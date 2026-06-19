@@ -1,0 +1,1000 @@
+{
+  "tutorial_id": "tut1_3d_bar",
+  "version": 1,
+  "product": "mechanical",
+  "geometry_tool": "spaceclaim",
+  "ansys_version_source": "2020 R2 (source material; re-verify selectors on 2025 R2)",
+  "is_mandatory": true,
+  "title": "Tutorial 1 \u2014 Elongation of a 3D Bar Under Tension",
+  "problem": "A bar fixed at one end with a 3000 lbf tensile load on the other. Steel: E = 30e6 psi, nu = 0.27. Radius 0.5 in, length 30 in. Compute the elongation.",
+  "expected_answer": "Directional deformation approx 0.00382 in",
+  "quiz_id": null,
+  "source": "Tut 1/Tut-1.1 - Copy.html",
+  "_notes": {
+    "selector_status": "UNVERIFIED \u2014 selectors use display names from the source screenshots; resolve real UIA automation_id/name via the Phase 0 spike before relying on them.",
+    "highlight_legend": "uia = overlay draws a box around a UIA element (element locator resolves the bbox at runtime). instruction = 3D-viewport action UIA cannot see; show an instruction/arrow, no tracked box. none = no highlight (launch/close).",
+    "verify_legend": "uia = UI-tree check. script(engine) = authoritative model state (spaceclaim | pymechanical). window_appeared = transition. manual = student confirms (no programmatic check available).",
+    "viewport_caveat": "Steps marked highlight=instruction happen inside the 3D graphics window, which UIA cannot enumerate. They are verified by model state where possible, else manual.",
+    "workbench_uia_finding_2026-06": "CONFIRMED via live guide_tut1.py debug dump: Workbench's ribbon/menu bar IS exposed via UI Automation (File, Save, Save As all resolve correctly). The Toolbox panel and Project Schematic canvas are NOT exposed via UIA at all -- a snapshot dump of the main window's full descendant tree (154 controls) contained zero Toolbox/Schematic items, only ribbon/menu/status-bar chrome. This is almost certainly a custom-drawn control with no per-item (or even pane-level) automation peers, not a selector-naming issue. wb_03 (Toolbox drag) and wb_04 (schematic rename) were changed from highlight:uia/verify:uia to highlight:instruction/verify:manual as a result. If a later Workbench step targeting the Toolbox or Schematic also reports 'NOT FOUND' with an all-chrome sample dump, apply the same fix rather than re-diagnosing. Real fix (deferred): image-template matching over the Toolbox/Schematic region, per the build plan's Phase 0 contingency (Student-Track-App-Build-Plan.md, Phase 0 exit gate).",
+    "workbench_win32_finding_2026-06": "CONFIRMED via spikes/probe3_win32_toolbox.py on a live machine: the Toolbox is ALSO invisible to the raw Win32 HWND tree (backend='win32'), not just UIA. The 45-control dump under the Workbench window contains zero SysListView32/SysTreeView32/listbox-class windows anywhere -- the Toolbox region (L4,T183-R308,B954) is covered only by generic repeated 'WindowsForms10.Window.8...' container HWNDs, the same class used for unrelated panes. This rules out BOTH automation APIs as a source of live per-item coordinates for Toolbox/Schematic rows -- it's a single owner-drawn surface with no native row objects at all, at any level. Do not re-attempt UIA or win32-backend probes for Toolbox/Schematic rows -- both are exhausted.",
+    "workbench_template_match_rejected_2026-06": "TRIED AND REJECTED: image-template matching (OpenCV TM_CCOEFF_NORMED against a saved crop of the 'Static Structural' row) as the live-box fallback for Toolbox rows. Verified failure mode: matching the exact crop against the exact screenshot it came from picked the 'Modal' row (score 0.58) over the real 'Static Structural' location, because every Toolbox row shares the same icon+text layout and pixel correlation doesn't actually read the text -- raising the threshold would only ever produce 'not found', never fix the wrong-row match. Replaced with OCR (pytesseract over an upscaled grayscale screenshot of the Toolbox rect, see locate.locate_text()), which matches on the real string content and is what wb_03 now uses (highlight/selector.type == 'ocr_text'). spikes/capture_template.py and spikes/templates/*.png are leftover from the rejected approach and can be deleted.",
+    "wb03_verify_2026-06": "wb_03 verify.type is \"ocr_text_present\" with a multi-row \"texts\" list (Engineering Data / Geometry / Model / Setup / Solution / Results), not just a single \"Engineering Data\" check -- matches the full system-block structure shown in the reference screenshot the student attached (a 7-row block: Static Structural, Engineering Data, Geometry, Model, Setup, Solution, Results), rather than confirming only one row of it. \"Static Structural\" itself is deliberately excluded from the list -- it is also the Toolbox's own permanent template row, so re-checking it would be a guaranteed false positive even before the drag happens. Implementation: locate.all_texts_present() does ONE OCR pass per attempt over locate.schematic_rect() and checks all phrases against that single result (re-tried as a whole up to OCR_RETRIES times) -- deliberately NOT one Tesseract invocation per phrase per tick, which would be far too slow for the ~700ms tick budget. verify.ocr_text_present() in verify.py dispatches to it.",
+    "wb04_geometry_2026-06": "wb_04 was changed from \"rename the system\" to \"select Geometry\" (double-click the Geometry row in the Static Structural schematic block to launch the geometry editor) -- this is the actual next real action in the live walkthrough; the rename step was dropped, not deferred. selector/highlight reuse the same ocr_text machinery as wb_03, but with selector.scope=\"schematic\" so guide_tut1.py scopes the OCR search to locate.schematic_rect() instead of the Toolbox -- a bare \"Geometry\" search over the whole screen would be too unscoped otherwise. verify uses \"window_appeared\" app=\"spaceclaim\" (same process-check pattern as wb_01) since double-clicking Geometry launches the geometry editor as its own process -- spaceclaim's process name in verify.APP_PROCESS_NAMES is still UNCONFIRMED, same caveat noted there since before this session; confirm against the real process name once tested live."
+  },
+  "apps": [
+    "workbench",
+    "spaceclaim",
+    "mechanical"
+  ],
+  "sections": [
+    {
+      "section": "Create a new Static Structural analysis case",
+      "app": "workbench",
+      "steps": [
+        {
+          "step_id": "wb_01_open",
+          "app": "workbench",
+          "title": "Open Ansys Workbench",
+          "description": "Launch Ansys Workbench to start the project.",
+          "selector": {
+            "type": "window",
+            "app": "workbench"
+          },
+          "highlight": "none",
+          "action": {
+            "kind": "launch"
+          },
+          "verify": {
+            "type": "window_appeared",
+            "app": "workbench"
+          },
+          "hints": [
+            "Start it from the Windows Start menu or the lab launcher."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_02_save_project",
+          "app": "workbench",
+          "title": "Save the project as \"Tut-1\"",
+          "description": "Open the File menu, click \"Save As...\", then name the project \"Tut-1\".",
+          "selector": {
+            "type": "uia",
+            "name": "Save As",
+            "via": "File",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "menu_select",
+            "via": "File",
+            "then": "text_entry",
+            "value": "Tut-1"
+          },
+          "verify": {
+            "type": "window_title_excludes",
+            "app": "workbench",
+            "text": "Unsaved Project"
+          },
+          "hints": [
+            "Click File to open the menu, then choose Save As..."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_03_add_static_structural",
+          "app": "workbench",
+          "title": "Add a Static Structural analysis",
+          "description": "Drag 'Static Structural' from Toolbox > Analysis Systems onto the Project Schematic.",
+          "selector": {
+            "type": "ocr_text",
+            "name": "Static Structural",
+            "group": "Analysis Systems",
+            "text": "Static Structural"
+          },
+          "highlight": "ocr_text",
+          "action": {
+            "kind": "drag"
+          },
+          "verify": {
+            "type": "ocr_text_present",
+            "texts": [
+              "Engineering Data",
+              "Geometry",
+              "Model",
+              "Setup",
+              "Solution",
+              "Results"
+            ],
+            "scope": "schematic"
+          },
+          "hints": [
+            "The Toolbox is on the left; expand Analysis Systems."
+          ],
+          "source_image": "Tut 1/PastedImage_aaf61d8c147540288ab72b3f6ef9062e_image.png"
+        },
+        {
+          "step_id": "wb_04_select_geometry",
+          "app": "workbench",
+          "title": "Select Geometry",
+          "description": "Double-click 'Geometry' in the Static Structural system block to launch the geometry editor.",
+          "selector": {
+            "type": "ocr_text",
+            "text": "Geometry",
+            "scope": "schematic"
+          },
+          "highlight": "ocr_text",
+          "action": {
+            "kind": "double_click"
+          },
+          "verify": {
+            "type": "window_appeared",
+            "app": "spaceclaim"
+          },
+          "hints": [
+            "The system block is in the Project Schematic; 'Geometry' is the row with the '?' icon."
+          ]
+        },
+        {
+          "step_id": "wb_05_units",
+          "app": "workbench",
+          "title": "Set unit system to U.S. Engineering",
+          "description": "Open the Units menu and choose U.S. Engineering.",
+          "selector": {
+            "type": "uia",
+            "name": "Units",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "menu_select",
+            "value": "U.S. Engineering"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Unit system set to U.S. Engineering?"
+          },
+          "hints": [
+            "Units is a top-level Workbench menu."
+          ],
+          "source_image": "Tut 1/PastedImage_aaf61d8c147540288ab72b3f6ef9062e_image.png"
+        }
+      ]
+    },
+    {
+      "section": "Open SpaceClaim and define its unit system",
+      "app": "spaceclaim",
+      "steps": [
+        {
+          "step_id": "sc_01_open_geometry",
+          "app": "workbench",
+          "title": "Open the geometry editor (SpaceClaim)",
+          "description": "Right-click the 'Geometry' cell and open the SpaceClaim CAD tool.",
+          "selector": {
+            "type": "uia",
+            "name": "Geometry",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Edit Geometry in SpaceClaim"
+          },
+          "launches": "spaceclaim",
+          "verify": {
+            "type": "window_appeared",
+            "app": "spaceclaim"
+          },
+          "hints": [
+            "Geometry is the 3rd cell of the system.",
+            "SpaceClaim can take 30-90s to open."
+          ],
+          "source_image": "Tut 1/PastedImage_aa50a9041f0340ddb1c14371fe46edde_image.png"
+        },
+        {
+          "step_id": "sc_02_options",
+          "app": "spaceclaim",
+          "title": "Open SpaceClaim Options",
+          "description": "File menu > SpaceClaim Options.",
+          "selector": {
+            "type": "uia",
+            "name": "Options",
+            "group": "File",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "menu_select"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Options dialog open?"
+          },
+          "hints": [
+            "Click File first, then Options at the bottom."
+          ],
+          "source_image": "Tut 1/PastedImage_12057055eba8436d9bb713155ba7881e_image.png"
+        },
+        {
+          "step_id": "sc_03_units_imperial",
+          "app": "spaceclaim",
+          "title": "Set units to Imperial",
+          "description": "Select 'Units' in the Options list, set type to Imperial, then close the dialog.",
+          "selector": {
+            "type": "uia",
+            "name": "Units",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click",
+            "then": "text_entry",
+            "value": "Imperial"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Units set to Imperial?"
+          },
+          "hints": [
+            "Units is in the left list of the Options dialog."
+          ],
+          "source_image": "Tut 1/PastedImage_046f868b8436469dafe90def2f6bc081_image.png"
+        }
+      ]
+    },
+    {
+      "section": "Draw the sketch in SpaceClaim",
+      "app": "spaceclaim",
+      "steps": [
+        {
+          "step_id": "sc_04_sketch_tab",
+          "app": "spaceclaim",
+          "title": "Select the Sketch ribbon",
+          "description": "Switch to the Sketch ribbon.",
+          "selector": {
+            "type": "uia",
+            "name": "Sketch",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "uia",
+            "check": "selected",
+            "target": "Sketch"
+          },
+          "hints": [
+            "Sketch is a top ribbon tab."
+          ],
+          "source_image": "Tut 1/PastedImage_f913bba4931143c39105f5034aacb66a_image.png"
+        },
+        {
+          "step_id": "sc_05_circle_tool",
+          "app": "spaceclaim",
+          "title": "Select the Circle tool",
+          "description": "Click 'Circle' in the Create group.",
+          "selector": {
+            "type": "uia",
+            "name": "Circle",
+            "group": "Create",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Circle tool active?"
+          },
+          "hints": [
+            "Create group, next to Line and Rectangle."
+          ],
+          "source_image": "Tut 1/PastedImage_f913bba4931143c39105f5034aacb66a_image.png"
+        },
+        {
+          "step_id": "sc_06_draw_circle",
+          "app": "spaceclaim",
+          "title": "Draw a circle on the default plane",
+          "description": "Click in the graphics window to place and draw a circle.",
+          "selector": {
+            "type": "viewport"
+          },
+          "highlight": "instruction",
+          "action": {
+            "kind": "draw"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "spaceclaim",
+            "check": "curve_count",
+            "args": {
+              "min": 1
+            }
+          },
+          "hints": [
+            "Click the center, drag out, click again."
+          ],
+          "source_image": "Tut 1/PastedImage_f913bba4931143c39105f5034aacb66a_image.png"
+        },
+        {
+          "step_id": "sc_07_dimension_tool",
+          "app": "spaceclaim",
+          "title": "Select the Dimension tool",
+          "description": "Click 'Dimension' in the Constraints group.",
+          "selector": {
+            "type": "uia",
+            "name": "Dimension",
+            "group": "Constraints",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Dimension tool active?"
+          },
+          "hints": [
+            "Constraints group on the Sketch ribbon."
+          ],
+          "source_image": "Tut 1/PastedImage_2681010a14334716a931c733cdc51460_image.png"
+        },
+        {
+          "step_id": "sc_08_set_diameter",
+          "app": "spaceclaim",
+          "title": "Set the circle diameter to 0.5\"",
+          "description": "Click the circle, then enter 0.5\" in the dimension box.",
+          "selector": {
+            "type": "viewport"
+          },
+          "highlight": "instruction",
+          "action": {
+            "kind": "text_entry",
+            "value": "0.5"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "spaceclaim",
+            "check": "circle_diameter",
+            "args": {
+              "value": 0.5,
+              "tol": 0.01
+            }
+          },
+          "hints": [
+            "Click the circle edge, type 0.5, press Enter."
+          ],
+          "source_image": "Tut 1/PastedImage_2681010a14334716a931c733cdc51460_image.png"
+        },
+        {
+          "step_id": "sc_09_end_sketch",
+          "app": "spaceclaim",
+          "title": "End Sketch Editing",
+          "description": "Click 'End Sketch Editing' to close sketch mode; the surface is generated automatically.",
+          "selector": {
+            "type": "uia",
+            "name": "End Sketch Editing",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "spaceclaim",
+            "check": "surface_count",
+            "args": {
+              "min": 1
+            }
+          },
+          "hints": [
+            "After this, the Design ribbon is auto-selected."
+          ],
+          "source_image": "Tut 1/PastedImage_2ac3da3aa6524cc48c09599a00184f0c_image.png"
+        }
+      ]
+    },
+    {
+      "section": "Extrude the 3D cylinder",
+      "app": "spaceclaim",
+      "steps": [
+        {
+          "step_id": "sc_10_pull_tool",
+          "app": "spaceclaim",
+          "title": "Select the Pull tool",
+          "description": "Click 'Pull' in the Edit group (Design ribbon).",
+          "selector": {
+            "type": "uia",
+            "name": "Pull",
+            "group": "Edit",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Pull tool active?"
+          },
+          "hints": [
+            "Edit group on the Design ribbon."
+          ],
+          "source_image": "Tut 1/PastedImage_a25ed1875f734e50b6241b460178aa70_image.png"
+        },
+        {
+          "step_id": "sc_11_pull_direction",
+          "app": "spaceclaim",
+          "title": "Choose the pull direction (Y) and add a step",
+          "description": "Select the perpendicular direction (Y), then click the plus button in the popup.",
+          "selector": {
+            "type": "viewport"
+          },
+          "highlight": "instruction",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Y direction selected?"
+          },
+          "hints": [
+            "Hover the surface until the Y arrow shows, then click the + in the mini-toolbar."
+          ],
+          "source_image": "Tut 1/PastedImage_a25ed1875f734e50b6241b460178aa70_image.png"
+        },
+        {
+          "step_id": "sc_12_extrude_30",
+          "app": "spaceclaim",
+          "title": "Extrude the bar to 30 in",
+          "description": "Drag the surface in Y, then set the length to 30 in in the dimension box.",
+          "selector": {
+            "type": "viewport"
+          },
+          "highlight": "instruction",
+          "action": {
+            "kind": "drag",
+            "then": "text_entry",
+            "value": "30"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "spaceclaim",
+            "check": "body_length",
+            "args": {
+              "axis": "Y",
+              "value": 30,
+              "tol": 0.1
+            }
+          },
+          "hints": [
+            "Drag a little, then type 30 and Enter for an exact length."
+          ],
+          "source_image": "Tut 1/PastedImage_b4bf3cb0f95e4bbd98391be0599f9fc3_image.png"
+        },
+        {
+          "step_id": "sc_13_close_save",
+          "app": "spaceclaim",
+          "title": "Close SpaceClaim and save",
+          "description": "Close SpaceClaim and save the project; control returns to Workbench.",
+          "selector": {
+            "type": "window",
+            "app": "spaceclaim"
+          },
+          "highlight": "none",
+          "action": {
+            "kind": "close"
+          },
+          "launches": "workbench",
+          "verify": {
+            "type": "window_appeared",
+            "app": "workbench"
+          },
+          "hints": [
+            "The 3D solid bar should now exist in the project."
+          ],
+          "source_image": "Tut 1/PastedImage_26d91310e8a34d03badd0682b3fdccac_image.png"
+        }
+      ]
+    },
+    {
+      "section": "Define the material properties (Engineering Data)",
+      "app": "workbench",
+      "steps": [
+        {
+          "step_id": "ed_01_open",
+          "app": "workbench",
+          "title": "Open Engineering Data",
+          "description": "Double-click the 'Engineering Data' cell.",
+          "selector": {
+            "type": "uia",
+            "name": "Engineering Data",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "double_click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Engineering Data tab open?"
+          },
+          "hints": [
+            "Engineering Data is the 2nd cell of the system."
+          ],
+          "source_image": "Tut 1/PastedImage_64397ce69f9045e6b752476e2b3d4039_image.png"
+        },
+        {
+          "step_id": "ed_02_add_steel",
+          "app": "workbench",
+          "title": "Add a new material \"Steel\"",
+          "description": "In the Outline view, add a new material named 'Steel'.",
+          "selector": {
+            "type": "uia",
+            "name": "Click here to add a new material",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "text_entry",
+            "value": "Steel"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Material 'Steel' added?"
+          },
+          "hints": [
+            "Type in the empty row at the bottom of the Outline grid."
+          ],
+          "source_image": "Tut 1/PastedImage_120dbab6b6ca4722bae419a9f4bb402b_image.png"
+        },
+        {
+          "step_id": "ed_03_isotropic_elasticity",
+          "app": "workbench",
+          "title": "Add Isotropic Elasticity",
+          "description": "Double-click Linear Elastic > Isotropic Elasticity in the Toolbox.",
+          "selector": {
+            "type": "uia",
+            "name": "Isotropic Elasticity",
+            "group": "Linear Elastic",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "double_click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Isotropic Elasticity added to Steel?"
+          },
+          "hints": [
+            "Make sure 'Steel' is selected in the Outline first."
+          ],
+          "source_image": "Tut 1/PastedImage_284371ab4abc4f1b8b72800edb910e75_image.png"
+        },
+        {
+          "step_id": "ed_04_properties",
+          "app": "workbench",
+          "title": "Set Young's Modulus and Poisson's Ratio",
+          "description": "In Properties, set Young's Modulus to 3E7 psi and Poisson's Ratio to 0.27.",
+          "selector": {
+            "type": "uia",
+            "name": "Young's Modulus",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "text_entry",
+            "value": "3E7 psi; 0.27"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "E = 3E7 psi and nu = 0.27 entered?"
+          },
+          "hints": [
+            "Young's Modulus = 3E7 psi, Poisson's Ratio = 0.27."
+          ],
+          "source_image": "Tut 1/PastedImage_284371ab4abc4f1b8b72800edb910e75_image.png"
+        }
+      ]
+    },
+    {
+      "section": "Setup and solve in Mechanical",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_01_open_model",
+          "app": "workbench",
+          "title": "Open Mechanical",
+          "description": "Double-click the 'Model' cell to open the Mechanical package.",
+          "selector": {
+            "type": "uia",
+            "name": "Model",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "double_click"
+          },
+          "launches": "mechanical",
+          "verify": {
+            "type": "window_appeared",
+            "app": "mechanical"
+          },
+          "hints": [
+            "Model is the 4th cell.",
+            "Mechanical can take 30-90s to open."
+          ],
+          "source_image": "Tut 1/PastedImage_fb064700d09f47479cc6b39e076a7e88_image.png"
+        },
+        {
+          "step_id": "me_02_assign_material",
+          "app": "mechanical",
+          "title": "Assign Steel to the solid body",
+          "description": "Expand Geometry in the Outline, select the SYS-1\\Solid object, then set Details > Material > Assignment to Steel.",
+          "selector": {
+            "type": "uia",
+            "name": "Solid",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click",
+            "then": "select",
+            "value": "Steel"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "material_assignment",
+            "args": {
+              "body": "Solid",
+              "material": "Steel"
+            }
+          },
+          "hints": [
+            "Details view is bottom-left; Material > Assignment is a dropdown."
+          ],
+          "source_image": "Tut 1/PastedImage_a7c1c544b68941a888b83685f3fa4bf9_image.png"
+        },
+        {
+          "step_id": "me_03_generate_mesh",
+          "app": "mechanical",
+          "title": "Generate the mesh",
+          "description": "Right-click 'Mesh' in the Outline tree and choose 'Generate Mesh'.",
+          "selector": {
+            "type": "uia",
+            "name": "Mesh",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Generate Mesh"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "mesh_node_count",
+            "args": {
+              "min": 1
+            }
+          },
+          "hints": [
+            "Default mesh is fine for this tutorial."
+          ],
+          "source_image": "Tut 1/PastedImage_915f3ee408594a6c99738067ecad0ade_image.png"
+        },
+        {
+          "step_id": "me_04_select_static",
+          "app": "mechanical",
+          "title": "Select Static Structural",
+          "description": "Select 'Static Structural' in the Outline tree to add loads.",
+          "selector": {
+            "type": "uia",
+            "name": "Static Structural",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "uia",
+            "check": "selected",
+            "target": "Static Structural"
+          },
+          "hints": [
+            "This enables the Environment ribbon."
+          ],
+          "source_image": "Tut 1/PastedImage_ad2c81b06a844b3698ab7d2a49553125_image.png"
+        },
+        {
+          "step_id": "me_05_force_tool",
+          "app": "mechanical",
+          "title": "Insert a Force load",
+          "description": "On the Environment ribbon, click 'Force' in the Loads group.",
+          "selector": {
+            "type": "uia",
+            "name": "Force",
+            "group": "Loads",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "load_exists",
+            "args": {
+              "type": "Force"
+            }
+          },
+          "hints": [
+            "Environment ribbon > Loads group."
+          ],
+          "source_image": "Tut 1/PastedImage_ad2c81b06a844b3698ab7d2a49553125_image.png"
+        },
+        {
+          "step_id": "me_06_force_face",
+          "app": "mechanical",
+          "title": "Scope the force to one end face",
+          "description": "Select one circular end face of the bar, then click 'Apply' in the Geometry box of the Force Details.",
+          "selector": {
+            "type": "viewport"
+          },
+          "highlight": "instruction",
+          "action": {
+            "kind": "select_face",
+            "then": "click",
+            "value": "Apply"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "load_scope_face_count",
+            "args": {
+              "type": "Force",
+              "faces": 1
+            }
+          },
+          "hints": [
+            "Click the end face in the 3D view, then Apply in Details > Geometry."
+          ],
+          "source_image": "Tut 1/PastedImage_ad2c81b06a844b3698ab7d2a49553125_image.png"
+        },
+        {
+          "step_id": "me_07_force_magnitude",
+          "app": "mechanical",
+          "title": "Set the force magnitude to 3000 lbf",
+          "description": "In the Force Details, set Magnitude to 3000 lbf.",
+          "selector": {
+            "type": "uia",
+            "name": "Magnitude",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "text_entry",
+            "value": "3000 lbf"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "force_magnitude",
+            "args": {
+              "value": 3000,
+              "unit": "lbf",
+              "tol": 0.1
+            }
+          },
+          "hints": [
+            "Magnitude is in the Definition section of Details."
+          ],
+          "source_image": "Tut 1/PastedImage_ad2c81b06a844b3698ab7d2a49553125_image.png"
+        },
+        {
+          "step_id": "me_08_fixed_tool",
+          "app": "mechanical",
+          "title": "Insert a Fixed Support",
+          "description": "On the Environment tab, click 'Fixed' in the Structural group.",
+          "selector": {
+            "type": "uia",
+            "name": "Fixed",
+            "group": "Structural",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "bc_exists",
+            "args": {
+              "type": "Fixed Support"
+            }
+          },
+          "hints": [
+            "Environment ribbon > Structural group > Fixed."
+          ],
+          "source_image": "Tut 1/PastedImage_592f23dfb4614b2c8aae454e6a967c24_image.png"
+        },
+        {
+          "step_id": "me_09_fixed_face",
+          "app": "mechanical",
+          "title": "Scope the fixed support to the opposite face",
+          "description": "Select the opposite end face of the bar, then click 'Apply'.",
+          "selector": {
+            "type": "viewport"
+          },
+          "highlight": "instruction",
+          "action": {
+            "kind": "select_face",
+            "then": "click",
+            "value": "Apply"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "bc_scope_face_count",
+            "args": {
+              "type": "Fixed Support",
+              "faces": 1
+            }
+          },
+          "hints": [
+            "Pick the end opposite to the force, then Apply."
+          ],
+          "source_image": "Tut 1/PastedImage_592f23dfb4614b2c8aae454e6a967c24_image.png"
+        },
+        {
+          "step_id": "me_10_solve",
+          "app": "mechanical",
+          "title": "Solve",
+          "description": "Click 'Solve' on the Home ribbon.",
+          "selector": {
+            "type": "uia",
+            "name": "Solve",
+            "group": "Home",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "solve_status",
+            "args": {
+              "status": "Done"
+            }
+          },
+          "hints": [
+            "Solving may take a moment; watch the status."
+          ],
+          "source_image": "Tut 1/PastedImage_2157c773105d47ef95221bf9626eed64_image.png"
+        }
+      ]
+    },
+    {
+      "section": "Generate the result",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "re_01_insert_dir_deformation",
+          "app": "mechanical",
+          "title": "Insert Directional Deformation",
+          "description": "Right-click 'Solution' in the Outline tree and insert Directional Deformation.",
+          "selector": {
+            "type": "uia",
+            "name": "Solution",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Insert > Directional Deformation"
+          },
+          "verify": {
+            "type": "uia",
+            "check": "exists",
+            "target": "Directional Deformation"
+          },
+          "hints": [
+            "Solution is under the analysis branch in the Outline."
+          ],
+          "source_image": "Tut 1/PastedImage_fea42a1429234d72bbc8f4f3ad7807ea_image_647659225101675194530531.png"
+        },
+        {
+          "step_id": "re_02_orientation",
+          "app": "mechanical",
+          "title": "Set orientation to the bar axis",
+          "description": "In the Directional Deformation Details, set Orientation to the perpendicular (axial, Y) direction.",
+          "selector": {
+            "type": "uia",
+            "name": "Orientation",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "select",
+            "value": "Y Axis"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Orientation set to the bar's axis (Y)?"
+          },
+          "hints": [
+            "Match the direction the load stretches the bar."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "re_03_evaluate",
+          "app": "mechanical",
+          "title": "Evaluate all results",
+          "description": "Right-click 'Directional Deformation' and choose 'Evaluate All Results'.",
+          "selector": {
+            "type": "uia",
+            "name": "Directional Deformation",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Evaluate All Results"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "result_evaluated",
+            "args": {
+              "result": "Directional Deformation"
+            }
+          },
+          "hints": [
+            "Expected elongation is about 0.00382 in."
+          ],
+          "source_image": "Tut 1/PastedImage_f59f40fbba9a4dc6a16afc9fed24f1d0_image_242339970111675194537932.png"
+        },
+        {
+          "step_id": "re_04_save",
+          "app": "mechanical",
+          "title": "Save the project",
+          "description": "Save the project to finish.",
+          "selector": {
+            "type": "uia",
+            "name": "Save",
+            "automation_id": null
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "menu_select"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Project saved?"
+          },
+          "hints": [
+            "Final result: elongation approx 0.00382 in."
+          ],
+          "source_image": "Tut 1/PastedImage_30230884392540ad8f9ebf6a76d728a7_image.png"
+        }
+      ]
+    }
+  ]
+}

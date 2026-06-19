@@ -17,12 +17,15 @@ Open **Ansys Workbench** with a project that has a Static Structural system
 
 | Probe | Script | Question it answers | PASS looks like |
 |---|---|---|---|
-| 2 | `probe2_uia_workbench.py` | Can UIA see/locate Workbench elements? | prints name + rectangle for a Toolbox item and a schematic cell |
 | 0 | `probe0_transition.py` | Can we detect a child app window appearing? | "Workbench up" → "discovery appeared after N s" once you open the Geometry cell |
 | 1 | `probe1_pymechanical.py` | Can we read model state from Mechanical? | prints the analyses/boundary-conditions of your open model |
 
+(Probe 2, "can UIA see/locate Workbench elements?", has been answered and
+removed -- UIA can see Workbench's ribbon/menu chrome but NOT the Toolbox or
+Project Schematic; see `mock_server/data/tut1.json`'s `_notes` for the full
+finding and `spikes/locate.py` for the OCR-based fallback that resulted.)
+
 Then come back with what you saw — especially:
-- which Workbench elements had a non-empty `automation_id` (preferred for selectors),
 - how long the child app took to appear,
 - whether Path A in probe 1 connected, and if not, what it took to enable gRPC.
 
