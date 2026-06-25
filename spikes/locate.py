@@ -74,7 +74,68 @@ DEBUG = True
 
 APP_TITLES = {"workbench": "Workbench", "spaceclaim": "SpaceClaim", "mechanical": "Mechanical"}
 
-OCR_UPSCALE = 3  # Toolbox row text is ~12-14px tall; OCR accuracy improves a lot once upscaled
+OCR_UPSCALE = 4  # Toolbox row text is ~12-14px tall; OCR accuracy improves a lot once upscaled
+OCR_CONFIG = "--psm 11"  # "sparse text, no particular order" -- the real capture
+                          # regions are mostly-blank canvases with a small dense
+                          # text block in one corner (e.g. 1622x771 with the
+                          # schematic block confined to a small area), not a
+                          # structured page; default PSM 3 (full page layout
+                          # analysis) is the wrong model for that and showed
+                          # spurious tokens between real words in testing
+
+_exclude_rects = []  # this app's own on-screen window rects, set per-tick by
+                      # guide_tut1.py via set_exclude_rects() -- see
+                      # _grab_masked() for why
+
+
+def set_exclude_rects(rects):
+    """Call once per tick (from guide_tut1.py) with this app's own window
+    rects (e.g. the step panel) in physical screen pixels -- NOT the
+    Highlight box, which is deliberately drawn ON TOP of the real target and
+    must stay visible to OCR. Confirmed live: once Workbench's window is
+    large enough that a capture region (e.g. the schematic) overlaps this
+    floating panel's own screen position, OCR read the PANEL'S OWN status
+    text ("highlighting 'Geometry'", "Not yet — finish the action above.",
+    "Prev") mixed into the real schematic content, corrupting the read."""
+    global _exclude_rects
+    _exclude_rects = list(rects)
+
+
+def _grab_masked(rect):
+    """ImageGrab.grab(bbox=rect) as a numpy array, with any portion
+    overlapping _exclude_rects painted white first -- used by _ocr_words()
+    so this app's own panel text never leaks into an OCR read."""
+    shot = ImageGrab.grab(bbox=rect)
+    arr = np.array(shot)
+    rl, rt = rect[0], rect[1]
+    for (xl, yt, xr, yb) in _exclude_rects:
+        ix0, iy0 = max(0, int(xl - rl)), max(0, int(yt - rt))
+        ix1, iy1 = min(arr.shape[1], int(xr - rl)), min(arr.shape[0], int(yb - rt))
+        if ix1 > ix0 and iy1 > iy0:
+            if DEBUG:
+                print(f"[debug] _grab_masked: capture_rect={rect} exclude_rect="
+                      f"({xl:.0f},{yt:.0f},{xr:.0f},{yb:.0f}) -> painting over "
+                      f"array[{iy0}:{iy1}, {ix0}:{ix1}] (of shape {arr.shape[:2]})")
+            arr[iy0:iy1, ix0:ix1] = 255
+    return arr
+
+
+def _find_win32_window(title_hint):
+    """Largest visible win32-backend window whose title contains
+    `title_hint`, or None. Shared by _toolbox_rect() and schematic_rect(),
+    which both need "the real Workbench window" via the win32 backend (not
+    UIA -- see _toolbox_rect's docstring for why)."""
+    if Desktop is None:
+        return None
+    try:
+        wins = [w for w in Desktop(backend="win32").windows()
+                if title_hint.lower() in (w.window_text() or "").lower() and w.is_visible()]
+    except Exception:
+        return None
+    if not wins:
+        return None
+    wins.sort(key=lambda w: w.rectangle().width() * w.rectangle().height(), reverse=True)
+    return wins[0]
 
 
 def _toolbox_rect(title_hint="Workbench"):
@@ -87,17 +148,9 @@ def _toolbox_rect(title_hint="Workbench"):
     left-docked, narrow (~240-360px), tall content pane with an adjacent
     vertical scrollbar sharing its top/bottom (confirmed shape: content pane
     L4,T183-R308,B954 + scrollbar L288-308)."""
-    if Desktop is None:
+    win = _find_win32_window(title_hint)
+    if win is None:
         return None
-    try:
-        wins = [w for w in Desktop(backend="win32").windows()
-                if title_hint.lower() in (w.window_text() or "").lower() and w.is_visible()]
-    except Exception:
-        return None
-    if not wins:
-        return None
-    wins.sort(key=lambda w: w.rectangle().width() * w.rectangle().height(), reverse=True)
-    win = wins[0]
     try:
         children = win.descendants()
         win_left = win.rectangle().left
@@ -125,23 +178,15 @@ def schematic_rect(title_hint="Workbench"):
     """Live screen rect of the Project Schematic canvas: everything to the
     right of the Toolbox panel, spanning the Toolbox's own vertical extent
     (the two panels sit side by side at the same height in Workbench's main
-    client area). Public (unlike _toolbox_rect) because verify.py scopes its
-    "has a system been dropped onto the schematic" OCR check to this region
-    on purpose -- the Toolbox's own "Static Structural" template row would
-    otherwise be an obvious false positive for that check."""
+    client area). Public (unlike _toolbox_rect) because guide_tut1.py scopes
+    OCR highlighting to this region for schematic-scoped steps (selector.
+    scope=="schematic") -- the Toolbox's own "Static Structural" template
+    row would otherwise be an obvious false positive for that search."""
     tb = _toolbox_rect(title_hint)
-    if tb is None or Desktop is None:
+    win = _find_win32_window(title_hint)
+    if tb is None or win is None:
         return None
-    try:
-        wins = [w for w in Desktop(backend="win32").windows()
-                if title_hint.lower() in (w.window_text() or "").lower() and w.is_visible()]
-    except Exception:
-        return None
-    if not wins:
-        return None
-    wins.sort(key=lambda w: w.rectangle().width() * w.rectangle().height(), reverse=True)
-    win_rect = wins[0].rectangle()
-    return (tb[2], tb[1], win_rect.right, tb[3])
+    return (tb[2], tb[1], win.rectangle().right, tb[3])
 
 
 OCR_RETRIES = 2  # Tesseract is genuinely flaky frame-to-frame on the exact same,
@@ -157,19 +202,18 @@ SIDE_PAD = 14  # extra horizontal margin baked into the box on top of the
 
 
 def _ocr_words(rect):
-    shot = ImageGrab.grab(bbox=rect)
-    frame = cv2.cvtColor(np.array(shot), cv2.COLOR_RGB2GRAY)
+    arr = _grab_masked(rect)
+    frame = cv2.cvtColor(arr, cv2.COLOR_RGB2GRAY)
     frame = cv2.resize(frame, None, fx=OCR_UPSCALE, fy=OCR_UPSCALE, interpolation=cv2.INTER_CUBIC)
-    return pytesseract.image_to_data(frame, output_type=pytesseract.Output.DICT)
+    return pytesseract.image_to_data(frame, config=OCR_CONFIG, output_type=pytesseract.Output.DICT)
 
 
 def _match_phrase_bbox(data, target_words):
     """Find `target_words` (already lowercased/split) as consecutive words on
     one OCR line within `data` (one pytesseract.image_to_data() result).
     Returns (left, top, right, bottom) in upscaled-image pixel coords, or
-    None. Factored out of locate_text() so multi-phrase checks (see
-    texts_found()) can reuse a SINGLE OCR pass for several phrases instead
-    of paying for one Tesseract invocation per phrase per tick."""
+    None. Used by locate_text() to find a phrase's bounding box within one
+    OCR pass."""
     n = len(target_words)
     words = data["text"]
     for i in range(len(words) - n + 1):
@@ -188,7 +232,19 @@ def _match_phrase_bbox(data, target_words):
     return None
 
 
-def locate_text(target_text, region_rect=None):
+ICON_EXTEND_PX = 50  # fixed extra width added past the label when
+                      # extend_to_icon=True, to cover a schematic row's
+                      # status icon + dropdown arrow. Deliberately a FIXED
+                      # constant, not a search for "the nearest colored
+                      # pixel rightward" -- that approach searched all the
+                      # way to the schematic canvas's far right edge, so a
+                      # single stray colored pixel anywhere out there (noise,
+                      # anti-aliasing, an unrelated element) made the box
+                      # balloon to wherever that pixel happened to be,
+                      # confirmed live as a wildly oversized, unstable box.
+
+
+def locate_text(target_text, region_rect=None, extend_to_icon=False):
     """Find `target_text` (e.g. "Static Structural") live on screen via OCR,
     scoped to `region_rect` (defaults to the Toolbox panel rect). Returns
     (left, top, right, bottom) in screen coords, or None.
@@ -198,7 +254,13 @@ def locate_text(target_text, region_rect=None):
     screenshot the template was cropped from (score 0.58, beating the real
     match), because every Toolbox row shares the same icon+text layout and
     raw pixel correlation doesn't actually read the text. OCR matches on the
-    real string content instead, which is what actually distinguishes rows."""
+    real string content instead, which is what actually distinguishes rows.
+
+    extend_to_icon: if True (schematic rows only -- Toolbox rows have no
+    status icon), extends the box's right edge by a FIXED amount
+    (ICON_EXTEND_PX) past the label, so e.g. a "Geometry" row's status icon
+    visually sits inside its own highlight box instead of floating outside
+    it. Fixed, not adaptive -- see ICON_EXTEND_PX for why."""
     if pytesseract is None or cv2 is None or np is None or ImageGrab is None:
         if DEBUG:
             print("[debug] locate_text: pytesseract/opencv/numpy/Pillow not installed")
@@ -225,6 +287,8 @@ def locate_text(target_text, region_rect=None):
             l = max(0, l - row_h * 1.3 - SIDE_PAD)
             r = r + SIDE_PAD
             result = (rect[0] + l, rect[1] + t, rect[0] + r, rect[1] + b)
+            if extend_to_icon:
+                result = (result[0], result[1], result[2] + ICON_EXTEND_PX, result[3])
             if DEBUG:
                 tail = f" (attempt {attempt + 1}/{OCR_RETRIES + 1})" if attempt else ""
                 print(f"[debug] locate_text({target_text!r}) -> {result}{tail}")
@@ -235,39 +299,6 @@ def locate_text(target_text, region_rect=None):
               f"{OCR_RETRIES + 1} attempt(s). OCR read {len(seen)} non-empty "
               f"word(s) in toolbox rect {rect}: {seen[:40]}")
     return None
-
-
-def texts_found(texts, region_rect):
-    """Returns the SUBSET of `texts` that OCR could read within region_rect,
-    UNIONED across up to OCR_RETRIES+1 retried attempts -- a phrase counts
-    if ANY attempt reads it. Confirmed live (not a hypothetical): the exact
-    same unchanged schematic block had "Engineering Data"/"Setup"/"Solution"/
-    "Results" read fine but "Geometry"/"Model" missed on one tick's single
-    OCR pass -- a DIFFERENT word can drop out on each attempt, so requiring
-    every phrase to land in the SAME single attempt (the original version of
-    this check) under-reports even when every phrase is genuinely on screen
-    and has been read correctly at least once."""
-    if pytesseract is None or cv2 is None or np is None or ImageGrab is None:
-        if DEBUG:
-            print("[debug] texts_found: pytesseract/opencv/numpy/Pillow not installed")
-        return set()
-    if region_rect is None:
-        if DEBUG:
-            print("[debug] texts_found: no region rect given")
-        return set()
-    target_lists = {t: t.lower().split() for t in texts}
-    found = set()
-    for _attempt in range(OCR_RETRIES + 1):
-        data = _ocr_words(region_rect)
-        for t, tw in target_lists.items():
-            if t not in found and _match_phrase_bbox(data, tw) is not None:
-                found.add(t)
-        if len(found) == len(texts):
-            break
-    if DEBUG:
-        missing = [t for t in texts if t not in found]
-        print(f"[debug] texts_found({texts!r}) -> found={sorted(found)} missing={missing}")
-    return found
 
 
 def menu_chain(value):
@@ -358,15 +389,40 @@ class ElementLocator:
             if DEBUG:
                 print(f"[debug] descendants() walk failed: {e}")
 
+    MIN_CANDIDATE_AREA = 1000  # px^2 -- candidates smaller than this are
+    # treated as incidental sub-controls (e.g. a row's tiny checkbox), not
+    # plausible click targets, and dropped before the smallest-wins tiebreak
+    # below. Confirmed live: Mechanical's "Assignment" Details row matched
+    # TWO elements named "Assignment" -- the whole row (area=8510) and a
+    # 14x23px checkbox to its left (area=322) -- and smallest-wins picked
+    # the checkbox, boxing the wrong thing entirely. 1000 sits comfortably
+    # between that 322 and every real target rect seen so far across both
+    # Workbench and Mechanical.
+
+    ROW_LEFT_TRIM = 20  # px -- trimmed off a property-row match's left edge
+    # (see _match()); a bit more than the 14px checkbox width confirmed live,
+    # so the box starts right at the row's actual label text instead of the
+    # blank checkbox gutter.
+
     @staticmethod
     def _match(ctrls, name):
-        """Match by name, visibility, AND prefer the SMALLEST matching box.
-        Some native menu implementations report the currently-highlighted
-        item's name on the WHOLE popup container too (confirmed: a real box
-        wrapped the entire File dropdown, not just 'Save As...'), so the
-        first name match isn't necessarily the right element -- the specific
-        leaf row is always much smaller than any wrapping container that
-        happens to share its name."""
+        """Match by name, visibility, AND prefer the SMALLEST matching box
+        (among those at least MIN_CANDIDATE_AREA, see above). Some native
+        menu implementations report the currently-highlighted item's name on
+        the WHOLE popup container too (confirmed: a real box wrapped the
+        entire File dropdown, not just 'Save As...'), so the first name
+        match isn't necessarily the right element -- the specific leaf row
+        is usually much smaller than any wrapping container that happens to
+        share its name. But the smallest match isn't always right either --
+        an incidental tiny sub-control (a checkbox, an icon) can also share
+        the name, in which case it's the LARGER, more substantive match
+        that's the real target. EXACT name matches are preferred over mere
+        substring matches first, before any size-based tiebreak: confirmed
+        live, Mechanical's "Solve" ribbon button sat alongside an internal
+        'Solve Handler' proxy element and a 'Solve Process Settings...' menu
+        item -- both contain "solve" as a substring but aren't actually it,
+        and area-based tiebreaking alone picked the wrong one ('Solve
+        Handler', purely because it happened to be a bit smaller)."""
         if not name:
             return None
         candidates = []
@@ -391,12 +447,26 @@ class ElementLocator:
                 print(f"[debug]   candidate {cname!r} visible={visible} rect={r} area={area} -> "
                       f"{'MATCH' if ok else 'skip'}")
             if ok:
-                candidates.append((area, r))
+                candidates.append((area, r, cname))
         if not candidates:
             return None
-        candidates.sort(key=lambda c: c[0])
-        _, r = candidates[0]
-        return (r.left, r.top, r.right, r.bottom)
+        exact = [c for c in candidates if c[2].lower() == name.lower()]
+        pool = exact or candidates  # fall back to substring matches if no exact name exists
+        plausible = [c for c in pool if c[0] >= ElementLocator.MIN_CANDIDATE_AREA]
+        pool = plausible or pool  # fall back to everything if ALL candidates are tiny
+        pool.sort(key=lambda c: c[0])
+        _, r, _ = pool[0]
+        left = r.left
+        # A wide, flat match (width >> height) is a Details-grid PROPERTY ROW,
+        # not a button/menu item -- its leftmost ~20px is the row's own
+        # checkbox/expander glyph (confirmed live: a real "Assignment" row's
+        # own checkbox sub-control measured 14px wide), which is blank,
+        # unrelated chrome, not part of what the step is pointing at. Trim it
+        # off the box's left edge. Buttons/menu items (roughly square/normal
+        # aspect ratio) are well under the width>height*4 ratio and untouched.
+        if r.width() > r.height() * 4:
+            left = min(r.left + ElementLocator.ROW_LEFT_TRIM, r.right)
+        return (left, r.top, r.right, r.bottom)
 
     def locate(self, name):
         """Return (left, top, right, bottom) or None. Only ever called with

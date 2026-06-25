@@ -11,51 +11,54 @@ CODE ORGANIZATION (three modules, each owning one concern):
 This mirrors the real architecture's split between the Tutorial client and
 the Ansys bridge's State verifier / Element locator sub-pieces (CLAUDE.md).
 
-STEPS BUILT SO FAR (from Tut 1, "Create a new Static Structural analysis case"):
-  1. "Open Ansys Workbench 2020 R2"      -- highlight: none, verify: process check
-  2. "Save the project as Tut-1"         -- highlight: uia, boxes "File" only
-                                             (Workbench's dropdown rows have no
-                                             stable per-item name once open --
-                                             "Save As..." is left to the step's
-                                             text, not a live box),
-                                             verify: window_title_excludes
-                                             ("Unsaved Project" leaves the
-                                             title bar once actually saved)
-  3. "Add a Static Structural analysis"  -- highlight: ocr_text (Toolbox rows
-                                             have ZERO UIA or win32 HWND
-                                             accessibility, confirmed via
-                                             diagnostic probes since removed
-                                             (tut1.json _notes); image-template
-                                             matching was tried and rejected --
-                                             it matched the wrong row since all
-                                             rows share the same icon+text
-                                             layout -- so this reads the live
-                                             Toolbox text via pytesseract OCR
-                                             and boxes whichever line says
-                                             "Static Structural"),
-                                             verify: ocr_text_present, checks
-                                             every row label of the schematic
-                                             system block (Engineering Data /
-                                             Geometry / Model / Setup /
-                                             Solution / Results) is present --
-                                             "Static Structural" itself is
-                                             excluded since it's also the
-                                             Toolbox's own permanent row
-  4. "Select Geometry"                   -- highlight: ocr_text, same OCR
-                                             machinery as step 3 but scoped to
-                                             locate.schematic_rect() instead of
-                                             the Toolbox (selector.scope ==
-                                             "schematic") -- boxes the
-                                             "Geometry" row inside the
-                                             schematic's Static Structural
-                                             block, verify: window_appeared
-                                             ("spaceclaim" process check, same
-                                             pattern as step 1)
+VERIFICATION IS MANUAL FOR EVERY STEP, ON PURPOSE: automatic checks
+(window_appeared, window_title_excludes, ocr_text_present, row_status_icon,
+and a PyMechanical gRPC integration) were built and DID work, but were
+deliberately removed -- continuing to chase OCR/UIA/gRPC reliability issues
+wasn't worth the fragility for a student-facing pilot. See tut1.json's
+_notes.manual_verify_switch_2026-06 for the full reasoning. Every step's
+verify.type is now "manual" (or an unimplemented "uia"/"script" type that
+falls through to the same manual-confirm path in verify.py) -- the student
+clicks "Mark step complete" once they've actually done the action.
+
+HIGHLIGHTING IS UNCHANGED -- the live box is independent of how a step gets
+verified, so all of this is still accurate:
+  - highlight: "none" (step 1) -- no box, process-launch step.
+  - highlight: "uia" (most steps) -- ElementLocator finds a named element in
+    the live UIA tree. Workbench's ribbon/menu chrome IS UIA-visible;
+    Mechanical's Outline tree/Details panel are WPF and expected to be too
+    (live-tested this session). Multi-stage actions (e.g. step 2's File ->
+    Save As, or right_click -> menu_select sequences) box ONLY the outer/
+    topmost name via target_sequence() -- transient popup rows don't expose
+    a stable per-item name, so the rest is left to the step's hint text.
+  - highlight: "ocr_text" (steps 3-5) -- Workbench's Toolbox panel and
+    Project Schematic canvas have ZERO UIA or win32 HWND accessibility
+    (confirmed via diagnostic probes since removed, see tut1.json _notes).
+    locate.locate_text() reads the live text via pytesseract OCR instead;
+    image-template matching was tried first and rejected (matched the wrong
+    row). selector.scope=="schematic" scopes the search to
+    locate.schematic_rect() instead of the Toolbox; extend_to_icon=True
+    (steps 4-5) widens the box to also enclose the row's status icon.
+  - highlight: "instruction" (steps 12, 15) -- picking a 3D face in the
+    geometry viewport isn't a UIA element at all, so these show the
+    tutorial's reference screenshot via _load_reference_image() instead of a
+    live box.
+
+STEP 6 ONWARD note: load_steps() now takes an explicit step_id list
+(STEP_IDS, near main()), not a prefix count -- tut1.json's section order
+follows the original tutorial doc (Workbench -> SpaceClaim -> Engineering
+Data -> Mechanical), but live testing jumped straight from Workbench to
+Mechanical, skipping SpaceClaim/Engineering Data. ALSO: Panel now owns one
+ElementLocator PER APP (self._locators, created lazily via _locator_for()),
+not a single hardcoded "workbench" locator, since steps 6-8 are the first to
+target a different app.
 
 RUN (with Workbench already open, or about to open it):
   .venv\\Scripts\\python spikes\\guide_tut1.py
 
-DEPS: pip install psutil pywinauto pyqt6
+DEPS: pip install pywinauto pyqt6 opencv-python-headless numpy pillow pytesseract
+      (psutil/ansys-mechanical-core no longer needed by the live guide --
+      only the standalone probe0/probe1 scripts still use them)
 """
 
 import json
@@ -83,19 +86,23 @@ OCR_MISS_TOLERANCE = 6  # consecutive OCR misses (each already internally
 DEBUG = True         # print diagnostic lines to the console
 
 
-def load_steps(upto):
-    """Flatten tut1.json's sections into one ordered list, sliced to the
-    first `upto` steps -- single source of truth for tutorial content, even
-    though we only use a prefix of it right now."""
+def load_steps(step_ids):
+    """Load tut1.json's steps by explicit step_id, in `step_ids`' order --
+    NOT a prefix slice of the document. tut1.json's section order follows the
+    ORIGINAL tutorial doc (Workbench -> SpaceClaim -> Engineering Data ->
+    Mechanical), which is the authoritative structure for real use later --
+    but this spike's live testing has jumped straight from Workbench to
+    Mechanical (skipping SpaceClaim/Engineering Data for now), so a strict
+    "first N steps" slice would load the wrong section entirely. Keeping
+    tut1.json's own ordering untouched and selecting explicitly here keeps
+    today's testing order decoupled from the canonical tutorial structure."""
     data = json.loads(TUT_PATH.read_text(encoding="utf-8"))
-    steps = []
+    by_id = {}
     for sec in data["sections"]:
         for st in sec["steps"]:
             st["_section"] = sec["section"]
-            steps.append(st)
-            if len(steps) >= upto:
-                return steps
-    return steps
+            by_id[st["step_id"]] = st
+    return [by_id[sid] for sid in step_ids]
 
 
 class Highlight(QtWidgets.QWidget):
@@ -151,7 +158,10 @@ class Panel(QtWidgets.QWidget):
         self.steps = steps
         self.i = 0
         self.manually_confirmed = False
-        self.element_locator = locate.ElementLocator("workbench")
+        # One ElementLocator per app, created lazily as steps need different
+        # apps (locate.py's documented design) -- steps 6-8 are the first to
+        # need "mechanical" rather than "workbench".
+        self._locators = {}
         # OCR is noisy frame-to-frame (slight render/hinting differences cause
         # an occasional single-tick miss even while the row is fully visible
         # and unchanged) -- without this, the box visibly flickers off and
@@ -215,6 +225,11 @@ class Panel(QtWidgets.QWidget):
     def _current(self):
         return self.steps[self.i]
 
+    def _locator_for(self, app_key):
+        if app_key not in self._locators:
+            self._locators[app_key] = locate.ElementLocator(app_key)
+        return self._locators[app_key]
+
     def go(self, delta):
         self.i = max(0, min(len(self.steps) - 1, self.i + delta))
         self.render_step()
@@ -234,14 +249,13 @@ class Panel(QtWidgets.QWidget):
         hints = st.get("hints") or []
         self.lbl_hint.setText(("Hint: " + hints[0]) if hints else "")
         self.btn_prev.setEnabled(self.i > 0)
-        self.btn_mark.setVisible(st.get("verify", {}).get("type") in ("manual", "script"))
         self._load_reference_image(st)
         self._tick()
         self._place_top_right()
 
     def _load_reference_image(self, st):
         # Only for highlight=="instruction" steps -- once a live box exists
-        # (highlight=="uia" or "template"), the box itself is the guidance.
+        # (highlight=="uia" or "ocr_text"), the box itself is the guidance.
         img_path = st.get("source_image") if st.get("highlight") == "instruction" else None
         pix = QtGui.QPixmap(str(REPO_ROOT / img_path)) if img_path else None
         if pix and not pix.isNull():
@@ -253,8 +267,28 @@ class Panel(QtWidgets.QWidget):
                 print(f"[debug] reference image not loadable: {REPO_ROOT / img_path}")
             self.lbl_image.setVisible(False)
 
+    def _own_screen_rect(self):
+        """This panel's own rect in PHYSICAL screen pixels (Qt's geometry()
+        is logical pixels -- same dpr conversion as Highlight.show_box, just
+        inverted). Passed to locate.set_exclude_rects() so OCR/color-sampling
+        never reads this panel's own status text -- confirmed live: once
+        Workbench's window is large enough that a capture region (e.g. the
+        schematic) overlaps this floating panel's screen position, OCR read
+        the PANEL'S OWN text ("highlighting 'Geometry'", "Not yet — finish
+        the action above.", "Prev") mixed into the real content underneath.
+        Deliberately excludes self.highlight -- that box is drawn ON TOP OF
+        the real target on purpose and must stay visible to OCR."""
+        screen = QtWidgets.QApplication.primaryScreen()
+        dpr = screen.devicePixelRatio() if screen else 1.0
+        g = self.geometry()
+        rect = (g.left() * dpr, g.top() * dpr, (g.left() + g.width()) * dpr, (g.top() + g.height()) * dpr)
+        if DEBUG:
+            print(f"[debug] _own_screen_rect: logical geometry={g} dpr={dpr} -> physical rect={rect}")
+        return rect
+
     def _tick(self):
         st = self._current()
+        locate.set_exclude_rects([self._own_screen_rect()])
 
         # --- highlighting ---
         # Box ONLY the outer/topmost element of the sequence (e.g. "File").
@@ -265,10 +299,11 @@ class Panel(QtWidgets.QWidget):
         # Remaining stages are left to the step's existing description/hints
         # text instead of an attempted box.
         if st.get("highlight") == "uia":
-            self.element_locator.refresh_snapshot()
+            locator = self._locator_for(st["app"])
+            locator.refresh_snapshot()
             seq = locate.target_sequence(st)
             target = seq[0] if seq else None
-            rect = self.element_locator.locate(target) if target else None
+            rect = locator.locate(target) if target else None
             self.highlight.show_box(rect)
             if not rect:
                 located_txt = f"⚠ couldn't find '{target}' — selector needs tuning." if target else ""
@@ -289,8 +324,12 @@ class Panel(QtWidgets.QWidget):
             # schematic canvas instead when the step says so (e.g. step 4's
             # "Geometry" lives in the schematic's system block, not the
             # Toolbox -- locate_text()'s default region is the Toolbox rect).
-            region = locate.schematic_rect() if sel.get("scope") == "schematic" else None
-            rect = locate.locate_text(text, region_rect=region) if text else None
+            # extend_to_icon=True for schematic rows so the box also encloses
+            # the row's status icon (checkmark/question-mark), not just the
+            # label text -- Toolbox rows have no such icon to extend toward.
+            is_schematic = sel.get("scope") == "schematic"
+            region = locate.schematic_rect() if is_schematic else None
+            rect = locate.locate_text(text, region_rect=region, extend_to_icon=is_schematic) if text else None
             if rect is not None:
                 self._ocr_last_rect = rect
                 self._ocr_miss_streak = 0
@@ -319,13 +358,19 @@ class Panel(QtWidgets.QWidget):
         elif verified is False:
             status, next_ok, color = "Not yet — finish the action above.", False, "#fb7"
         else:
-            status = "No automatic check for this step — confirm manually below."
+            status = "Once this step is complete, please mark it as done and then move on to the next."
             next_ok = self.manually_confirmed
             color = "#7e7" if self.manually_confirmed else "#9cf"
 
         self.lbl_status.setText((located_txt + "\n" if located_txt else "") + status)
         self.lbl_status.setStyleSheet(f"color:{color};font-size:12px;")
         self.btn_next.setEnabled(next_ok and self.i < len(self.steps) - 1)
+        # Based on the ACTUAL runtime result, not a static guess from
+        # verify.type -- a hardcoded `type in ("manual", "script")` check
+        # here once missed verify.type=="uia" (and would miss any future
+        # type) whenever it returns None because that check just isn't
+        # implemented yet, leaving no way to advance past the step at all.
+        self.btn_mark.setVisible(verified is None)
         self.btn_mark.setEnabled(not self.manually_confirmed)
 
     def closeEvent(self, e):
@@ -333,10 +378,23 @@ class Panel(QtWidgets.QWidget):
         super().closeEvent(e)
 
 
+STEP_IDS = [
+    "wb_01_open", "wb_02_save_project", "wb_03_add_static_structural",
+    "wb_04_select_geometry", "wb_05_select_model",
+    "me_01_expand_geometry", "me_02_select_solid", "me_03_set_material_steel",
+    "me_04_generate_mesh",
+    "me_05_select_static", "me_06_force_tool", "me_07_force_face",
+    "me_08_force_magnitude", "me_09_fixed_tool", "me_10_fixed_face",
+    "re_01_insert_dir_deformation", "re_02_orientation", "re_03_evaluate",
+    "me_11_solve",
+    "re_04_save",
+]
+
+
 def main():
     if not TUT_PATH.exists():
         sys.exit(f"tutorial not found: {TUT_PATH}")
-    steps = load_steps(upto=4)
+    steps = load_steps(STEP_IDS)
 
     qapp = QtWidgets.QApplication(sys.argv)
     panel = Panel(steps)

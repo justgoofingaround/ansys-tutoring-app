@@ -483,9 +483,11 @@ Since the tutorial **starts in Workbench**, probe that first, in a throwaway
 1. `pip install ansys-mechanical-core pywinauto pynput pyqt6`
 2. Open **Ansys Workbench** and create/load a project with a Static Structural
    system (so the Geometry and Model cells exist).
-3. `spikes/probe2_uia_workbench.py` (Probe 2): print the name + screen rectangle
-   of a Toolbox item and a schematic cell (e.g. "Geometry"). Tells you how much
-   of Workbench UIA can see.
+3. ~~`spikes/probe2_uia_workbench.py` (Probe 2)~~ -- **done, script removed.**
+   Answer: UIA sees Workbench's ribbon/menu chrome but NOT the Toolbox or
+   Project Schematic (zero descendants either way). See `mock_server/data/
+   tut1.json`'s `_notes` for the full finding and `spikes/locate.py` for the
+   OCR-based fallback (`locate_text`/`texts_found`) that resulted.
 4. `spikes/probe0_transition.py` (Probe 0): detect the Workbench window, then
    double-click the Geometry cell yourself and confirm the script sees
    **Discovery's window appear**.
