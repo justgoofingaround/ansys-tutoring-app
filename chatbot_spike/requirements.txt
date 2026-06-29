@@ -1,0 +1,7 @@
+pymupdf
+beautifulsoup4
+sentence-transformers
+chromadb
+ollama
+tiktoken
+rank-bm25

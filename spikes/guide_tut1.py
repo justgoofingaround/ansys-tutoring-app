@@ -11,6 +11,24 @@ CODE ORGANIZATION (three modules, each owning one concern):
 This mirrors the real architecture's split between the Tutorial client and
 the Ansys bridge's State verifier / Element locator sub-pieces (CLAUDE.md).
 
+"ASK CHATBOT" BUTTON: bridges to chatbot_spike/ (a SEPARATE module's spike --
+see chatbot_spike/README.md and architecture doc Section 8, "Module: Ansys
+Help Chatbot") via the CHATBOT_DIR sys.path insert below, rather than
+duplicating its retrieve/generate pipeline here. ChatbotDialog is non-modal
+and ChatbotWorker runs on a background QThread, since a real query (local
+LLM generation) takes several seconds and the main thread must never block
+(CLAUDE.md's threading rule). tutorial_context is set to the current step's
+title -- a stand-in for the architecture doc's "Context fetcher" sub-
+component, which in the real module queries the Student Track App's state
+automatically instead of guide_tut1.py setting it directly on itself.
+ChatbotDialog's UI is modeled on a user-supplied Figma reference (light
+theme, gradient background, "ME"/"OUR AI" captioned bubbles, pill-shaped
+input). Each message turn is a REAL MessageBubble (QFrame) widget in a
+QScrollArea, not text appended into one shared QTextEdit document -- true
+border-radius (the reference's rounded bubbles) isn't reliably supported on
+inline/table elements in Qt's rich-text engine, confirmed across this
+dialog's earlier iterations, but works fine via stylesheet on a real QFrame.
+
 VERIFICATION IS MANUAL FOR EVERY STEP, ON PURPOSE: automatic checks
 (window_appeared, window_title_excludes, ocr_text_present, row_status_icon,
 and a PyMechanical gRPC integration) were built and DID work, but were
@@ -56,7 +74,11 @@ target a different app.
 RUN (with Workbench already open, or about to open it):
   .venv\\Scripts\\python spikes\\guide_tut1.py
 
-DEPS: pip install pywinauto pyqt6 opencv-python-headless numpy pillow pytesseract
+DEPS: pip install pywinauto pyqt6 opencv-python-headless numpy pillow pytesseract markdown
+      (markdown renders the chatbot's answers; the chatbot feature itself also
+      needs chatbot_spike/'s own deps -- see chatbot_spike/requirements.txt --
+      but guide_tut1.py still runs fine without them, just with the chatbot
+      button showing a graceful error instead, see ChatbotDialog._on_failed)
       (psutil/ansys-mechanical-core no longer needed by the live guide --
       only the standalone probe0/probe1 scripts still use them)
 """
@@ -78,6 +100,19 @@ import verify
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TUT_PATH = REPO_ROOT / "mock_server" / "data" / "tut1.json"
+
+# chatbot_spike/ is a SEPARATE module (architecture doc Section 8, its own
+# spike directory -- see chatbot_spike/README.md), not part of the Student
+# Interaction Track App's spike. Its modules use bare imports (`from config
+# import ...`) that resolve relative to chatbot_spike/ being on sys.path,
+# the same convention this file's own `import locate`/`import verify` relies
+# on for spikes/. Bridging it here is the simplest way to call the already-
+# working retrieve/generate pipeline in-process (one model load per running
+# guide_tut1.py session) instead of shelling out to query.py per question,
+# which would reload the embedding model from scratch every single ask.
+CHATBOT_DIR = REPO_ROOT / "chatbot_spike"
+if CHATBOT_DIR.exists() and str(CHATBOT_DIR) not in sys.path:
+    sys.path.insert(0, str(CHATBOT_DIR))
 RELOCATE_MS = 700   # re-check ~1.4 Hz: follows window moves AND advances the
                      # highlight stage quickly once a menu opens
 OCR_MISS_TOLERANCE = 6  # consecutive OCR misses (each already internally
@@ -145,6 +180,307 @@ class Highlight(QtWidgets.QWidget):
         p.drawRoundedRect(self.rect().adjusted(2, 2, -2, -2), 6, 6)
 
 
+class ChatbotWorker(QtCore.QObject):
+    """Runs chatbot_spike's retrieve+generate pipeline OFF the Qt main
+    thread -- a real query takes several seconds (embedding + ChromaDB/BM25
+    search + a local Ollama generation call), and CLAUDE.md/the build plan
+    are explicit that the main thread owns the event loop and must never
+    block on slow work. Imports chatbot_spike's modules lazily, inside run(),
+    so a missing/broken chatbot install only breaks the chatbot feature, not
+    guide_tut1.py's own startup.
+
+    Streams tokens (the `token` signal) rather than waiting for the full
+    answer -- confirmed live, an unbounded answer took a long time to fully
+    generate, and watching nothing happen for that whole stretch made the
+    chatbot feel far slower than it was. Streaming doesn't reduce the actual
+    generation time, but the student sees the answer growing immediately
+    instead of a frozen "Thinking..." -- the standard chat-UI fix for
+    exactly this perceived-latency problem. Actual latency is separately
+    addressed by config.MAX_RESPONSE_TOKENS (chatbot_spike/generate.py)
+    capping how much the model generates in the first place."""
+    token = QtCore.pyqtSignal(str)
+    finished = QtCore.pyqtSignal(str, list)
+    failed = QtCore.pyqtSignal(str)
+
+    def __init__(self, question, tutorial_context):
+        super().__init__()
+        self.question = question
+        self.tutorial_context = tutorial_context
+
+    def run(self):
+        try:
+            from retrieve import retrieve
+            from generate import stream_answer
+            chunks = retrieve(self.question)
+            answer, sources = stream_answer(
+                self.question, chunks, tutorial_context=self.tutorial_context,
+                on_token=self.token.emit)
+            self.finished.emit(answer, sources)
+        except Exception as e:
+            if DEBUG:
+                print(f"[debug] ChatbotWorker failed: {e}")
+            self.failed.emit(str(e))
+
+
+class MessageBubble(QtWidgets.QFrame):
+    """One chat turn's bubble -- a REAL QFrame/QLabel widget, not rendered
+    rich text inside a shared QTextEdit document. True border-radius (the
+    Figma reference's rounded message bubbles) isn't reliably supported on
+    inline/table elements in Qt's rich-text engine (confirmed live across
+    this dialog's earlier iterations), but IS fully supported via stylesheet
+    on a real QFrame -- so each message turn now gets its own bubble widget
+    in a QVBoxLayout/QScrollArea instead of being appended into one document."""
+
+    def __init__(self, caption, bg, text_color, border=None, parent=None):
+        super().__init__(parent)
+        self.setStyleSheet(
+            f"QFrame {{ background:{bg}; border-radius:14px; "
+            f"{f'border:1px solid {border};' if border else ''} }}")
+        v = QtWidgets.QVBoxLayout(self)
+        v.setContentsMargins(16, 10, 16, 12)
+        v.setSpacing(4)
+        self.caption = QtWidgets.QLabel(caption)
+        self.caption.setStyleSheet(
+            f"background:transparent; color:#9a96a8; font-size:11px; "
+            f"font-weight:600; letter-spacing:1px;")
+        v.addWidget(self.caption)
+        self.body = QtWidgets.QLabel("")
+        self.body.setWordWrap(True)
+        self.body.setTextFormat(QtCore.Qt.TextFormat.RichText)
+        self.body.setStyleSheet(f"background:transparent; color:{text_color}; font-size:15px;")
+        v.addWidget(self.body)
+        self._raw = ""  # accumulates plain streamed text until set_html() takes over
+
+    def append_token(self, piece):
+        self._raw += piece
+        self.body.setText(self._escape(self._raw))
+
+    def set_html(self, html):
+        self.body.setText(html)
+
+    @staticmethod
+    def _escape(text):
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+class ChatbotDialog(QtWidgets.QDialog):
+    """Non-modal (.show(), never .exec()) so asking the chatbot never
+    freezes the live highlight loop running in the Panel underneath it.
+    "Graceful chatbot-unreachable message (button present, returns a clear
+    notice)" is a Phase 4 requirement already named in the build plan --
+    _on_failed() below is exactly that, just arriving earlier than planned
+    since the chatbot spike already exists to wire up.
+
+    Layout modeled on a Figma "AI Chatbot UI" reference the user shared:
+    sparkle header, soft pastel gradient page background, "ME"/"OUR AI"
+    captioned bubbles staggered left-to-right, a pill-shaped input with an
+    embedded send icon, and suggestion chips shown before the first message."""
+
+    ERROR_COLOR = "#c0392b"
+    USER_BG = "#fbeef6"     # pale pink tint, not flat white -- confirmed in the
+                             # reference, bubbles pick up a faint tint of the
+                             # gradient behind them rather than sitting flat white
+    AI_BG = "#f8f6fb"       # pale lavender-white, distinct from the user's pink tint
+    GRADIENT = (
+        "qradialgradient(cx:0.22, cy:0.92, radius:1.15, fx:0.22, fy:0.92, "
+        "stop:0 #f7cdec, stop:0.35 #ddc6f2, stop:0.65 #cfd8f7, stop:1 #ffffff)"
+    )
+    SUGGESTIONS = [
+        "What can I ask you to do?",
+        "Which one of my projects is performing the best?",
+        "What projects should I be concerned about right now?",
+    ]
+
+    @staticmethod
+    def _make_char_icon(char, color, size=64):
+        """Renders `char` (an emoji or a symbol like the send arrow) onto a
+        QPixmap via Qt's own font engine -- used both for the window icon
+        (an emoji embedded directly in setWindowTitle()'s text renders
+        through Windows' native title-bar font, which doesn't reliably
+        support multi-codepoint emoji and can fall back to a placeholder
+        glyph instead) and for the input field's embedded send icon."""
+        pix = QtGui.QPixmap(size, size)
+        pix.fill(QtCore.Qt.GlobalColor.transparent)
+        painter = QtGui.QPainter(pix)
+        font = QtGui.QFont("Segoe UI Emoji")
+        font.setPixelSize(int(size * 0.75))
+        painter.setFont(font)
+        painter.setPen(QtGui.QColor(color))
+        painter.drawText(pix.rect(), QtCore.Qt.AlignmentFlag.AlignCenter, char)
+        painter.end()
+        return QtGui.QIcon(pix)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Compass — Ansys Help Assistant")
+        self.setWindowIcon(self._make_char_icon("👩🏻‍💻", "#000"))
+        self.resize(440, 520)
+        self.setStyleSheet(f"QDialog {{ background: {self.GRADIENT}; }}")
+        self.tutorial_context = ""
+        self._thread = None
+        self._worker = None
+        self._answer_bubble = None  # the current turn's MessageBubble
+        self._has_sent = False
+
+        v = QtWidgets.QVBoxLayout(self)
+        v.setContentsMargins(24, 20, 24, 18)
+        v.setSpacing(10)
+
+        sparkle = QtWidgets.QLabel("✨")
+        sparkle.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        sparkle.setFont(QtGui.QFont("Segoe UI Emoji", 20))
+        sparkle.setStyleSheet("background:transparent; color:#222;")
+        v.addWidget(sparkle)
+
+        title = QtWidgets.QLabel("Ask our AI anything")
+        title.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        title.setStyleSheet("background:transparent; color:#222; font-size:17px;")
+        v.addWidget(title)
+
+        self.scroll = QtWidgets.QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
+        self.scroll.setStyleSheet("QScrollArea { background: transparent; border:none; }")
+        self.scroll.viewport().setStyleSheet("background: transparent;")
+        container = QtWidgets.QWidget()
+        container.setStyleSheet("background: transparent;")
+        self.messages_layout = QtWidgets.QVBoxLayout(container)
+        self.messages_layout.setContentsMargins(0, 0, 0, 0)
+        self.messages_layout.setSpacing(10)
+        self.messages_layout.addStretch(1)
+        self.scroll.setWidget(container)
+        v.addWidget(self.scroll, stretch=1)
+
+        # Suggestion chips -- only shown before the first message, matching
+        # the reference's empty state.
+        self.suggestions_box = QtWidgets.QWidget()
+        self.suggestions_box.setStyleSheet("background:transparent;")
+        sv = QtWidgets.QVBoxLayout(self.suggestions_box)
+        sv.setContentsMargins(0, 0, 0, 6)
+        sv.setSpacing(8)
+        sug_label = QtWidgets.QLabel("Suggestions on what to ask Our AI")
+        sug_label.setStyleSheet("background:transparent; color:#8a8a93; font-size:12px;")
+        sv.addWidget(sug_label)
+        chip_row = QtWidgets.QHBoxLayout()
+        chip_row.setSpacing(8)
+        for text in self.SUGGESTIONS:
+            chip = QtWidgets.QPushButton(text)
+            chip.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+            chip.setStyleSheet(
+                "QPushButton { background:#ffffff; color:#444; border:1px solid #ece9f0; "
+                "border-radius:14px; padding:8px 14px; font-size:12px; text-align:left; }"
+                "QPushButton:hover { background:#f7f3fb; }")
+            chip.clicked.connect(lambda _checked, t=text: self._send_text(t))
+            chip_row.addWidget(chip)
+        sv.addLayout(chip_row)
+        v.addWidget(self.suggestions_box)
+
+        self.input = QtWidgets.QLineEdit()
+        self.input.setPlaceholderText("Ask me anything about your projects")
+        self.input.setFixedHeight(48)
+        self.input.setStyleSheet(
+            "QLineEdit { background:#ffffff; color:#222; border:1px solid #ece9f0; "
+            "border-radius:24px; padding:0 44px 0 18px; font-size:15px; }"
+            "QLineEdit:focus { border:1px solid #b9a8e0; }")
+        send_action = QtGui.QAction(self._make_char_icon("➤", "#8a9ab3"), "", self.input)
+        send_action.triggered.connect(self._send)
+        self._send_action = send_action
+        self.input.addAction(send_action, QtWidgets.QLineEdit.ActionPosition.TrailingPosition)
+        self.input.returnPressed.connect(self._send)
+        v.addWidget(self.input)
+
+    def _send_text(self, text):
+        self.input.setText(text)
+        self._send()
+
+    def _scroll_to_bottom(self):
+        bar = self.scroll.verticalScrollBar()
+        QtCore.QTimer.singleShot(0, lambda: bar.setValue(bar.maximum()))
+
+    def _add_bubble(self, caption, align="left", indent=0, **kwargs):
+        bubble = MessageBubble(caption, parent=self.scroll, **kwargs)
+        row = QtWidgets.QHBoxLayout()
+        row.setContentsMargins(0, 0, 0, 0)
+        if align == "right":
+            row.addStretch(1)
+            row.addWidget(bubble)
+        else:
+            if indent:
+                row.addSpacing(indent)
+            row.addWidget(bubble)
+            row.addStretch(1)
+        # Always APPEND (never insert before the vertical stretch __init__
+        # added first) -- that stretch stays at index 0, so a short
+        # conversation sits bunched near the BOTTOM of the scroll area with
+        # blank space above it, matching the reference, and grows upward as
+        # more turns are added instead of accumulating top-down.
+        self.messages_layout.addLayout(row)
+        return bubble
+
+    def _send(self):
+        question = self.input.text().strip()
+        if not question or self._thread is not None:
+            return  # a request is already in flight -- one at a time, see _cleanup_thread
+        self.input.clear()
+        if not self._has_sent:
+            self._has_sent = True
+            self.suggestions_box.setVisible(False)
+
+        user_bubble = self._add_bubble(
+            "ME", align="left", bg=self.USER_BG, text_color="#222")
+        user_bubble.set_html(MessageBubble._escape(question))
+
+        self._answer_bubble = self._add_bubble(
+            "Compass", align="right", bg=self.AI_BG, text_color="#222")
+        self._scroll_to_bottom()
+
+        self.input.setEnabled(False)
+        self._send_action.setEnabled(False)
+
+        self._thread = QtCore.QThread(self)
+        self._worker = ChatbotWorker(question, self.tutorial_context)
+        self._worker.moveToThread(self._thread)
+        self._thread.started.connect(self._worker.run)
+        self._worker.token.connect(self._on_token)
+        self._worker.finished.connect(self._on_finished)
+        self._worker.failed.connect(self._on_failed)
+        self._worker.finished.connect(self._thread.quit)
+        self._worker.failed.connect(self._thread.quit)
+        self._thread.finished.connect(self._cleanup_thread)
+        self._thread.start()
+
+    def _on_token(self, piece):
+        self._answer_bubble.append_token(piece)
+        self._scroll_to_bottom()
+
+    def _on_finished(self, answer, sources):
+        import markdown
+        src_lines = "<br>".join(f"&nbsp;•&nbsp; {MessageBubble._escape(s)}" for s in sources)
+        html = (
+            markdown.markdown(answer)
+            + f"<div style='margin-top:10px;padding-left:8px;border-left:2px solid #e5e3ea;"
+              f"color:#9a96a8;font-size:12px;'><b>Sources</b><br>{src_lines}</div>")
+        self._answer_bubble.set_html(html)
+        self._scroll_to_bottom()
+
+    def _on_failed(self, error):
+        self._answer_bubble.set_html(
+            f"<span style='color:{self.ERROR_COLOR}'>Sorry, Compass isn't reachable right "
+            f"now ({MessageBubble._escape(error)}). Try again later or ask your "
+            f"instructor.</span>")
+        self._scroll_to_bottom()
+
+    def _cleanup_thread(self):
+        self._thread.deleteLater()
+        self._worker.deleteLater()
+        self._thread = None
+        self._worker = None
+        self._answer_bubble = None
+        self.input.setEnabled(True)
+        self._send_action.setEnabled(True)
+        self.input.setFocus()
+
+
 class Panel(QtWidgets.QWidget):
     """Step panel. Calls verify.verify_step() / locate.* and reacts -- never
     implements verification or element-finding itself."""
@@ -210,6 +546,11 @@ class Panel(QtWidgets.QWidget):
         self.btn_mark.clicked.connect(self.mark_complete)
         v.addWidget(self.btn_mark)
 
+        self.btn_chatbot = QtWidgets.QPushButton("💬 Ask Compass")
+        self.btn_chatbot.clicked.connect(self._open_chatbot)
+        v.addWidget(self.btn_chatbot)
+        self._chatbot_dialog = None  # created lazily on first use
+
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self._tick)
         self.timer.start(RELOCATE_MS)
@@ -237,6 +578,20 @@ class Panel(QtWidgets.QWidget):
     def mark_complete(self):
         self.manually_confirmed = True
         self._tick()
+
+    def _open_chatbot(self):
+        if self._chatbot_dialog is None:
+            self._chatbot_dialog = ChatbotDialog(self)
+        st = self._current()
+        # Mirrors the architecture doc's "Context fetcher" (Section 8.1) --
+        # in the real module this comes from querying the Student Track
+        # App's own state automatically; here it's just the current step,
+        # since that IS this app's state.
+        self._chatbot_dialog.tutorial_context = (
+            f"{st['_section']} — {st['title']} (step {self.i + 1}/{len(self.steps)})")
+        self._chatbot_dialog.show()
+        self._chatbot_dialog.raise_()
+        self._chatbot_dialog.activateWindow()
 
     def render_step(self):
         st = self._current()
@@ -375,6 +730,8 @@ class Panel(QtWidgets.QWidget):
 
     def closeEvent(self, e):
         self.highlight.close()
+        if self._chatbot_dialog is not None:
+            self._chatbot_dialog.close()
         super().closeEvent(e)
 
 
