@@ -96,6 +96,7 @@ os.environ.setdefault("QT_AUTO_SCREEN_SCALE_FACTOR", "0")
 from PyQt6 import QtCore, QtGui, QtWidgets  # noqa: E402
 
 import locate
+import report_verify
 import verify
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -494,6 +495,7 @@ class Panel(QtWidgets.QWidget):
         self.steps = steps
         self.i = 0
         self.manually_confirmed = False
+        self.report_validation = None
         # One ElementLocator per app, created lazily as steps need different
         # apps (locate.py's documented design) -- steps 6-8 are the first to
         # need "mechanical" rather than "workbench".
@@ -546,6 +548,11 @@ class Panel(QtWidgets.QWidget):
         self.btn_mark.clicked.connect(self.mark_complete)
         v.addWidget(self.btn_mark)
 
+        self.btn_upload = QtWidgets.QPushButton("Upload report…")
+        self.btn_upload.setVisible(False)
+        self.btn_upload.clicked.connect(self.upload_report)
+        v.addWidget(self.btn_upload)
+
         self.btn_chatbot = QtWidgets.QPushButton("💬 Ask Compass")
         self.btn_chatbot.clicked.connect(self._open_chatbot)
         v.addWidget(self.btn_chatbot)
@@ -572,11 +579,40 @@ class Panel(QtWidgets.QWidget):
         return self._locators[app_key]
 
     def go(self, delta):
+        if self.i == len(self.steps) - 1 and delta > 0 and self.report_validation and self.report_validation.get("ok"):
+            self.close()
+            return
         self.i = max(0, min(len(self.steps) - 1, self.i + delta))
         self.render_step()
 
     def mark_complete(self):
         self.manually_confirmed = True
+        self._tick()
+
+    def upload_report(self):
+        dialog = QtWidgets.QFileDialog(self, "Select generated report", str(REPO_ROOT))
+        dialog.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
+        dialog.setOption(QtWidgets.QFileDialog.Option.DontUseNativeDialog, True)
+        dialog.setFileMode(QtWidgets.QFileDialog.FileMode.ExistingFile)
+        dialog.setNameFilter("Reports (*.docx *.txt *.md *.markdown *.html *.htm *.json *.pdf);;All Files (*)")
+        if not dialog.exec():
+            return
+        selected = dialog.selectedFiles()
+        if not selected:
+            return
+        path = selected[0]
+        try:
+            tutorial_data = json.loads(TUT_PATH.read_text(encoding="utf-8"))
+            self.report_validation = report_verify.validate_report(path, tutorial_data)
+        except Exception as exc:
+            self.report_validation = {
+                "ok": False,
+                "score": 0,
+                "total": 1,
+                "checks": [],
+                "feedback": f"Report could not be checked: {exc}",
+            }
+        self.manually_confirmed = bool(self.report_validation.get("ok"))
         self._tick()
 
     def _open_chatbot(self):
@@ -596,6 +632,8 @@ class Panel(QtWidgets.QWidget):
     def render_step(self):
         st = self._current()
         self.manually_confirmed = False
+        if st.get("step_id") != REPORT_STEP["step_id"]:
+            self.report_validation = None
         self._ocr_last_rect = None
         self._ocr_miss_streak = 0
         self.lbl_prog.setText(f"Step {self.i + 1}/{len(self.steps)}  ·  {st['_section']}")
@@ -704,29 +742,49 @@ class Panel(QtWidgets.QWidget):
             located_txt = ""
 
         # --- verification ---
-        verified = verify.verify_step(st)
-        if DEBUG:
-            print(f"[debug] step {self.i + 1}/{len(self.steps)} '{st['step_id']}' "
-                  f"verify_step() -> {verified}")
-        if verified is True:
-            status, next_ok, color = "Verified — step complete.", True, "#7e7"
-        elif verified is False:
-            status, next_ok, color = "Not yet — finish the action above.", False, "#fb7"
+        if st.get("step_id") == REPORT_STEP["step_id"]:
+            verified = self.report_validation.get("ok") if self.report_validation else None
+            if self.report_validation is None:
+                status = "Upload a generated report to run the standard checks."
+                next_ok = False
+                color = "#9cf"
+            elif verified:
+                status = self.report_validation.get("feedback", "Report verified.")
+                next_ok = True
+                color = "#7e7"
+            else:
+                status = self.report_validation.get("feedback", "Report needs fixes.")
+                next_ok = False
+                color = "#fb7"
+            located_txt = located_txt or "Report upload step"
         else:
-            status = "Once this step is complete, please mark it as done and then move on to the next."
-            next_ok = self.manually_confirmed
-            color = "#7e7" if self.manually_confirmed else "#9cf"
+            verified = verify.verify_step(st)
+            if DEBUG:
+                print(f"[debug] step {self.i + 1}/{len(self.steps)} '{st['step_id']}' "
+                      f"verify_step() -> {verified}")
+            if verified is True:
+                status, next_ok, color = "Verified — step complete.", True, "#7e7"
+            elif verified is False:
+                status, next_ok, color = "Not yet — finish the action above.", False, "#fb7"
+            else:
+                status = "Once this step is complete, please mark it as done and then move on to the next."
+                next_ok = self.manually_confirmed
+                color = "#7e7" if self.manually_confirmed else "#9cf"
 
         self.lbl_status.setText((located_txt + "\n" if located_txt else "") + status)
         self.lbl_status.setStyleSheet(f"color:{color};font-size:12px;")
-        self.btn_next.setEnabled(next_ok and self.i < len(self.steps) - 1)
+        is_last = self.i == len(self.steps) - 1
+        self.btn_next.setText("Finish" if is_last and next_ok else "Next →")
+        self.btn_next.setEnabled(next_ok and (not is_last or bool(self.report_validation and self.report_validation.get("ok"))))
         # Based on the ACTUAL runtime result, not a static guess from
         # verify.type -- a hardcoded `type in ("manual", "script")` check
         # here once missed verify.type=="uia" (and would miss any future
         # type) whenever it returns None because that check just isn't
         # implemented yet, leaving no way to advance past the step at all.
-        self.btn_mark.setVisible(verified is None)
+        self.btn_mark.setVisible(verified is None and st.get("step_id") != REPORT_STEP["step_id"])
         self.btn_mark.setEnabled(not self.manually_confirmed)
+        self.btn_upload.setVisible(st.get("step_id") == REPORT_STEP["step_id"])
+        self.btn_upload.setEnabled(not (self.report_validation and self.report_validation.get("ok")))
 
     def closeEvent(self, e):
         self.highlight.close()
@@ -748,10 +806,41 @@ STEP_IDS = [
 ]
 
 
+REPORT_STEP = {
+    "step_id": "report_01_upload",
+    "app": "mechanical",
+    "title": "Upload the generated report",
+    "description": "Upload the Mechanical report you generated after finishing the tutorial. The system checks the report structure, the deformation results pages, and whether the final answer is represented correctly.",
+    "selector": {
+        "type": "window",
+        "app": "mechanical"
+    },
+    "highlight": "none",
+    "action": {
+        "kind": "upload_report"
+    },
+    "verify": {
+        "type": "manual",
+        "prompt": "Upload the generated report and confirm it passes the standard checks."
+    },
+    "hints": [
+        "Use the Mechanical HTML/PDF/DOCX report generated from the completed model.",
+        "The validator looks for the Static Structural / Solution / Results structure and the deformation result pages.",
+    ],
+}
+
+
+def build_runtime_steps(step_ids):
+    steps = load_steps(step_ids)
+    REPORT_STEP["_section"] = "Generate the result"
+    steps.append(REPORT_STEP)
+    return steps
+
+
 def main():
     if not TUT_PATH.exists():
         sys.exit(f"tutorial not found: {TUT_PATH}")
-    steps = load_steps(STEP_IDS)
+    steps = build_runtime_steps(STEP_IDS)
 
     qapp = QtWidgets.QApplication(sys.argv)
     panel = Panel(steps)

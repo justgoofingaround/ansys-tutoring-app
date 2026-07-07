@@ -10,6 +10,11 @@
   "expected_answer": "Directional deformation approx 0.00382 in",
   "quiz_id": null,
   "source": "Tut 1/Tut-1.1 - Copy.html",
+  "report_checks": {
+    "required_sections": ["Static Structural", "Solution", "Results"],
+    "preferred_sections": ["Total Deformation", "Equivalent Stress"],
+    "must_contain": ["Structural Steel"]
+  },
   "_notes": {
     "selector_status": "UNVERIFIED \u2014 selectors use display names from the source screenshots; resolve real UIA automation_id/name via the Phase 0 spike before relying on them.",
     "highlight_legend": "uia = overlay draws a box around a UIA element (element locator resolves the bbox at runtime). instruction = 3D-viewport action UIA cannot see; show an instruction/arrow, no tracked box. none = no highlight (launch/close).",

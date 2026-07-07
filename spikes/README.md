@@ -30,7 +30,9 @@ Then come back with what you saw — especially:
 - whether Path A in probe 1 connected, and if not, what it took to enable gRPC.
 
 That output is what we turn into the cleaned, app-aware `bridge/` (with the
-per-app adapters and async verify from the engineering review).
+per-app adapters and async verify from the engineering review). The live guide
+now also includes a final report-upload checkpoint that validates the generated
+report against the tutorial rubric in `mock_server/data/tut1.json`.
 
 ## Notes / things you'll likely tweak
 

@@ -12,7 +12,7 @@ See [`Student-Track-App-Build-Plan.md`](Student-Track-App-Build-Plan.md) for the
 
 ## Status
 
-This is the Phase 0 spike (`spikes/guide_tut1.py`) — a working, manually-driven walkthrough of part of Tut-1, used to de-risk the real architecture's assumptions before it gets built for real under `student_app/`. It currently covers Workbench setup through Mechanical's results steps (see `STEP_IDS` in `guide_tut1.py`); SpaceClaim and Engineering Data sections of Tut-1 exist in the tutorial data but aren't wired into this spike's run yet.
+This is the Phase 0 spike (`spikes/guide_tut1.py`) — a working, manually-driven walkthrough of part of Tut-1, used to de-risk the real architecture's assumptions before it gets built for real under `student_app/`. It currently covers Workbench setup through Mechanical's results steps and then a final generated-report upload/validation checkpoint (see `STEP_IDS` in `guide_tut1.py`); SpaceClaim and Engineering Data sections of Tut-1 exist in the tutorial data but aren't wired into this spike's run yet.
 
 ## How to use it
 
