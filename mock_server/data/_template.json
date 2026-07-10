@@ -1,0 +1,118 @@
+{
+  "_readme": [
+    "TEMPLATE for authoring a new tutorial. Copy this file to mock_server/data/<tutorial_id>.json,",
+    "replace every placeholder, then check it:   .venv\\Scripts\\python tools\\validate_tutorial.py mock_server\\data\\<your file>.json",
+    "and run it in the guide:                    .venv\\Scripts\\python spikes\\guide_tut1.py <tutorial_id>",
+    "Any key starting with '_' (like this one) is a comment: the app and the validator ignore it.",
+    "Delete the _comment keys once you're done, or keep them -- either is fine.",
+    "Full field guidance: mock_server/data/README.md. Real example: tut1.json."
+  ],
+
+  "tutorial_id": "tut0_template",
+  "version": 1,
+  "title": "Tutorial N -- <what the student builds, e.g. 'Elongation of a 3D Bar Under Tension'>",
+  "problem": "<One-paragraph problem statement: geometry, material properties, loads/supports, and what to compute.>",
+
+  "_report_checks_comment": "Grades the report the student uploads at the end. If you delete report_checks entirely, the tutorial simply has no report-upload step. required_sections/must_contain are hard checks (block Finish); preferred_sections only warn. expected_result checks the numeric answer within +/- tolerance.",
+  "report_checks": {
+    "required_sections": ["Static Structural", "Solution", "Results"],
+    "preferred_sections": ["Total Deformation"],
+    "must_contain": ["Structural Steel"],
+    "expected_result": {
+      "value": 0.00382,
+      "tolerance": 0.0002,
+      "units": "in",
+      "aliases": ["0.00382"]
+    }
+  },
+
+  "_apps_comment": "Every app any step targets. Allowed: workbench | spaceclaim | discovery | mechanical.",
+  "apps": ["workbench", "mechanical"],
+
+  "_runtime_steps_comment": "OPTIONAL top-level key 'runtime_steps': an array of step_ids selecting WHICH steps run and in what ORDER. Omit it (like this template does) to run every step in document order. Use it to skip untested sections or reorder without touching the authored structure -- see tut1.json for a real example.",
+
+  "_notes": {
+    "_comment": "Free-form decision log. When you change a selector/verify strategy after live testing, record WHY here with a dated key, so the next author doesn't re-diagnose it. See tut1.json's _notes for the conventions this saved us.",
+    "example_finding_2026-07": "Example: 'Workbench Toolbox rows are invisible to UIA -- switched wb_02 to ocr_text after live testing.'"
+  },
+
+  "sections": [
+    {
+      "section": "Set up the analysis in Workbench",
+      "app": "workbench",
+      "steps": [
+        {
+          "_pattern": "PATTERN 1 -- app launch / close step: selector 'window', highlight 'none'. No box is drawn; the description carries the instruction.",
+          "step_id": "wb_01_open",
+          "app": "workbench",
+          "title": "Open Ansys Workbench",
+          "description": "Launch Ansys Workbench from the Start menu or the lab launcher.",
+          "selector": { "type": "window", "app": "workbench" },
+          "highlight": "none",
+          "action": { "kind": "launch" },
+          "verify": { "type": "manual", "prompt": "Is Ansys Workbench open?" },
+          "hints": ["Ask a TA if Workbench isn't installed on this PC."],
+          "source_image": null
+        },
+        {
+          "_pattern": "PATTERN 2 -- ribbon/menu element: selector+highlight 'uia'. The overlay draws a live box around the element whose display NAME matches selector.name. 'via' names the parent menu to open first (the box tracks the parent; the rest is hint text). Ribbons/menus/trees ARE UIA-visible.",
+          "step_id": "wb_02_save_project",
+          "app": "workbench",
+          "title": "Save the project",
+          "description": "Open the File menu and click 'Save As...', then name the project.",
+          "selector": { "type": "uia", "name": "Save As", "via": "File" },
+          "highlight": "uia",
+          "action": { "kind": "menu_select", "via": "File", "then": "text_entry", "value": "<project name>" },
+          "verify": { "type": "manual", "prompt": "Project saved under the new name?" },
+          "hints": ["Click File first; Save As is in the dropdown."],
+          "source_image": null
+        },
+        {
+          "_pattern": "PATTERN 3 -- Workbench Toolbox / Project Schematic: selector+highlight 'ocr_text'. These panels are INVISIBLE to UIA and win32 (confirmed -- do not retry 'uia' here); the guide finds selector.text on screen via OCR instead. Add \"scope\": \"schematic\" to search the Project Schematic block instead of the Toolbox.",
+          "step_id": "wb_03_add_static_structural",
+          "app": "workbench",
+          "title": "Add a Static Structural analysis",
+          "description": "Drag 'Static Structural' from Toolbox > Analysis Systems onto the Project Schematic.",
+          "selector": { "type": "ocr_text", "text": "Static Structural" },
+          "highlight": "ocr_text",
+          "action": { "kind": "drag" },
+          "verify": { "type": "manual", "prompt": "Dragged 'Static Structural' onto the Project Schematic?" },
+          "hints": ["The Toolbox is on the left; expand Analysis Systems."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Build and solve the model in Mechanical",
+      "app": "mechanical",
+      "steps": [
+        {
+          "_pattern": "PATTERN 4 -- 3D viewport action (pick a face, rotate, sketch): selector 'viewport', highlight 'instruction'. Nothing inside the 3D window is automatable, so the panel shows your reference screenshot (source_image, path relative to the repo root, under mock_server/data/images/<tutorial>/ -- folder named after your tutorial file) instead of a live box. The validator warns until the screenshot file actually exists -- take it while testing your tutorial live.",
+          "step_id": "me_01_pick_face",
+          "app": "mechanical",
+          "title": "Select the loaded face",
+          "description": "In the 3D view, click the end face of the bar that carries the load.",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "select_face" },
+          "verify": { "type": "manual", "prompt": "Face selected (highlighted green in the 3D view)?" },
+          "hints": ["Use the Face selection filter in the toolbar if clicks select edges instead."],
+          "source_image": "mock_server/data/images/tut0_template/me_01_pick_face.png"
+        },
+        {
+          "_pattern": "PATTERN 2 again, plus a forward-looking verify. verify.type today: everything degrades to a manual 'Mark step complete' button, but AUTHOR THE REAL CHECK anyway ('script' with engine pymechanical/spaceclaim, or 'uia', or 'window_appeared' with 'app') -- the runtime will grow into it, per the build plan. 'manual' + a clear prompt is always a safe choice.",
+          "step_id": "me_02_solve",
+          "app": "mechanical",
+          "title": "Solve the analysis",
+          "description": "Click Solve in the Home ribbon and wait for the solution to complete.",
+          "selector": { "type": "uia", "name": "Solve" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "script", "engine": "pymechanical", "check": "solve_completed", "args": {} },
+          "hints": ["Solving can take a minute; the status bar shows progress."],
+          "source_image": null
+        }
+      ]
+    }
+  ]
+}

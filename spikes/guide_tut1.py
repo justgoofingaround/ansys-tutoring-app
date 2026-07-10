@@ -62,17 +62,21 @@ verified, so all of this is still accurate:
     tutorial's reference screenshot via _load_reference_image() instead of a
     live box.
 
-STEP 6 ONWARD note: load_steps() now takes an explicit step_id list
-(STEP_IDS, near main()), not a prefix count -- tut1.json's section order
-follows the original tutorial doc (Workbench -> SpaceClaim -> Engineering
-Data -> Mechanical), but live testing jumped straight from Workbench to
-Mechanical, skipping SpaceClaim/Engineering Data. ALSO: Panel now owns one
-ElementLocator PER APP (self._locators, created lazily via _locator_for()),
-not a single hardcoded "workbench" locator, since steps 6-8 are the first to
-target a different app.
+TUTORIALS ARE JSON-DRIVEN: the guide takes any tutorial JSON as its input --
+no per-tutorial code. Which steps run (and in what order) comes from the
+JSON's optional top-level "runtime_steps" list of step_ids; without it, every
+step runs in document order. tut1.json uses runtime_steps for ORDERING: the
+result-insertion steps (re_01..re_03) run before me_11_solve so one solve
+evaluates them, which document order can't express without breaking the
+section grouping. The synthetic report-upload step is appended only when the
+tutorial declares a "report_checks" rubric. Panel owns one ElementLocator
+PER APP (self._locators, created lazily via _locator_for()), since a
+tutorial spans multiple apps.
 
 RUN (with Workbench already open, or about to open it):
-  .venv\\Scripts\\python spikes\\guide_tut1.py
+  .venv\\Scripts\\python spikes\\guide_tut1.py                     # defaults to tut1.json
+  .venv\\Scripts\\python spikes\\guide_tut1.py mock_server\\data\\tut2.json
+  .venv\\Scripts\\python spikes\\guide_tut1.py tut2                # bare id -> mock_server/data/tut2.json
 
 DEPS: pip install pywinauto pyqt6 opencv-python-headless numpy pillow pytesseract markdown
       (markdown renders the chatbot's answers; the chatbot feature itself also
@@ -100,7 +104,21 @@ import report_verify
 import verify
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-TUT_PATH = REPO_ROOT / "mock_server" / "data" / "tut1.json"
+TUTORIALS_DIR = REPO_ROOT / "mock_server" / "data"
+DEFAULT_TUT_PATH = TUTORIALS_DIR / "tut1.json"
+
+
+def resolve_tutorial_path(arg):
+    """Turn the CLI argument into a tutorial JSON path. Accepts a real path
+    (absolute, or relative to the cwd or repo root) or a bare tutorial id
+    ('tut2' -> mock_server/data/tut2.json)."""
+    if not arg:
+        return DEFAULT_TUT_PATH
+    for candidate in (Path(arg), REPO_ROOT / arg,
+                      TUTORIALS_DIR / arg, TUTORIALS_DIR / f"{arg}.json"):
+        if candidate.is_file():
+            return candidate.resolve()
+    return Path(arg)  # let main() report the miss with the name as given
 
 # chatbot_spike/ is a SEPARATE module (architecture doc Section 8, its own
 # spike directory -- see chatbot_spike/README.md), not part of the Student
@@ -122,22 +140,28 @@ OCR_MISS_TOLERANCE = 6  # consecutive OCR misses (each already internally
 DEBUG = True         # print diagnostic lines to the console
 
 
-def load_steps(step_ids):
-    """Load tut1.json's steps by explicit step_id, in `step_ids`' order --
-    NOT a prefix slice of the document. tut1.json's section order follows the
-    ORIGINAL tutorial doc (Workbench -> SpaceClaim -> Engineering Data ->
-    Mechanical), which is the authoritative structure for real use later --
-    but this spike's live testing has jumped straight from Workbench to
-    Mechanical (skipping SpaceClaim/Engineering Data for now), so a strict
-    "first N steps" slice would load the wrong section entirely. Keeping
-    tut1.json's own ordering untouched and selecting explicitly here keeps
-    today's testing order decoupled from the canonical tutorial structure."""
-    data = json.loads(TUT_PATH.read_text(encoding="utf-8"))
+def load_steps(data):
+    """Flatten a tutorial dict's sections into the runtime step list.
+
+    Which steps run, and in what order, is the JSON's decision, not code's:
+    the optional top-level "runtime_steps" list of step_ids selects/orders
+    steps explicitly; without it, every step runs in document order. tut1.json
+    uses it to run re_01..re_03 (insert results) BEFORE me_11_solve so a
+    single solve evaluates them -- an order the section grouping can't
+    express."""
     by_id = {}
+    ordered = []
     for sec in data["sections"]:
         for st in sec["steps"]:
             st["_section"] = sec["section"]
             by_id[st["step_id"]] = st
+            ordered.append(st)
+    step_ids = data.get("runtime_steps")
+    if not step_ids:
+        return ordered
+    missing = [sid for sid in step_ids if sid not in by_id]
+    if missing:
+        sys.exit(f"runtime_steps references step_id(s) not in the tutorial: {missing}")
     return [by_id[sid] for sid in step_ids]
 
 
@@ -486,13 +510,14 @@ class Panel(QtWidgets.QWidget):
     """Step panel. Calls verify.verify_step() / locate.* and reacts -- never
     implements verification or element-finding itself."""
 
-    def __init__(self, steps):
+    def __init__(self, steps, tut_path):
         flags = (QtCore.Qt.WindowType.FramelessWindowHint
                  | QtCore.Qt.WindowType.WindowStaysOnTopHint
                  | QtCore.Qt.WindowType.Tool)
         super().__init__(None, flags)
         self.setWindowTitle("__TutGuidePanel__")  # never a real selector target
         self.steps = steps
+        self.tut_path = tut_path  # re-read on report upload so rubric edits apply live
         self.i = 0
         self.manually_confirmed = False
         self.report_validation = None
@@ -579,7 +604,9 @@ class Panel(QtWidgets.QWidget):
         return self._locators[app_key]
 
     def go(self, delta):
-        if self.i == len(self.steps) - 1 and delta > 0 and self.report_validation and self.report_validation.get("ok"):
+        # Next is only enabled once the last step is complete (manual confirm
+        # or a passing report), so a forward click there means "Finish".
+        if self.i == len(self.steps) - 1 and delta > 0:
             self.close()
             return
         self.i = max(0, min(len(self.steps) - 1, self.i + delta))
@@ -602,7 +629,7 @@ class Panel(QtWidgets.QWidget):
             return
         path = selected[0]
         try:
-            tutorial_data = json.loads(TUT_PATH.read_text(encoding="utf-8"))
+            tutorial_data = json.loads(self.tut_path.read_text(encoding="utf-8"))
             self.report_validation = report_verify.validate_report(path, tutorial_data)
         except Exception as exc:
             self.report_validation = {
@@ -775,7 +802,11 @@ class Panel(QtWidgets.QWidget):
         self.lbl_status.setStyleSheet(f"color:{color};font-size:12px;")
         is_last = self.i == len(self.steps) - 1
         self.btn_next.setText("Finish" if is_last and next_ok else "Next →")
-        self.btn_next.setEnabled(next_ok and (not is_last or bool(self.report_validation and self.report_validation.get("ok"))))
+        # next_ok already encodes the step's own completion gate (manual
+        # confirm, or a passing report on the report step) -- no extra
+        # report requirement here, since tutorials without report_checks
+        # have no report step at all.
+        self.btn_next.setEnabled(next_ok)
         # Based on the ACTUAL runtime result, not a static guess from
         # verify.type -- a hardcoded `type in ("manual", "script")` check
         # here once missed verify.type=="uia" (and would miss any future
@@ -791,19 +822,6 @@ class Panel(QtWidgets.QWidget):
         if self._chatbot_dialog is not None:
             self._chatbot_dialog.close()
         super().closeEvent(e)
-
-
-STEP_IDS = [
-    "wb_01_open", "wb_02_save_project", "wb_03_add_static_structural",
-    "wb_04_select_geometry", "wb_05_select_model",
-    "me_01_expand_geometry", "me_02_select_solid", "me_03_set_material_steel",
-    "me_04_generate_mesh",
-    "me_05_select_static", "me_06_force_tool", "me_07_force_face",
-    "me_08_force_magnitude", "me_09_fixed_tool", "me_10_fixed_face",
-    "re_01_insert_dir_deformation", "re_02_orientation", "re_03_evaluate",
-    "me_11_solve",
-    "re_04_save",
-]
 
 
 REPORT_STEP = {
@@ -830,22 +848,31 @@ REPORT_STEP = {
 }
 
 
-def build_runtime_steps(step_ids):
-    steps = load_steps(step_ids)
-    REPORT_STEP["_section"] = "Generate the result"
-    steps.append(REPORT_STEP)
+def build_runtime_steps(data):
+    """Steps to run, straight from the tutorial dict. The synthetic report-
+    upload checkpoint is appended only when the tutorial declares a
+    report_checks rubric for it to grade against."""
+    steps = load_steps(data)
+    if not steps:
+        sys.exit("tutorial has no steps")
+    if data.get("report_checks"):
+        REPORT_STEP["_section"] = "Generate the result"
+        steps.append(REPORT_STEP)
     return steps
 
 
 def main():
-    if not TUT_PATH.exists():
-        sys.exit(f"tutorial not found: {TUT_PATH}")
-    steps = build_runtime_steps(STEP_IDS)
+    tut_path = resolve_tutorial_path(sys.argv[1] if len(sys.argv) > 1 else None)
+    if not tut_path.is_file():
+        sys.exit(f"tutorial not found: {tut_path}")
+    data = json.loads(tut_path.read_text(encoding="utf-8"))
+    steps = build_runtime_steps(data)
 
     qapp = QtWidgets.QApplication(sys.argv)
-    panel = Panel(steps)
+    panel = Panel(steps, tut_path)
     panel.show()
-    print(f"Guiding {len(steps)} step(s). Make sure Ansys Workbench is open.")
+    title = data.get("title") or tut_path.stem
+    print(f"Guiding {len(steps)} step(s) of \"{title}\". Make sure Ansys Workbench is open.")
     sys.exit(qapp.exec())
 
 

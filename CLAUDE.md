@@ -63,7 +63,11 @@ Python 3.11+ · PyQt6 (transparent click-through overlay) · pynput (input captu
   signals/slots or `QMetaObject.invokeMethod`.
 - **Tutorial JSON is the cross-module contract.** Steps carry `app`,
   `selector`, `action`, `verify` (`uia` | `script` | `window_appeared`), and
-  optional `launches` for app-transition steps.
+  optional `launches` for app-transition steps. Tutorials are JSON-only: the
+  guide runs any `mock_server/data/<tutorial_id>.json` with no code changes
+  (`python spikes/guide_tut1.py <tutorial_id>`). Author new ones from
+  `mock_server/data/_template.json` per `mock_server/data/README.md`, and
+  check them with `python tools/validate_tutorial.py <file>` before testing.
 - Spike/throwaway code lives in `spikes/`; it is not shipped.
 
 ## Planned repo layout
@@ -76,6 +80,8 @@ Python 3.11+ · PyQt6 (transparent click-through overlay) · pynput (input captu
 | `student_app/sync/` | API client, disk-backed event logger, local cache + fakes |
 | `student_app/quiz/` | Multiple-choice quiz runner |
 | `mock_server/` | FastAPI stand-in for Tutorials & Quizzes |
+| `mock_server/data/` | Tutorial JSONs + `_template.json` + authoring README (exists) |
+| `tools/` | Author-facing utilities, e.g. `validate_tutorial.py` (exists) |
 | `spikes/` | Phase 0 throwaway probes |
 | `tests/` | pytest (client testable without Ansys via fakes) |
 

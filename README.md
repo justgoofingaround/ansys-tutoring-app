@@ -12,7 +12,9 @@ See [`Student-Track-App-Build-Plan.md`](Student-Track-App-Build-Plan.md) for the
 
 ## Status
 
-This is the Phase 0 spike (`spikes/guide_tut1.py`) — a working, manually-driven walkthrough of part of Tut-1, used to de-risk the real architecture's assumptions before it gets built for real under `student_app/`. It currently covers Workbench setup through Mechanical's results steps and then a final generated-report upload/validation checkpoint (see `STEP_IDS` in `guide_tut1.py`); SpaceClaim and Engineering Data sections of Tut-1 exist in the tutorial data but aren't wired into this spike's run yet.
+This is the Phase 0 spike (`spikes/guide_tut1.py`) — a working, manually-driven walkthrough of Tut-1, used to de-risk the real architecture's assumptions before it gets built for real under `student_app/`. It covers Workbench setup through Mechanical's results steps and then a final generated-report upload/validation checkpoint.
+
+Tutorials are **JSON-only**: the guide runs any tutorial file in `mock_server/data/` with no code changes. Which steps run, and in what order, comes from the tutorial JSON itself (its optional `runtime_steps` list), and the report-upload checkpoint appears whenever the tutorial declares a `report_checks` rubric.
 
 ## How to use it
 
@@ -26,7 +28,8 @@ This is the Phase 0 spike (`spikes/guide_tut1.py`) — a working, manually-drive
 
 3. **Run the guide**:
    ```
-   .venv\Scripts\python spikes\guide_tut1.py
+   .venv\Scripts\python spikes\guide_tut1.py            # runs Tut-1 (the default)
+   .venv\Scripts\python spikes\guide_tut1.py <tutorial>  # any other tutorial, by id or path
    ```
    A dark panel appears in the top-right corner of your screen, on top of Ansys.
 
@@ -39,4 +42,14 @@ This is the Phase 0 spike (`spikes/guide_tut1.py`) — a working, manually-drive
 
 5. The guide walks you all the way from opening Workbench through generating and saving the final FEA result in Mechanical.
 
-**Note:** the guide is the only thing you run directly — `mock_server/` (a FastAPI stand-in for the real Tutorials & Quizzes server) isn't needed for this spike; `guide_tut1.py` reads `mock_server/data/tut1.json` straight off disk.
+**Note:** the guide is the only thing you run directly — `mock_server/` (a FastAPI stand-in for the real Tutorials & Quizzes server) isn't needed for this spike; `guide_tut1.py` reads the tutorial JSON straight off disk.
+
+## Authoring a new tutorial
+
+No code changes needed — a tutorial is one JSON file:
+
+1. Copy [`mock_server/data/_template.json`](mock_server/data/_template.json) to `mock_server/data/<tutorial_id>.json` and fill it in (the template's inline `_comment` keys explain each step pattern; [`tut1.json`](mock_server/data/tut1.json) is a full real example).
+2. Check it: `.venv\Scripts\python tools\validate_tutorial.py mock_server\data\<file>.json` — must report 0 errors.
+3. Run it: `.venv\Scripts\python spikes\guide_tut1.py <tutorial_id>`
+
+Full guidance (selector/highlight decision table, verify types, report rubric, conventions): [`mock_server/data/README.md`](mock_server/data/README.md).
