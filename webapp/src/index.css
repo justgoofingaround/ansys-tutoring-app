@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+/* ── "Drafting Room" design tokens ─────────────────────────────────────────
+   Engineering-lab-manual aesthetic: paper surfaces, ink text, hairline
+   borders (structure from borders, not shadows), one confident violet.   */
+@theme {
+  --color-paper: #fafaf7;
+  --color-surface: #ffffff;
+  --color-ink: #1a1a21;
+  --color-ink-soft: #5a5a66;
+  --color-ink-faint: #8a8a94;
+  --color-hairline: #e4e2dc;
+  --color-violet: #57068c;
+  --color-violet-hover: #7b2cbf;
+  --color-violet-tint: #f3ebfa;
+  --color-violet-deep: #2a0845;
+  --color-success: #1e7b4d;
+  --color-success-tint: #e9f5ee;
+  --color-warning: #9a6700;
+  --color-warning-tint: #fbf3e0;
+  --color-error: #b3261e;
+  --color-error-tint: #fbeceb;
+
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
+
+  --radius-card: 8px;
+  --radius-control: 6px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-paper text-ink font-sans antialiased;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+::selection {
+  background: var(--color-violet-tint);
+}
+
+/* Compass answer markup (renderAnswer in ChatPage) */
+.chat-code {
+  @apply rounded bg-paper px-1 py-0.5 font-mono text-[13px] text-ink border border-hairline;
+}
+.chat-cite {
+  @apply ml-0.5 inline-flex size-4 items-center justify-center rounded-full bg-violet-tint font-mono text-[10px] font-semibold text-violet;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

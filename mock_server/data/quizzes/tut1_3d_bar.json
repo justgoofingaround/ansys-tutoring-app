@@ -1,0 +1,80 @@
+{
+  "quiz_id": "quiz_tut1_3d_bar",
+  "tutorial_id": "tut1_3d_bar",
+  "title": "Tutorial 1 — Check your understanding",
+  "_authoring_notes": "Post-tutorial quiz for the 3D bar under tension (F = 3000 lbf, L = 30 in, r = 0.5 in, structural steel, expected elongation 0.00382 in). One correct_index per question (0-based). concept_tag groups questions for the mastery analytics; keep tags short and reuse them across quizzes where the concept is the same.",
+  "questions": [
+    {
+      "text": "A straight bar is loaded in pure axial tension. Which expression gives its elongation?",
+      "options": [
+        "δ = F·L / (A·E)",
+        "δ = F·A / (L·E)",
+        "δ = E·L / (F·A)",
+        "δ = F·L³ / (3·E·I)"
+      ],
+      "correct_index": 0,
+      "concept_tag": "axial-deformation",
+      "explanation": "For a uniform bar in axial tension, δ = FL/AE: elongation grows with load and length, and shrinks with cross-sectional area and stiffness (Young's modulus). The FL³/3EI form is tip deflection of a cantilever in bending, not axial stretch."
+    },
+    {
+      "text": "In this tutorial the bar stretched about 0.00382 in under 3000 lbf. If the force were doubled to 6000 lbf (everything else unchanged, material still elastic), the elongation would be approximately:",
+      "options": [
+        "0.00382 in — unchanged",
+        "0.00764 in — doubled",
+        "0.01528 in — quadrupled",
+        "impossible to say without re-running the simulation"
+      ],
+      "correct_index": 1,
+      "concept_tag": "axial-deformation",
+      "explanation": "Linear elasticity means δ = FL/AE is directly proportional to F: double the force, double the stretch. This linearity is also why the solver class is called Static STRUCTURAL (linear) analysis."
+    },
+    {
+      "text": "Which application did you use to create the bar's geometry, and how was it opened?",
+      "options": [
+        "Ansys Mechanical, from the Start menu",
+        "Ansys Discovery, launched from the Geometry cell in Workbench",
+        "Ansys Workbench itself — geometry is drawn on the Project Schematic",
+        "Ansys Fluent, launched from the Model cell"
+      ],
+      "correct_index": 1,
+      "concept_tag": "workbench-workflow",
+      "explanation": "Workbench is the hub: the Static Structural system's Geometry cell launches Ansys Discovery for modeling, and the Model cell launches Mechanical for setup and solving. You never draw geometry in Workbench itself."
+    },
+    {
+      "text": "Why does the model need a Fixed Support on one end face before solving?",
+      "options": [
+        "It increases the stress so results are easier to see",
+        "Without any constraint the bar would undergo rigid-body motion and the static solver cannot find a unique solution",
+        "Fixed supports are only cosmetic — the solver adds its own constraints",
+        "It is required to generate the mesh"
+      ],
+      "correct_index": 1,
+      "concept_tag": "boundary-conditions",
+      "explanation": "A static analysis solves for a unique equilibrium. An unconstrained body can translate or rotate freely (rigid-body motion), so the stiffness matrix is singular and the solve fails or produces garbage. The fixed support anchors the bar so the applied force produces pure deformation."
+    },
+    {
+      "text": "What is the main trade-off when you refine (make finer) the mesh?",
+      "options": [
+        "Finer meshes are less accurate but solve faster",
+        "Mesh density has no effect on the results, only on the pictures",
+        "Finer meshes generally capture the solution more accurately but cost more solve time and memory",
+        "Finer meshes change the material properties of the model"
+      ],
+      "correct_index": 2,
+      "concept_tag": "meshing",
+      "explanation": "FEA approximates the continuous solution over discrete elements. More, smaller elements follow the true field better (up to convergence) but every element adds equations to solve. Good practice is refining until the result you care about stops changing."
+    },
+    {
+      "text": "To report the bar's elongation you inserted a Directional Deformation result. Why directional rather than Total Deformation?",
+      "options": [
+        "Total Deformation only works on 2D models",
+        "Elongation is the stretch along the bar's axis, so you read the deformation component in that axis; Total Deformation is the magnitude of all components combined",
+        "Directional Deformation is the only result Mechanical can export to a report",
+        "There is no difference — the two are always equal"
+      ],
+      "correct_index": 1,
+      "concept_tag": "results",
+      "explanation": "Total Deformation is √(x²+y²+z²) — a magnitude with no sign or direction. The tutorial's answer (≈ 0.00382 in) is specifically the stretch along the bar's axis, which is what Directional Deformation in that axis reports. Here Poisson contraction is tiny so the numbers are close, but conceptually they answer different questions."
+    }
+  ]
+}

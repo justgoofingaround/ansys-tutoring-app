@@ -2,3 +2,8 @@
 __pycache__/
 *.pyc
 chatbot_spike/data/
+
+server_data/
+webapp/node_modules/
+webapp/dist/
+.gstack/

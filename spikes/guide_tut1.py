@@ -90,6 +90,7 @@ DEPS: pip install pywinauto pyqt6 opencv-python-headless numpy pillow pytesserac
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
 # Disable Qt auto-DPI scaling so widget geometry matches UIA's physical
@@ -106,18 +107,31 @@ import verify
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TUTORIALS_DIR = REPO_ROOT / "mock_server" / "data"
 DEFAULT_TUT_PATH = TUTORIALS_DIR / "tut1.json"
+# The web app's "Close guide" button (ansysguide://close -> guide_launcher.py)
+# can't reach this process directly, so it drops this sentinel file instead;
+# Panel._tick() polls for it. Must match STOP_FILE in tools/guide_launcher.py.
+STOP_FILE = REPO_ROOT / "server_data" / "guide_stop"
 
 
 def resolve_tutorial_path(arg):
     """Turn the CLI argument into a tutorial JSON path. Accepts a real path
-    (absolute, or relative to the cwd or repo root) or a bare tutorial id
-    ('tut2' -> mock_server/data/tut2.json)."""
+    (absolute, or relative to the cwd or repo root), a bare file name
+    ('tut2' -> mock_server/data/tut2.json), or a tutorial_id from inside any
+    JSON in mock_server/data ('tut1_3d_bar' -> tut1.json)."""
     if not arg:
         return DEFAULT_TUT_PATH
     for candidate in (Path(arg), REPO_ROOT / arg,
                       TUTORIALS_DIR / arg, TUTORIALS_DIR / f"{arg}.json"):
         if candidate.is_file():
             return candidate.resolve()
+    for candidate in sorted(TUTORIALS_DIR.glob("*.json")):
+        if candidate.name.startswith("_"):
+            continue  # templates aren't runnable tutorials
+        try:
+            if json.loads(candidate.read_text(encoding="utf-8")).get("tutorial_id") == arg:
+                return candidate.resolve()
+        except (OSError, json.JSONDecodeError):
+            continue
     return Path(arg)  # let main() report the miss with the name as given
 
 # chatbot_spike/ is a SEPARATE module (architecture doc Section 8, its own
@@ -519,6 +533,7 @@ class Panel(QtWidgets.QWidget):
         self.steps = steps
         self.tut_path = tut_path  # re-read on report upload so rubric edits apply live
         self.i = 0
+        self._started_at = time.time()  # stop requests older than this are stale
         self.manually_confirmed = False
         self.report_validation = None
         # One ElementLocator per app, created lazily as steps need different
@@ -540,6 +555,22 @@ class Panel(QtWidgets.QWidget):
         v = QtWidgets.QVBoxLayout(self)
         self.lbl_prog = QtWidgets.QLabel()
         self.lbl_prog.setStyleSheet("color:#9cf;font-size:11px;")
+        # The panel is frameless (no native title bar), so it needs its own
+        # close button. A confirm dialog guards accidental mid-tutorial exits.
+        self.btn_close = QtWidgets.QPushButton("✕")
+        self.btn_close.setFixedSize(22, 22)
+        self.btn_close.setToolTip("Close the guide")
+        self.btn_close.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+        self.btn_close.setStyleSheet(
+            "QPushButton { background:transparent; color:#888; border:none; "
+            "font-size:13px; }"
+            "QPushButton:hover { color:#fff; background:#3a3a3a; border-radius:4px; }")
+        self.btn_close.clicked.connect(self._confirm_close)
+        header = QtWidgets.QHBoxLayout()
+        header.addWidget(self.lbl_prog)
+        header.addStretch(1)
+        header.addWidget(self.btn_close)
+        v.addLayout(header)
         self.lbl_title = QtWidgets.QLabel()
         self.lbl_title.setWordWrap(True)
         self.lbl_title.setStyleSheet("font-size:15px;font-weight:bold;")
@@ -556,7 +587,7 @@ class Panel(QtWidgets.QWidget):
         self.lbl_status = QtWidgets.QLabel()
         self.lbl_status.setWordWrap(True)
         self.lbl_status.setStyleSheet("font-size:12px;")
-        for w in (self.lbl_prog, self.lbl_title, self.lbl_desc, self.lbl_hint, self.lbl_image, self.lbl_status):
+        for w in (self.lbl_title, self.lbl_desc, self.lbl_hint, self.lbl_image, self.lbl_status):
             v.addWidget(w)
 
         row = QtWidgets.QHBoxLayout()
@@ -615,6 +646,19 @@ class Panel(QtWidgets.QWidget):
     def mark_complete(self):
         self.manually_confirmed = True
         self._tick()
+
+    def _confirm_close(self):
+        # Closing mid-tutorial loses no server-side progress (steps are marked
+        # in the web app), but confirm anyway -- ✕ sits right above Prev/Next.
+        answer = QtWidgets.QMessageBox.question(
+            self, "Close guide",
+            "Close the tutorial guide? You can relaunch it any time from the "
+            "web app or the terminal.",
+            QtWidgets.QMessageBox.StandardButton.Yes
+            | QtWidgets.QMessageBox.StandardButton.No,
+            QtWidgets.QMessageBox.StandardButton.No)
+        if answer == QtWidgets.QMessageBox.StandardButton.Yes:
+            self.close()
 
     def upload_report(self):
         dialog = QtWidgets.QFileDialog(self, "Select generated report", str(REPO_ROOT))
@@ -707,6 +751,19 @@ class Panel(QtWidgets.QWidget):
         return rect
 
     def _tick(self):
+        # The web app's "Close guide" button reaches us via this sentinel
+        # (see STOP_FILE above) -- no confirm dialog for a remote close, the
+        # click over in the browser was the deliberate act. Compare mtime
+        # instead of deleting: if several guides are somehow running, ALL of
+        # them must see the request (the first deleter would hide it from the
+        # rest). The file itself is cleaned up by the next launch's startup.
+        try:
+            stop_requested = STOP_FILE.stat().st_mtime >= self._started_at
+        except OSError:
+            stop_requested = False
+        if stop_requested:
+            self.close()
+            return
         st = self._current()
         locate.set_exclude_rects([self._own_screen_rect()])
 
@@ -818,10 +875,17 @@ class Panel(QtWidgets.QWidget):
         self.btn_upload.setEnabled(not (self.report_validation and self.report_validation.get("ok")))
 
     def closeEvent(self, e):
+        # Qt.Tool windows don't trigger quit-on-last-window-closed, so without
+        # an explicit quit() every close path (Finish, the ✕ button, a remote
+        # ansysguide://close) left a headless zombie process ticking forever
+        # -- confirmed live: the stop check fired, close() ran, and the timer
+        # kept printing anyway.
+        self.timer.stop()
         self.highlight.close()
         if self._chatbot_dialog is not None:
             self._chatbot_dialog.close()
         super().closeEvent(e)
+        QtWidgets.QApplication.quit()
 
 
 REPORT_STEP = {
@@ -867,6 +931,13 @@ def main():
         sys.exit(f"tutorial not found: {tut_path}")
     data = json.loads(tut_path.read_text(encoding="utf-8"))
     steps = build_runtime_steps(data)
+
+    # A leftover stop request (e.g. "Close guide" clicked while no guide was
+    # running) must not kill this fresh launch on its first tick.
+    try:
+        STOP_FILE.unlink()
+    except OSError:
+        pass
 
     qapp = QtWidgets.QApplication(sys.argv)
     panel = Panel(steps, tut_path)

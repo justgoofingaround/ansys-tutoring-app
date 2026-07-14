@@ -10,13 +10,52 @@ The system is local-first by design: no student interaction data leaves NYU infr
 
 See [`Student-Track-App-Build-Plan.md`](Student-Track-App-Build-Plan.md) for the build plan and [`CLAUDE.md`](CLAUDE.md) for project conventions and architecture pointers.
 
+## The Tutoring Hub (web app)
+
+![Login page — Student/Instructor sign-in beside a drafted schematic of Tut-1's bar problem](login_page.png)
+
+Alongside the desktop overlay, the repo now ships a full-stack **hub** — FastAPI + SQLite backend (`server/`) and a React SPA (`webapp/`) — that runs on the instructor desktop and serves the whole class over the NYU LAN. Everything is local: bundled fonts, no CDN, no cloud LLM, and every analytics row carries an opaque `student_xxxxxx` token instead of a name or NetID.
+
+What works today:
+
+- **Auth** — instructors are seeded accounts; students self-register with a per-section **class code** (`SEC-XXXXXX`) plus a display name and password.
+- **Student side** — tutorial dashboard with per-step progress, an in-browser tutorial runner with live tick marks, one-click **Launch/Close desktop guide** buttons (via the `ansysguide://` URL protocol), report upload with instant rubric feedback, post-tutorial **quizzes** (per-question explanations, by-concept results), and **Compass** — a streaming chat assistant over locally indexed Ansys docs with cited sources and an explicit consent gate.
+- **Instructor side** — section management with regenerable class codes (progress dashboards, tutorial library, quiz analytics, and the FAQ review queue are in progress).
+
+### Run the hub
+
+```powershell
+# one-time: install server deps + build the web UI (Node 20+)
+.venv\Scripts\pip install fastapi uvicorn bcrypt python-multipart
+cd webapp; npm install; npm run build; cd ..
+
+# start (the first boot seeds the instructor account and imports tut1 + its quiz)
+$env:INSTRUCTOR_USERNAME = 'prof'
+$env:INSTRUCTOR_PASSWORD = '<pick-a-password>'
+.venv\Scripts\python -m uvicorn server.app:app --port 8000
+```
+
+Then open **http://localhost:8000**:
+
+1. Sign in as the instructor → **Class** → create a section → share its class code.
+2. Students register with that code, open Tutorial 1 from their dashboard, and either run it in the browser or click **Launch desktop guide**.
+3. Compass (the chat assistant) additionally needs [Ollama](https://ollama.com) running locally and the `chatbot_spike/` index built — see [`chatbot_spike/README.md`](chatbot_spike/README.md). Without it, chat degrades gracefully; everything else works.
+4. The **Launch desktop guide** button needs a one-time, per-PC registration (no admin rights):
+   `.venv\Scripts\python tools\register_guide_protocol.py` (`--unregister` reverses it).
+
+Quizzes are JSON-authored like tutorials: drop a file in `mock_server/data/quizzes/` (see [`tut1_3d_bar.json`](mock_server/data/quizzes/tut1_3d_bar.json)) and restart — no code changes.
+
+Tests (no Ansys or Ollama needed): `.venv\Scripts\python -m pytest tests\server`
+
 ## Status
 
-This is the Phase 0 spike (`spikes/guide_tut1.py`) — a working, manually-driven walkthrough of Tut-1, used to de-risk the real architecture's assumptions before it gets built for real under `student_app/`. It covers Workbench setup through Mechanical's results steps and then a final generated-report upload/validation checkpoint.
+**Desktop overlay** — the Phase 0 spike (`spikes/guide_tut1.py`): a working, manually-driven walkthrough of Tut-1, used to de-risk the real architecture's assumptions before it gets built for real under `student_app/`. It covers Workbench setup through Mechanical's results steps and then a final generated-report upload/validation checkpoint.
+
+**Tutoring Hub** — milestones 1–4 of 6 complete: auth + login, the full student content slice (dashboard, runner, reports), quizzes, and Compass chat. In progress: instructor dashboards/library (M5), then quiz analytics + the FAQ mining pipeline (M6).
 
 Tutorials are **JSON-only**: the guide runs any tutorial file in `mock_server/data/` with no code changes. Which steps run, and in what order, comes from the tutorial JSON itself (its optional `runtime_steps` list), and the report-upload checkpoint appears whenever the tutorial declares a `report_checks` rubric.
 
-## How to use it
+## How to use the desktop guide
 
 1. **Install dependencies** (Python 3.11+, Windows):
    ```
