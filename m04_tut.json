@@ -1,0 +1,534 @@
+{
+  "tutorial_id": "tut04_geometry_materials_coordinate_systems",
+  "version": 1,
+  "title": "Module 04 \u2014 Geometry, Materials, and Coordinate Systems for a Globe Valve",
+  "problem": "Build a Static Structural analysis workflow for the globe valve assembly (globe_valve.scdoc): create Engineering Data, Geometry, and Static Structural systems and link them; define AISI 6150 Steel, Type 40 Gray Cast Iron, and Type 302 Stainless Steel materials; import the CAD geometry and assign the correct material to each of the 20 bodies; then create a local Cartesian coordinate system (rotated 30\u00b0 about Z) and a local cylindrical coordinate system on the valve body's outer surface.",
+  "report_checks": {
+    "required_sections": [
+      "Engineering Data",
+      "Geometry",
+      "Materials",
+      "Coordinate Systems"
+    ],
+    "preferred_sections": [
+      "Worksheet"
+    ],
+    "must_contain": [
+      "AISI 6150 Steel",
+      "Type 40 Gray Cast Iron",
+      "Type 302 Stainless Steel"
+    ]
+  },
+  "_notes": {
+    "no_loads_or_solve_2026-07": "This module only sets up materials/geometry/coordinate systems -- no load, boundary condition, or solve exists yet (that's Module 05+), so unlike tut1's me_06 onward there is nothing here for verify.type='script'/'uia' (load_exists, bc_exists, solve_status, etc.) to check. Every step uses verify.type='manual', consistent with tut1's own manual_verify_switch_2026-06 decision for all non-load/solve steps.",
+    "selector_status": "UNVERIFIED, same caveat as tut1: selectors use display names from the source slides; resolve real UIA automation_id/name via the Phase 0 spike before relying on them.",
+    "toolbox_schematic_ocr_2026-07": "Reused tut1's CONFIRMED finding (workbench_uia_finding_2026-06 / workbench_win32_finding_2026-06 in tut1.json): the Workbench Toolbox and Project Schematic canvas are not exposed to UIA or win32 at all. All Toolbox-drag steps (wb_03-wb_05) and schematic cell/drag steps (wb_06-wb_07) use selector.type='ocr_text', matching wb_03_add_static_structural's pattern in tut1.",
+    "engineering_data_grid_unconfirmed_2026-07": "The Engineering Data property Toolbox (Physical Properties/Linear Elastic/Strength) and the material outline grid were never reached in tut1 (its ed_01-ed_04 section was trimmed as never-run), so there's no prior finding to reuse. Treated them the same way as the Workbench Toolbox (ocr_text) as the most likely case given it's the same owner-drawn-panel pattern, but this is an assumption, not a confirmed finding like toolbox_schematic_ocr_2026-07 -- verify live before relying on it.",
+    "spaceclaim_discovery_apps_2026-07": "sc_02-sc_06 are tagged app='spaceclaim' or app='discovery' per step (not 'workbench'), even though the launch click itself happens in the Workbench schematic -- same convention tut1 used for wb_04_select_geometry/wb_05_select_model (app reflects where the step's action/verify actually happens).",
+    "material_batch_steps_2026-07": "ed_05/ed_06 (Type 40 Gray Cast Iron, Type 302 Stainless Steel) and me_04 (remaining body material assignments) each bundle a repeated action into one step, mirroring how the source slides themselves compress 'repeat the steps to create/define...' into a single bullet rather than one step per material/body.",
+    "source_image_2026-07": "No screenshots exist for this tutorial's steps yet, so source_image is null throughout -- fill in real captures under mock_server/data/images/tut04_geometry_materials_coordinate_systems/ before relying on the source_image feature."
+  },
+  "apps": ["workbench", "spaceclaim", "discovery", "mechanical"],
+  "runtime_steps": [
+    "wb_01_open",
+    "wb_02_save_project",
+    "wb_03_add_engineering_data",
+    "wb_04_add_geometry",
+    "wb_05_add_static_structural",
+    "wb_06_link_engineering_data",
+    "wb_07_link_geometry",
+    "ed_01_open_engineering_data",
+    "ed_02_create_aisi6150",
+    "ed_03_add_properties_aisi6150",
+    "ed_04_set_aisi6150_values",
+    "ed_05_create_gray_cast_iron",
+    "ed_06_create_stainless_steel",
+    "ed_07_delete_structural_steel",
+    "ed_08_close_engineering_data",
+    "sc_01_check_geometry_properties",
+    "sc_02_open_spaceclaim",
+    "sc_03_browse_globe_valve",
+    "sc_04_open_discovery",
+    "sc_05_review_geometry",
+    "sc_06_close_discovery",
+    "sc_07_uncheck_material_properties",
+    "sc_08_refresh_project",
+    "me_01_open_model",
+    "me_02_check_bodies_and_units",
+    "me_03_assign_valve_body",
+    "me_04_assign_remaining_bodies",
+    "me_05_isolate_body_view",
+    "me_06_show_all_bodies",
+    "me_07_check_stiffness_worksheet",
+    "cs_01_insert_coordinate_system",
+    "cs_02_set_origin_face",
+    "cs_03_rotate_z_30",
+    "cs_04_insert_cylindrical_cs",
+    "cs_05_show_all_coordinate_systems",
+    "cs_06_save_project"
+  ],
+  "sections": [
+    {
+      "section": "Build the analysis workflow in Workbench",
+      "app": "workbench",
+      "steps": [
+        {
+          "step_id": "wb_01_open",
+          "app": "workbench",
+          "title": "Open Ansys Workbench",
+          "description": "Start button > All Programs > ANSYS nn.n > Workbench nn.n.",
+          "selector": { "type": "window", "app": "workbench" },
+          "highlight": "none",
+          "action": { "kind": "launch" },
+          "verify": { "type": "manual", "prompt": "Is Ansys Workbench open?" },
+          "hints": ["Or use the lab launcher if the Start menu shortcut isn't present."],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_02_save_project",
+          "app": "workbench",
+          "title": "Save the project as \"M04\"",
+          "description": "File > Save As..., choose a location on the hard disk, and name the project \"M04.wbpj\".",
+          "selector": { "type": "uia", "name": "Save As", "via": "File" },
+          "highlight": "uia",
+          "action": { "kind": "menu_select", "via": "File", "then": "text_entry", "value": "M04" },
+          "verify": { "type": "manual", "prompt": "Project saved as 'M04.wbpj'?" },
+          "hints": ["Click File to open the menu, then choose Save As..."],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_03_add_engineering_data",
+          "app": "workbench",
+          "title": "Insert an Engineering Data component system",
+          "description": "Double-click 'Engineering Data' under Component Systems in the Toolbox to add it to the Project Schematic.",
+          "selector": { "type": "ocr_text", "text": "Engineering Data" },
+          "highlight": "ocr_text",
+          "action": { "kind": "double_click" },
+          "verify": { "type": "manual", "prompt": "An 'Engineering Data' box (A) appeared in the Project Schematic?" },
+          "hints": ["Component Systems is the Toolbox group above Analysis Systems."],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_04_add_geometry",
+          "app": "workbench",
+          "title": "Insert a Geometry component system",
+          "description": "Double-click 'Geometry' under Component Systems in the Toolbox, the same way as Engineering Data.",
+          "selector": { "type": "ocr_text", "text": "Geometry" },
+          "highlight": "ocr_text",
+          "action": { "kind": "double_click" },
+          "verify": { "type": "manual", "prompt": "A 'Geometry' box (B) appeared in the Project Schematic?" },
+          "hints": ["Same Component Systems group as Engineering Data."],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_05_add_static_structural",
+          "app": "workbench",
+          "title": "Insert a Static Structural analysis system",
+          "description": "Double-click 'Static Structural' under Analysis Systems in the Toolbox to add the 7-row system block.",
+          "selector": { "type": "ocr_text", "text": "Static Structural" },
+          "highlight": "ocr_text",
+          "action": { "kind": "double_click" },
+          "verify": { "type": "manual", "prompt": "A 'Static Structural' box (C) with 7 rows appeared in the Project Schematic?" },
+          "hints": ["Analysis Systems is a separate Toolbox group, below Component Systems."],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_06_link_engineering_data",
+          "app": "workbench",
+          "title": "Link Engineering Data into Static Structural",
+          "description": "Drag and drop the A2 cell (Engineering Data) onto the C2 cell (Engineering Data row) of the Static Structural system.",
+          "selector": { "type": "ocr_text", "text": "Engineering Data", "scope": "schematic" },
+          "highlight": "ocr_text",
+          "action": { "kind": "drag" },
+          "verify": { "type": "manual", "prompt": "C2 now reads 'Share A2' and shows a linked check mark?" },
+          "hints": ["Drag from the A2 cell itself, not the box title."],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_07_link_geometry",
+          "app": "workbench",
+          "title": "Link Geometry into Static Structural",
+          "description": "Drag and drop the C2 cell (Geometry) onto the B3 cell (Geometry row) of the Static Structural system.",
+          "selector": { "type": "ocr_text", "text": "Geometry", "scope": "schematic" },
+          "highlight": "ocr_text",
+          "action": { "kind": "drag" },
+          "verify": { "type": "manual", "prompt": "B3 now reads 'Share C2' and the Geometry box relabels to C? The three boxes are now linked, leaving only Materials and Geometry to define." },
+          "hints": ["Drag from the C2 cell itself, not the box title."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Define materials in Engineering Data",
+      "app": "workbench",
+      "steps": [
+        {
+          "step_id": "ed_01_open_engineering_data",
+          "app": "workbench",
+          "title": "Open the Engineering Data application",
+          "description": "Double-click cell A2 to enter Engineering Data.",
+          "selector": { "type": "ocr_text", "text": "Engineering Data", "scope": "schematic" },
+          "highlight": "ocr_text",
+          "action": { "kind": "double_click" },
+          "verify": { "type": "manual", "prompt": "The 'A2,B2:Engineering Data' tab opened?" },
+          "hints": ["Cell A2 is the second row of the Engineering Data box."],
+          "source_image": null
+        },
+        {
+          "step_id": "ed_02_create_aisi6150",
+          "app": "workbench",
+          "title": "Create a new material: AISI 6150 Steel",
+          "description": "Click the blank line at the bottom of column A (below Structural Steel) and type the name 'AISI 6150 Steel'.",
+          "selector": { "type": "ocr_text", "text": "Click here to add a new material", "scope": "engineering_data_grid" },
+          "highlight": "ocr_text",
+          "action": { "kind": "text_entry", "value": "AISI 6150 Steel" },
+          "verify": { "type": "manual", "prompt": "New row 'AISI 6150 Steel' added below Structural Steel?" },
+          "hints": ["The row is in the Outline of Schematic A2,B2: Engineering Data table."],
+          "source_image": null
+        },
+        {
+          "step_id": "ed_03_add_properties_aisi6150",
+          "app": "workbench",
+          "title": "Add Density, Isotropic Elasticity, and Tensile Yield Strength",
+          "description": "In the Toolbox, find Physical Properties > Density, Linear Elastic > Isotropic Elasticity, and Strength > Tensile Yield Strength, then drag and drop each onto the AISI 6150 Steel material row.",
+          "selector": { "type": "ocr_text", "text": "Isotropic Elasticity", "scope": "engineering_data_toolbox" },
+          "highlight": "ocr_text",
+          "action": { "kind": "drag" },
+          "verify": { "type": "manual", "prompt": "All three properties now listed under AISI 6150 Steel in the Properties table?" },
+          "hints": ["Each property is dragged separately, one at a time, onto the same material row."],
+          "source_image": null
+        },
+        {
+          "step_id": "ed_04_set_aisi6150_values",
+          "app": "workbench",
+          "title": "Enter AISI 6150 Steel property values",
+          "description": "Set Young's Modulus = 29,700,000 psi, Poisson's Ratio = 0.29, Density = 0.284 lbm/in^3, Tensile Yield Strength = 74,700 psi.",
+          "selector": { "type": "uia", "name": "Density" },
+          "highlight": "uia",
+          "action": { "kind": "text_entry", "value": "0.284 lbm/in^3" },
+          "verify": { "type": "manual", "prompt": "All four values entered for AISI 6150 Steel (E, nu, density, yield strength)?" },
+          "hints": ["Use the Units menu to switch the displayed unit system if needed; keep 'Display Values in Project Units' checked."],
+          "source_image": null
+        },
+        {
+          "step_id": "ed_05_create_gray_cast_iron",
+          "app": "workbench",
+          "title": "Create Type 40 Gray Cast Iron",
+          "description": "Repeat ed_02-ed_04 for a new material 'Type 40 Gray Cast Iron': Young's Modulus = 17,695,000 psi, Poisson's Ratio = 0.29, Density = 0.25831 lbm/in^3, Tensile Ultimate Strength = 42,641 psi.",
+          "selector": { "type": "ocr_text", "text": "Click here to add a new material", "scope": "engineering_data_grid" },
+          "highlight": "ocr_text",
+          "action": { "kind": "text_entry", "value": "Type 40 Gray Cast Iron" },
+          "verify": { "type": "manual", "prompt": "Type 40 Gray Cast Iron created with all four values?" },
+          "hints": ["This material uses Tensile Ultimate Strength, not Yield Strength."],
+          "source_image": null
+        },
+        {
+          "step_id": "ed_06_create_stainless_steel",
+          "app": "workbench",
+          "title": "Create Type 302 Stainless Steel",
+          "description": "Repeat ed_02-ed_04 for a new material 'Type 302 Stainless Steel': Young's Modulus = 28,000,000 psi, Poisson's Ratio = 0.25, Density = 0.284 lbm/in^3, Tensile Yield Strength = 34,800 psi.",
+          "selector": { "type": "ocr_text", "text": "Click here to add a new material", "scope": "engineering_data_grid" },
+          "highlight": "ocr_text",
+          "action": { "kind": "text_entry", "value": "Type 302 Stainless Steel" },
+          "verify": { "type": "manual", "prompt": "Type 302 Stainless Steel created with all four values?" },
+          "hints": ["Same four-property pattern as the first two materials."],
+          "source_image": null
+        },
+        {
+          "step_id": "ed_07_delete_structural_steel",
+          "app": "workbench",
+          "title": "Delete the default Structural Steel material",
+          "description": "Right-click the 'Structural Steel' row and choose Delete, so the material list only contains the three materials used in this analysis.",
+          "selector": { "type": "ocr_text", "text": "Structural Steel", "scope": "engineering_data_grid" },
+          "highlight": "ocr_text",
+          "action": { "kind": "right_click", "then": "menu_select", "value": "Delete" },
+          "verify": { "type": "manual", "prompt": "Material list now shows only AISI 6150 Steel, Type 302 Stainless Steel, and Type 40 Gray Cast Iron?" },
+          "hints": ["Deleting Structural Steel here is what makes every body's material assignment show as undefined later in Mechanical."],
+          "source_image": null
+        },
+        {
+          "step_id": "ed_08_close_engineering_data",
+          "app": "workbench",
+          "title": "Return to the Workbench project page",
+          "description": "Close the 'A2,B2: Engineering Data' tab to go back to the Project Schematic.",
+          "selector": { "type": "uia", "name": "A2,B2:Engineering Data" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Back on the Project Schematic (Project tab)?" },
+          "hints": ["Click the small 'x' on the Engineering Data tab."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Import the valve geometry",
+      "app": "workbench",
+      "steps": [
+        {
+          "step_id": "sc_01_check_geometry_properties",
+          "app": "workbench",
+          "title": "Check the Geometry system's Analysis Type",
+          "description": "Right-click the C2 cell (Geometry) and choose Properties. In the Advanced Geometry Options, confirm Analysis Type is set to 3D.",
+          "selector": { "type": "ocr_text", "text": "Geometry", "scope": "schematic" },
+          "highlight": "ocr_text",
+          "action": { "kind": "right_click", "then": "menu_select", "value": "Properties" },
+          "verify": { "type": "manual", "prompt": "Analysis Type shows '3D' in the Properties of Schematic B3: Geometry pane?" },
+          "hints": ["Analysis Type is under Advanced Geometry Options."],
+          "source_image": null
+        },
+        {
+          "step_id": "sc_02_open_spaceclaim",
+          "app": "spaceclaim",
+          "title": "Open SpaceClaim to import geometry",
+          "description": "Right-click the C2 cell (Geometry) and choose 'New SpaceClaim Geometry' to launch SpaceClaim.",
+          "selector": { "type": "ocr_text", "text": "Geometry", "scope": "schematic" },
+          "highlight": "ocr_text",
+          "action": { "kind": "right_click", "then": "menu_select", "value": "New SpaceClaim Geometry" },
+          "verify": { "type": "manual", "prompt": "SpaceClaim opened?" },
+          "hints": ["This creates associativity between the CAD geometry and the Mechanical model."],
+          "source_image": null
+        },
+        {
+          "step_id": "sc_03_browse_globe_valve",
+          "app": "spaceclaim",
+          "title": "Import globe_valve.scdoc",
+          "description": "Browse for the file 'globe_valve.scdoc' and open it.",
+          "selector": { "type": "uia", "name": "File name" },
+          "highlight": "uia",
+          "action": { "kind": "text_entry", "value": "globe_valve.scdoc" },
+          "verify": { "type": "manual", "prompt": "globe_valve.scdoc opened in SpaceClaim?" },
+          "hints": ["Filter is set to 'All Geometry Files (*.sat;*.sab;*...)' by default."],
+          "source_image": null
+        },
+        {
+          "step_id": "sc_04_open_discovery",
+          "app": "workbench",
+          "title": "Open the geometry in Discovery",
+          "description": "Right-click cell C2 (Geometry) and choose 'Edit Geometry in Discovery'.",
+          "selector": { "type": "ocr_text", "text": "Geometry", "scope": "schematic" },
+          "highlight": "ocr_text",
+          "action": { "kind": "right_click", "then": "menu_select", "value": "Edit Geometry in Discovery" },
+          "verify": { "type": "manual", "prompt": "Discovery opened with the globe_valve geometry loaded?" },
+          "hints": ["The context menu also offers New Discovery Geometry / New DesignModeler Geometry / Import Geometry."],
+          "source_image": null
+        },
+        {
+          "step_id": "sc_05_review_geometry",
+          "app": "discovery",
+          "title": "Review the imported geometry",
+          "description": "Confirm the geometry was imported correctly and contains multiple components (Component1\\ValveBody, seal, flange, valverod, nuts, bolts, etc. in the tree).",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "review" },
+          "verify": { "type": "manual", "prompt": "Multiple components visible in the tree and the assembly looks correct in the 3D view?" },
+          "hints": ["The tree on the left lists each Component (ValveBody, seal, flange, valverod, nut1, bolt, ...)."],
+          "source_image": null
+        },
+        {
+          "step_id": "sc_06_close_discovery",
+          "app": "discovery",
+          "title": "Close Discovery",
+          "description": "Close Discovery and return to the Workbench project page. The C2 geometry cell should now show a green check.",
+          "selector": { "type": "window", "app": "discovery" },
+          "highlight": "none",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Back in Workbench with C2 (Geometry) showing a green check mark?" },
+          "hints": ["Use the X in the Discovery window's top bar."],
+          "source_image": null
+        },
+        {
+          "step_id": "sc_07_uncheck_material_properties",
+          "app": "workbench",
+          "title": "Prevent Discovery's default material from importing",
+          "description": "In the Geometry cell Properties (Basic Geometry Options), uncheck 'Material Properties' so Discovery's default material isn't imported into the project.",
+          "selector": { "type": "uia", "name": "Material Properties" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Material Properties checkbox is now unchecked in the Geometry cell properties?" },
+          "hints": ["This is under Basic Geometry Options, near the bottom of the Geometry cell's Properties pane."],
+          "source_image": null
+        },
+        {
+          "step_id": "sc_08_refresh_project",
+          "app": "workbench",
+          "title": "Refresh the project",
+          "description": "Click Refresh Project (on the Project tab toolbar) to transfer the geometry and materials into Mechanical. An intermediate save of the project is recommended.",
+          "selector": { "type": "uia", "name": "Refresh Project" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Project refreshed without errors (Geometry and Engineering Data cells both show green checks)?" },
+          "hints": ["Save the project (Ctrl+S) right after this, before continuing into Mechanical."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Assign materials in Mechanical",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_01_open_model",
+          "app": "mechanical",
+          "title": "Open Mechanical",
+          "description": "Double-click the B4 Model cell of the Static Structural system to launch Mechanical.",
+          "selector": { "type": "ocr_text", "text": "Model", "scope": "schematic" },
+          "highlight": "ocr_text",
+          "action": { "kind": "double_click" },
+          "verify": { "type": "manual", "prompt": "Mechanical opened?" },
+          "hints": ["Model is the row right below Geometry in the Static Structural block."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_02_check_bodies_and_units",
+          "app": "mechanical",
+          "title": "Confirm 20 bodies and Metric units",
+          "description": "Select all bodies under Geometry in the Outline tree and confirm 20 bodies were imported. Confirm the unit system is Metric (mm, t, N, s, ...); if not, change it in the Units menu on the Home tab.",
+          "selector": { "type": "uia", "name": "Geometry" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Status bar shows 'Multiple Selection (20 Objects Selected)' and Units menu shows Metric (mm, kg, N, s, mV, mA) checked?" },
+          "hints": ["Select the Geometry branch itself (not an individual body) to select all 20 bodies at once."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_03_assign_valve_body",
+          "app": "mechanical",
+          "title": "Assign Type 40 Gray Cast Iron to the Valve body",
+          "description": "Select 'Component1\\ValveBody' in the Outline tree and set Material > Assignment to Type 40 Gray Cast Iron in the Details panel.",
+          "selector": { "type": "uia", "name": "Component1\\ValveBody" },
+          "highlight": "uia",
+          "action": { "kind": "click", "then": "select", "value": "Type 40 Gray Cast Iron" },
+          "verify": { "type": "manual", "prompt": "A green check now appears in front of the ValveBody line in the tree (previously a yellow/question-mark line)?" },
+          "hints": ["The Assignment row was highlighted yellow beforehand, meaning required info was missing."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_04_assign_remaining_bodies",
+          "app": "mechanical",
+          "title": "Assign the remaining body materials",
+          "description": "Repeat me_03 for the rest of the bodies: Flange -> Type 40 Gray Cast Iron, Valve seal -> Type 302 Stainless Steel, Valve rod -> AISI 6150 Steel, Bolts -> AISI 6150 Steel, Nuts -> AISI 6150 Steel. Optionally set Geometry > Display Style to 'Material' to color bodies by material assignment.",
+          "selector": { "type": "uia", "name": "Display Style" },
+          "highlight": "uia",
+          "action": { "kind": "select", "value": "Material" },
+          "verify": { "type": "manual", "prompt": "Every body in the Outline tree now shows a green check, with no yellow/question-mark lines remaining?" },
+          "hints": ["Component1\\ValveBody, Component4\\seal, Component2\\flange, Component3\\valverod, Component21\\nut1 (x6), Component20\\bolt (x6)."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_05_isolate_body_view",
+          "app": "mechanical",
+          "title": "Isolate the Flange to inspect the seal material",
+          "description": "Select the body filter in the selection tools, click the flange body to select it, then press F9 to hide it so the seal material is visible.",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "select_face" },
+          "verify": { "type": "manual", "prompt": "Flange is hidden and the seal (Type 302 Stainless Steel, cyan) is now visible in the 3D view?" },
+          "hints": ["The Body/Face/Edge/Vertex filters are in the Selection toolbar above the 3D view."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_06_show_all_bodies",
+          "app": "mechanical",
+          "title": "Restore the full assembly view",
+          "description": "Right-click in the graphics window and choose 'Show All Bodies' (Shift+F9) to restore the view.",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "right_click", "then": "menu_select", "value": "Show All Bodies" },
+          "verify": { "type": "manual", "prompt": "All 20 bodies visible again?" },
+          "hints": ["Shortcut: Shift+F9."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_07_check_stiffness_worksheet",
+          "app": "mechanical",
+          "title": "Check stiffness behavior via the Worksheet",
+          "description": "Click the Geometry branch in the Outline tree, then click Worksheet in the toolbar, and confirm every body shows Stiffness Behavior = Flexible.",
+          "selector": { "type": "uia", "name": "Worksheet" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "All 20 rows in the Worksheet show Stiffness Behavior = Flexible and the correct Material Assignment?" },
+          "hints": ["Worksheet is in the Home ribbon's Tools group when the Geometry branch is selected."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Create local coordinate systems",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "cs_01_insert_coordinate_system",
+          "app": "mechanical",
+          "title": "Insert a new coordinate system",
+          "description": "Right-click the Coordinate Systems branch, choose Insert > Coordinate System, and set Type to Cartesian.",
+          "selector": { "type": "uia", "name": "Coordinate Systems" },
+          "highlight": "uia",
+          "action": { "kind": "right_click", "then": "menu_select", "value": "Coordinate System" },
+          "verify": { "type": "manual", "prompt": "A new 'Coordinate System' item added under Coordinate Systems, Type set to Cartesian?" },
+          "hints": ["Insert > Coordinate System (not 'Coordinate System at Center of Mass')."],
+          "source_image": null
+        },
+        {
+          "step_id": "cs_02_set_origin_face",
+          "app": "mechanical",
+          "title": "Set the coordinate system origin",
+          "description": "Set Origin > Define By to Geometry Selection, select the top face of the valve rod flange as shown, then click Apply.",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "select_face", "then": "click", "value": "Apply" },
+          "verify": { "type": "manual", "prompt": "Origin X/Y/Z populated (approximately 0, 0, 103.31 mm) and the triad shown on the selected face?" },
+          "hints": ["Pick the circular face at the top of the bonnet, where the bolt flange sits."],
+          "source_image": null
+        },
+        {
+          "step_id": "cs_03_rotate_z_30",
+          "app": "mechanical",
+          "title": "Rotate the coordinate system 30\u00b0 about Z",
+          "description": "Under Transformations, add a rotation around Z and set the value to 30\u00b0. Orient the view normal to the global +Z axis for a clearer rendering, and observe the new local coordinate system.",
+          "selector": { "type": "uia", "name": "Rotate Z" },
+          "highlight": "uia",
+          "action": { "kind": "text_entry", "value": "30" },
+          "verify": { "type": "manual", "prompt": "Rotate Z shows 30.0\u00b0 and the triad in the viewport has visibly rotated?" },
+          "hints": ["Rotate Z is in the Coordinate Systems ribbon's Transform group, or directly in Details > Transformations."],
+          "source_image": null
+        },
+        {
+          "step_id": "cs_04_insert_cylindrical_cs",
+          "app": "mechanical",
+          "title": "Create a local cylindrical coordinate system",
+          "description": "Insert a second coordinate system, set Type to Cylindrical, select the outer surface of the valve body for the origin and apply, rename it 'Local Coordinate System', and change the orientation so the Y direction is circumferential.",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "select_face", "then": "click", "value": "Apply" },
+          "verify": { "type": "manual", "prompt": "'Local Coordinate System' (Cylindrical) created on the valve body's outer surface with Y circumferential?" },
+          "hints": ["Rename via F2 or slow double-click on the tree item."],
+          "source_image": null
+        },
+        {
+          "step_id": "cs_05_show_all_coordinate_systems",
+          "app": "mechanical",
+          "title": "Display all coordinate systems",
+          "description": "On the Display tab, check 'All Coordinate Systems' to show every coordinate system's triad in the 3D view at once.",
+          "selector": { "type": "uia", "name": "All Coordinate Systems" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Global, Cartesian, and Cylindrical coordinate system triads all visible on the model?" },
+          "hints": ["You can also delete a coordinate system with RMB > Delete if you want to clean up a test one."],
+          "source_image": null
+        },
+        {
+          "step_id": "cs_06_save_project",
+          "app": "mechanical",
+          "title": "Save the project",
+          "description": "File > Save Project, to preserve the materials, geometry, and coordinate systems for later modules.",
+          "selector": { "type": "uia", "name": "Save Project" },
+          "highlight": "uia",
+          "action": { "kind": "menu_select" },
+          "verify": { "type": "manual", "prompt": "Project saved?" },
+          "hints": ["File backstage menu also offers Save Project As... and Archive Project... if needed."],
+          "source_image": null
+        }
+      ]
+    }
+  ]
+}

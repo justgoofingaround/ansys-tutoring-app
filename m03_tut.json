@@ -1,0 +1,173 @@
+{
+  "tutorial_id": "tut03_modeling_approach",
+  "version": 1,
+  "title": "Module 03 \u2014 Modeling Approach for a Pressure Valve Assembly",
+  "problem": "A pressure valve assembly (Valve body, Valve rod, Valve seal, Flange, Nuts/Bolts) sees a worst-case static internal pressure. Decide what to include in the model, how to characterize geometry/material for each part, how to treat the interfaces (including to the rest of the world), what environment assumptions to make, and how to validate the model and design once results are in.",
+  "report_checks": {
+    "required_sections": [
+      "Components Included",
+      "Materials",
+      "Interfaces",
+      "Environment Assumptions",
+      "Validation Criteria"
+    ],
+    "preferred_sections": [
+      "Load Path Discussion"
+    ],
+    "must_contain": [
+      "Type 40 Gray Cast Iron",
+      "AISI 6150 Steel",
+      "Type 302 Stainless Steel"
+    ]
+  },
+  "_notes": {
+    "no_hands_on_steps_2026-07": "Source module (Mech_GS_2023R1_EN_PR03) is a discussion/decision guide, not a click-by-click walkthrough -- no Workbench/Mechanical UI actions appear in the slides. All steps use selector.type='window', highlight='none', action.kind='review' (same shape as wb_01_open's launch step, minus an actual launch) and verify.type='manual'; there is nothing here for 'uia'/'ocr_text'/'script' verify to check against.",
+    "no_expected_result_2026-07": "report_checks.expected_result was omitted (unlike tut1) because the module gives a stress *criterion* (Valve body stress < 0.5*Ultimate Strength at 7 MPa fault pressure), not a single numeric target -- there's no scalar answer to grade with a tolerance the way tut1 grades elongation.",
+    "source_image_2026-07": "No screenshots exist for this module's steps (nothing is captured on-screen), so source_image is null throughout, same as tut1's non-viewport steps (e.g. re_02_orientation)."
+  },
+  "apps": ["mechanical"],
+  "runtime_steps": [
+    "dp0_intro",
+    "dp1_body_rod_seal",
+    "dp1_flange",
+    "dp1_bolts",
+    "dp2_materials",
+    "dp3_interfaces",
+    "dp4_environment",
+    "dp5_validation"
+  ],
+  "sections": [
+    {
+      "section": "Preliminary decisions",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "dp0_intro",
+          "app": "mechanical",
+          "title": "Review the five preliminary decisions",
+          "description": "Before modeling: what components to include and why; how to characterize their geometry/material; how to model the interfaces; how to characterize the operating environment; how to validate the model and design.",
+          "selector": { "type": "window", "app": "mechanical" },
+          "highlight": "none",
+          "action": { "kind": "review" },
+          "verify": { "type": "manual", "prompt": "Can you list all five preliminary decisions?" },
+          "hints": ["These five questions frame every decision point that follows."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Discussion point 1 \u2014 What components do I model and why?",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "dp1_body_rod_seal",
+          "app": "mechanical",
+          "title": "Include Valve body, Valve rod, Valve seal as solids",
+          "description": "Valve body is required by the analysis objective. Valve rod and Valve seal are modeled as solids too -- mass is ignored (no inertial loading), but their stiffness matters since they carry the internal pressure into the Flange.",
+          "selector": { "type": "window", "app": "mechanical" },
+          "highlight": "none",
+          "action": { "kind": "review" },
+          "verify": { "type": "manual", "prompt": "Why are these three parts modeled as solids, and why is their mass ignored?" },
+          "hints": ["The Valve rod/Flange and Valve rod/Valve seal interfaces get refined later in the course."],
+          "source_image": null
+        },
+        {
+          "step_id": "dp1_flange",
+          "app": "mechanical",
+          "title": "Include the Flange as a solid",
+          "description": "The Flange is modeled as a solid; mass is ignored. The Flange-to-Valve-seal interface is critical to the load path. The Flange-to-Valve-body gap likely has a gasket we have no data on -- flag it as a modeling unknown.",
+          "selector": { "type": "window", "app": "mechanical" },
+          "highlight": "none",
+          "action": { "kind": "review" },
+          "verify": { "type": "manual", "prompt": "Why is the unmodeled gasket at the Flange/Valve-body gap a source of uncertainty?" },
+          "hints": ["Unknown components at an interface are a common source of modeling assumptions."],
+          "source_image": null
+        },
+        {
+          "step_id": "dp1_bolts",
+          "app": "mechanical",
+          "title": "Include Nuts/Bolts as solids",
+          "description": "Nuts/Bolts are modeled as solids; mass is ignored. They add local stiffness between Valve body and Flange. Later in the course: bolt preload, then replacing the bolts with beams.",
+          "selector": { "type": "window", "app": "mechanical" },
+          "highlight": "none",
+          "action": { "kind": "review" },
+          "verify": { "type": "manual", "prompt": "What's the tradeoff between solid-body bolts and beam-idealized bolts?" },
+          "hints": ["Solid bolts are accurate but expensive; beams are cheap but lose local detail."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Discussion point 2 \u2014 What material properties do we need?",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "dp2_materials",
+          "app": "mechanical",
+          "title": "Assign materials and identify required properties",
+          "description": "Valve body/Flange: Type 40 Gray Cast Iron. Valve rod/Nuts/Bolts: AISI 6150 Steel. Valve seal: Type 302 Stainless Steel. This static-stress study only needs Young's Modulus, Poisson's ratio, and Strength (for Safety Factor) -- not density, CTE/conductivity, fatigue, or stress/strain curves.",
+          "selector": { "type": "window", "app": "mechanical" },
+          "highlight": "none",
+          "action": { "kind": "review" },
+          "verify": { "type": "manual", "prompt": "Why are only Young's Modulus, Poisson's ratio, and Strength required here?" },
+          "hints": ["Only request the properties your analysis type actually consumes."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Discussion point 3 \u2014 How do I treat the interfaces?",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "dp3_interfaces",
+          "app": "mechanical",
+          "title": "Decide interface and support treatment",
+          "description": "Supports at the interface to the rest of the 'world' prevent rigid body motion (sum of forces = 0). Bonded contact or shared topology enforces load transfer between parts; frictionless contact comes later. Stress right at a support may be approximate/inaccurate.",
+          "selector": { "type": "window", "app": "mechanical" },
+          "highlight": "none",
+          "action": { "kind": "review" },
+          "verify": { "type": "manual", "prompt": "Why should stress right at a support be treated with caution?" },
+          "hints": ["Bonded contact / shared topology is the simplest way to guarantee load transfer when you're not yet modeling relative motion."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Discussion point 4 \u2014 What operating-environment assumptions do I make?",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "dp4_environment",
+          "app": "mechanical",
+          "title": "Simplify loading and boundary conditions",
+          "description": "Assume a worst-case static, uniform internal pressure (real pressure is transient/non-uniform, but this fits the scope). Bolt preload is added later using handbook guidelines.",
+          "selector": { "type": "window", "app": "mechanical" },
+          "highlight": "none",
+          "action": { "kind": "review" },
+          "verify": { "type": "manual", "prompt": "Why is a worst-case static, uniform pressure a defensible first assumption?" },
+          "hints": ["You can add transient/non-uniform effects later if results warrant it."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Discussion point 5 \u2014 How will I know if I've met the design objectives?",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "dp5_validation",
+          "app": "mechanical",
+          "title": "Define design and model validation criteria",
+          "description": "Design criterion: under 7 MPa fault pressure, Valve body stress must be < 0.5 x Ultimate Strength. Use Equivalent, Principal, and Directional (Normal) stresses with brittle-material failure criteria. Validate the model itself via reaction-force balance and mesh-sensitivity checks.",
+          "selector": { "type": "window", "app": "mechanical" },
+          "highlight": "none",
+          "action": { "kind": "review" },
+          "verify": { "type": "manual", "prompt": "Can you state the design criterion and the two model-validation checks?" },
+          "hints": ["Design validation (does it meet the criterion?) and model validation (do I believe the numbers?) are separate questions."],
+          "source_image": null
+        }
+      ]
+    }
+  ]
+}

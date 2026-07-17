@@ -1,0 +1,348 @@
+{
+  "tutorial_id": "mod02_problem_statement",
+  "version": 1,
+  "title": "Module 02 -- Getting Started: Navigating the Globe Valve Assembly in Mechanical",
+  "problem": "Open the Globe_Valve_SS02_Start.wbpz archive in Workbench and edit the Static Structural model (cell B4) in Mechanical. Practice navigating the Model Outline and geometry of a globe valve assembly (valve body, flange, valve rod, seal, nuts, and bolts): expand the Geometry branch and highlight individual and multiple bodies from the Outline, hide and show bodies from the graphics window and via keyboard shortcut (F9 / Shift+F9), use the Explode tool to separate the assembly, use the Body selection filter to pick bodies directly in the graphics window, create and remove a section plane to view the valve's internal surfaces, use Paint Select with the Face selection filter to select all internal surfaces of the valve body, and review the Loads and Supports available under the Static Structural branch.",
+  "report_checks": {
+    "required_sections": ["Geometry", "Static Structural"],
+    "preferred_sections": ["Section Planes", "Explode"],
+    "must_contain": ["ValveBody", "flange"],
+    "expected_result": null
+  },
+  "apps": ["workbench", "mechanical"],
+  "notes": {
+    "comment": "This module is a UI-navigation/familiarization exercise (no solve, no numeric result). expected_result is left null and report_checks are intentionally light -- the goal is confirming the student explored the outline, hid/showed bodies, exploded the assembly, sectioned it, and looked at the Loads/Supports insert menu, not grading a computed value."
+  },
+  "sections": [
+    {
+      "section": "Open the model in Workbench and Mechanical",
+      "app": "workbench",
+      "steps": [
+        {
+          "step_id": "wb_01_open_archive",
+          "app": "workbench",
+          "title": "Open Archive \"Globe_Valve_SS02_Start.wbpz\"",
+          "description": "In Workbench, use File > Open to open the archive Globe_Valve_SS02_Start.wbpz.",
+          "selector": { "type": "uia", "name": "Open...", "via": "File" },
+          "highlight": "uia",
+          "action": { "kind": "menu_select", "via": "File", "then": "file_open", "value": "Globe_Valve_SS02_Start.wbpz" },
+          "verify": { "type": "manual", "prompt": "Is the Globe_Valve_SS02_Start.wbpz project loaded in the Workbench Project Schematic?" },
+          "hints": ["File > Open, then browse to the .wbpz archive and select it."],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_02_edit_model",
+          "app": "workbench",
+          "title": "Edit the Model cell (B4) to open Mechanical",
+          "description": "Right-click cell B4 (Model) in the Static Structural system and choose Edit... to launch Mechanical.",
+          "selector": { "type": "ocr_text", "text": "Model", "scope": "schematic" },
+          "highlight": "ocr_text",
+          "action": { "kind": "right_click_menu", "then": "click", "value": "Edit..." },
+          "verify": { "type": "window_appeared", "app": "mechanical" },
+          "hints": ["Cell B4 is the 'Model' cell in the Static Structural (B) column of the Project Schematic."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Navigate the Model Outline",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_01_expand_geometry",
+          "app": "mechanical",
+          "title": "Expand the Geometry branch",
+          "description": "In the Model Outline, expand the Geometry branch to show the listing of components in the assembly (ValveBody, seal, flange, valverod, nuts, bolts).",
+          "selector": { "type": "uia", "name": "Geometry" },
+          "highlight": "uia",
+          "action": { "kind": "expand_tree_node" },
+          "verify": { "type": "manual", "prompt": "Is the Geometry branch expanded, showing the component list?" },
+          "hints": ["Click the small arrow/plus icon next to the Geometry item in the Outline."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_02_highlight_body",
+          "app": "mechanical",
+          "title": "Highlight a component body from the Outline",
+          "description": "Click a single component (e.g. Component1\\ValveBody) in the Model Outline and observe it highlight in the graphics window.",
+          "selector": { "type": "uia", "name": "Component1\\ValveBody" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Does the selected body highlight green in the graphics window?" },
+          "hints": ["Component names in the Outline correspond directly to bodies in the 3D view."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_03_multiselect_bodies",
+          "app": "mechanical",
+          "title": "Highlight multiple bodies with Ctrl/Shift-select",
+          "description": "Hold Ctrl (or Shift) and click several components in the Outline (e.g. the nut1 components) to highlight multiple bodies at once.",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "multi_select", "modifier": "ctrl" },
+          "verify": { "type": "manual", "prompt": "Are multiple bodies now highlighted together in the graphics window?" },
+          "hints": ["Ctrl-click adds to the selection; Shift-click selects a contiguous range."],
+          "source_image": "mock_server/data/images/mod02_problem_statement/me_03_multiselect_bodies.png"
+        },
+        {
+          "step_id": "me_04_click_geometry_branch",
+          "app": "mechanical",
+          "title": "Click the Geometry branch when finished",
+          "description": "Click on the Geometry branch itself in the Outline to clear the individual body selection and view the whole assembly again.",
+          "selector": { "type": "uia", "name": "Geometry" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Is the full assembly shown with no individual body highlighted?" },
+          "hints": ["This resets the highlight back to the whole model."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Hide and show bodies",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_05_select_valve_and_flange",
+          "app": "mechanical",
+          "title": "Select the Valve body and Ctrl-select the Flange",
+          "description": "In the graphics window, select any face of the Valve body, then Ctrl-select any face of the Flange.",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "select_face_multi", "modifier": "ctrl" },
+          "verify": { "type": "manual", "prompt": "Are both the Valve body face and the Flange face selected (highlighted)?" },
+          "hints": ["Use the Body selection filter first if clicks are picking faces/edges you don't want."],
+          "source_image": "mock_server/data/images/mod02_problem_statement/me_05_select_valve_and_flange.png"
+        },
+        {
+          "step_id": "me_06_hide_body",
+          "app": "mechanical",
+          "title": "Hide the selected bodies (RMB > Hide Body)",
+          "description": "Right-click in the graphics window and choose Hide Body to hide the Valve body and Flange.",
+          "selector": { "type": "uia", "name": "Hide Body" },
+          "highlight": "uia",
+          "action": { "kind": "right_click_menu", "then": "click", "value": "Hide Body" },
+          "verify": { "type": "manual", "prompt": "Are the Valve body and Flange now hidden from the graphics view?" },
+          "hints": ["Keyboard shortcut: F9, after selecting the face(s)."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_07_show_all_bodies",
+          "app": "mechanical",
+          "title": "Show all bodies again (RMB > Show All Bodies)",
+          "description": "Right-click in the graphics window and choose Show All Bodies to restore visibility of all components.",
+          "selector": { "type": "uia", "name": "Show All Bodies" },
+          "highlight": "uia",
+          "action": { "kind": "right_click_menu", "then": "click", "value": "Show All Bodies" },
+          "verify": { "type": "manual", "prompt": "Are all bodies visible again in the graphics window?" },
+          "hints": ["Keyboard shortcut: Shift+F9."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_08_hide_via_f9",
+          "app": "mechanical",
+          "title": "Hide the Valve body using the F9 keyboard shortcut",
+          "description": "Select any face on the Valve body, then press F9 on the keyboard to hide it.",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "select_face_then_key", "key": "F9" },
+          "verify": { "type": "manual", "prompt": "Is the Valve body hidden after pressing F9?" },
+          "hints": ["Make sure a face on the Valve body is selected before pressing F9."],
+          "source_image": "mock_server/data/images/mod02_problem_statement/me_08_hide_via_f9.png"
+        },
+        {
+          "step_id": "me_09_show_via_shift_f9",
+          "app": "mechanical",
+          "title": "Show all bodies with RMB or Shift+F9",
+          "description": "Right-click and choose Show All Bodies, or press Shift+F9, to restore the Valve body's visibility.",
+          "selector": { "type": "uia", "name": "Show All Bodies" },
+          "highlight": "uia",
+          "action": { "kind": "right_click_menu", "then": "click", "value": "Show All Bodies" },
+          "verify": { "type": "manual", "prompt": "Is the Valve body visible again?" },
+          "hints": ["Shift+F9 is the keyboard equivalent."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Explode the assembly",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_10_explode_slider",
+          "app": "mechanical",
+          "title": "Explode the assembly using the Explode slider",
+          "description": "Locate the Explode toolbar on the Display tab and drag the slider to the right to explode the assembly, separating the flange, seal, valve rod, nuts, and bolts from the valve body.",
+          "selector": { "type": "uia", "name": "Explode", "via": "Display" },
+          "highlight": "uia",
+          "action": { "kind": "drag_slider" },
+          "verify": { "type": "manual", "prompt": "Is the assembly now shown exploded, with components separated?" },
+          "hints": ["The Explode toolbar is on the Display ribbon tab, at the far right."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_11_reset_explode",
+          "app": "mechanical",
+          "title": "Reset the exploded view",
+          "description": "Click the Reset button on the Explode tool to switch the display back to a non-exploded view, then click in the graphics background to clear the current selection.",
+          "selector": { "type": "uia", "name": "Reset", "via": "Display" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Has the assembly returned to its normal, non-exploded position?" },
+          "hints": ["Reset sits directly to the left of the Explode slider."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Select bodies using the Body selection filter",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_12_toggle_body_filter",
+          "app": "mechanical",
+          "title": "Toggle the Body selection filter on",
+          "description": "In the Selection Filters toolbar, toggle the Body selection filter on so that clicks in the graphics window select whole bodies.",
+          "selector": { "type": "uia", "name": "Body" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Is the Body selection filter toggled on (highlighted/active)?" },
+          "hints": ["The Selection Filters toolbar is at the top of the graphics window."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_13_select_bodies_viewport",
+          "app": "mechanical",
+          "title": "Select bodies directly from the graphics window",
+          "description": "Select a body from the graphics window, then hold Ctrl and select additional bodies (e.g. bolts) to select multiple bodies at once.",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "select_body_multi", "modifier": "ctrl" },
+          "verify": { "type": "manual", "prompt": "Are the intended bodies highlighted green in the graphics window?" },
+          "hints": ["With the Body filter on, a single click selects the entire body, not just a face."],
+          "source_image": "mock_server/data/images/mod02_problem_statement/me_13_select_bodies_viewport.png"
+        }
+      ]
+    },
+    {
+      "section": "Create a section view",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_14_orient_y_axis",
+          "app": "mechanical",
+          "title": "Orient the view down the Y axis",
+          "description": "Select the Y axis of the triad in the lower right corner of the graphics window to orient the view looking down the Y axis.",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "click_triad_axis", "axis": "Y" },
+          "verify": { "type": "manual", "prompt": "Is the view now oriented looking down the Y axis?" },
+          "hints": ["The triad is a small 3-axis widget in the bottom-right of the 3D view."],
+          "source_image": "mock_server/data/images/mod02_problem_statement/me_14_orient_y_axis.png"
+        },
+        {
+          "step_id": "me_15_new_section_plane",
+          "app": "mechanical",
+          "title": "Create a new section plane",
+          "description": "Switch to the Section Planes tab in the bottom left of the Mechanical window and click the New Section Plane icon.",
+          "selector": { "type": "uia", "name": "New Section Plane", "via": "Section Planes" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Has a new section plane tool been activated?" },
+          "hints": ["The Section Planes tab is next to the Details tab at the bottom left."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_16_drag_section_plane",
+          "app": "mechanical",
+          "title": "Drag the section plane through the valve rod",
+          "description": "Drag the left mouse button vertically through the valve rod to define the section plane, then rotate the view to see internal to the Valve body.",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "drag", "direction": "vertical" },
+          "verify": { "type": "manual", "prompt": "Does the section view now reveal the internal surfaces of the Valve body?" },
+          "hints": ["Drag the plane roughly through the centerline of the vertical valve rod."],
+          "source_image": "mock_server/data/images/mod02_problem_statement/me_16_drag_section_plane.png"
+        }
+      ]
+    },
+    {
+      "section": "Paint select internal surfaces",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_17_face_filter",
+          "app": "mechanical",
+          "title": "Use the Face selection filter",
+          "description": "In the Selection Filters toolbar, switch to the Face selection filter to select faces in the model.",
+          "selector": { "type": "uia", "name": "Face" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Is the Face selection filter now active?" },
+          "hints": ["The Face filter icon sits alongside the Body/Edge/Vertex filters."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_18_paint_select_internal_faces",
+          "app": "mechanical",
+          "title": "Paint select the internal surfaces of the Valve body",
+          "description": "Click and drag the left mouse button over all the surfaces internal to the Valve body (visible via the section cut) to select them with Paint Select.",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "paint_select" },
+          "verify": { "type": "manual", "prompt": "Are the internal surfaces of the Valve body highlighted green?" },
+          "hints": ["Drag slowly across each internal surface; painting works only on faces currently visible."],
+          "source_image": "mock_server/data/images/mod02_problem_statement/me_18_paint_select_internal_faces.png"
+        }
+      ]
+    },
+    {
+      "section": "Turn off the section plane",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_19_clear_selection",
+          "app": "mechanical",
+          "title": "Clear the surface selection",
+          "description": "Click in the graphics window background to clear the current surface selection.",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "click_background" },
+          "verify": { "type": "manual", "prompt": "Is the surface selection cleared?" },
+          "hints": ["Click on empty space in the graphics window, away from any geometry."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_20_disable_section_plane",
+          "app": "mechanical",
+          "title": "Clear the \"Section Plane 1\" checkbox",
+          "description": "In the Section Planes window in the lower left corner, clear the check mark to the left of \"Section Plane 1\" to turn the section plane off.",
+          "selector": { "type": "uia", "name": "Section Plane 1" },
+          "highlight": "uia",
+          "action": { "kind": "toggle_checkbox", "value": false },
+          "verify": { "type": "manual", "prompt": "Is the full, unsectioned assembly visible again?" },
+          "hints": ["The Section Planes window is docked at the bottom left, below the graphics window."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Investigate Loads and Supports",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_21_insert_menu",
+          "app": "mechanical",
+          "title": "Open the Static Structural Insert menu",
+          "description": "Right-click the Static Structural branch in the Outline and choose Insert to see the available loads and supports (Acceleration, Pressure, Force, Fixed Support, Displacement, Frictionless Support, and more). Loads and supports will be covered in detail later in the course.",
+          "selector": { "type": "uia", "name": "Insert", "via": "Static Structural" },
+          "highlight": "uia",
+          "action": { "kind": "right_click_menu", "then": "hover", "value": "Insert" },
+          "verify": { "type": "manual", "prompt": "Is the Insert submenu of loads/supports visible under the Static Structural branch?" },
+          "hints": ["Right-click directly on the 'Static Structural' item in the Outline, not on Solution or Analysis Settings."],
+          "source_image": null
+        }
+      ]
+    }
+  ]
+}

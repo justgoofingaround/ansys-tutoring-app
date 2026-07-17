@@ -1,0 +1,260 @@
+{
+  "tutorial_id": "m01_intro_valve_body",
+  "version": 1,
+  "title": "Module 01 -- Static Structural Analysis of a Valve Body",
+  "problem": "A cast valve body (imported from valve_body_demo.scdoc) is assigned Gray Cast Iron. Both end flange faces are fixed. All 48 internal (wetted) surfaces carry a 3 MPa internal pressure. The top flange face carries a 9,600 N blow-off force oriented in the +Z direction. Solve for equivalent (von-Mises) stress in the body.",
+  "report_checks": {
+    "required_sections": ["Static Structural", "Solution", "Results"],
+    "preferred_sections": ["Equivalent Stress"],
+    "must_contain": ["Gray Cast Iron"],
+    "expected_result": {
+      "value": 68.607,
+      "tolerance": 0.5,
+      "units": "MPa",
+      "aliases": ["68.607", "68.6"]
+    }
+  },
+  "apps": ["workbench", "mechanical"],
+  "sections": [
+    {
+      "section": "Set up the analysis in Workbench",
+      "app": "workbench",
+      "steps": [
+        {
+          "step_id": "wb_01_open",
+          "app": "workbench",
+          "title": "Open Ansys Workbench",
+          "description": "Launch Ansys Workbench: Windows Start Menu button -> Ansys -> Workbench.",
+          "selector": { "type": "window", "app": "workbench" },
+          "highlight": "none",
+          "action": { "kind": "launch" },
+          "verify": { "type": "manual", "prompt": "Is Ansys Workbench open?" },
+          "hints": ["Ask a TA if Workbench isn't installed on this PC."],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_02_add_static_structural",
+          "app": "workbench",
+          "title": "Add a Static Structural analysis system",
+          "description": "Under the Toolbox Analysis Systems category, click and drag analysis system 'Static Structural' onto the Project Schematic, and drop it on target 'Create standalone system' (this will be the only target available).",
+          "selector": { "type": "ocr_text", "text": "Static Structural" },
+          "highlight": "ocr_text",
+          "action": { "kind": "drag" },
+          "verify": { "type": "manual", "prompt": "Does the Project Schematic now show a standalone Static Structural system (cells 1-7: Static Structural, Engineering Data, Geometry, Model, Setup, Solution, Results)?" },
+          "hints": ["The Toolbox is on the left; Static Structural is under Analysis Systems.", "'Create standalone system' will be the only drop target -- drop it there."],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_03_import_geometry",
+          "app": "workbench",
+          "title": "Import the valve body geometry",
+          "description": "Right-click Geometry -> Import Geometry -> Browse... -> select valve_body_demo.scdoc -> Open.",
+          "selector": { "type": "ocr_text", "text": "Geometry", "scope": "schematic" },
+          "highlight": "ocr_text",
+          "action": { "kind": "context_menu_select", "path": ["Import Geometry", "Browse..."], "file": "valve_body_demo.scdoc" },
+          "verify": { "type": "manual", "prompt": "Does the Geometry cell now show a green checkmark?" },
+          "hints": ["Right-click directly on the Geometry cell (row 3) in the schematic."],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_04_open_engineering_data",
+          "app": "workbench",
+          "title": "Open Engineering Data",
+          "description": "Right-click Engineering Data -> Edit... to open the Engineering Data application.",
+          "selector": { "type": "ocr_text", "text": "Engineering Data", "scope": "schematic" },
+          "highlight": "ocr_text",
+          "action": { "kind": "context_menu_select", "path": ["Edit..."] },
+          "verify": { "type": "manual", "prompt": "Has the Engineering Data tab (A2:Engineering Data) opened?" },
+          "hints": ["Right-click directly on the Engineering Data cell (row 2) in the schematic."],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_05_show_data_sources",
+          "app": "workbench",
+          "title": "Show Engineering Data Sources",
+          "description": "Toggle the toolbar button 'Engineering Data Sources' to \"on\", then click data source 'General Materials'.",
+          "selector": { "type": "uia", "name": "Engineering Data Sources" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Is the 'General Materials' row visible in the Engineering Data Sources table?" },
+          "hints": ["The toolbar button is near the top-left of the Engineering Data tab."],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_06_add_gray_cast_iron",
+          "app": "workbench",
+          "title": "Add Gray Cast Iron to the project",
+          "description": "Click data source 'General Materials', then in the Outline of General Materials table click the '+' (Add) icon next to 'Gray Cast Iron'.",
+          "selector": { "type": "ocr_text", "text": "Gray Cast Iron" },
+          "highlight": "ocr_text",
+          "action": { "kind": "click_add_icon" },
+          "verify": { "type": "manual", "prompt": "Does Gray Cast Iron now show a blue book icon in column C, confirming it was added to the project?" },
+          "hints": ["General Materials source must be selected first (step wb_05)."],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_07_close_engineering_data",
+          "app": "workbench",
+          "title": "Exit the Engineering Data application",
+          "description": "Toggle the toolbar button 'Engineering Data Sources' back to \"off\", then click the small 'x' on the A2:Engineering Data tab to return to the Project page.",
+          "selector": { "type": "uia", "name": "A2:Engineering Data" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Have you returned to the main Project Schematic view?" },
+          "hints": ["The small x is on the right edge of the A2:Engineering Data tab."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Build and solve the model in Mechanical",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_01_open_model",
+          "app": "mechanical",
+          "title": "Open the Model in Mechanical",
+          "description": "Right-click Model -> Edit... to launch the Mechanical application.",
+          "selector": { "type": "ocr_text", "text": "Model", "scope": "schematic" },
+          "highlight": "ocr_text",
+          "action": { "kind": "context_menu_select", "path": ["Edit..."] },
+          "verify": { "type": "manual", "prompt": "Has the Mechanical application window opened?" },
+          "hints": ["Right-click directly on the Model cell (row 4) in the schematic."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_02_assign_material",
+          "app": "mechanical",
+          "title": "Assign Gray Cast Iron to the valve body",
+          "description": "Expand branch Geometry, select branch Component1\\body. In the Details view, set Material -> Assignment to 'Gray Cast Iron' using the drop-down menu.",
+          "selector": { "type": "uia", "name": "Component1\\body", "via": "Geometry" },
+          "highlight": "uia",
+          "action": { "kind": "click_then_set_property", "property": "Material/Assignment", "value": "Gray Cast Iron" },
+          "verify": { "type": "manual", "prompt": "Does the Details view show Material -> Assignment = Gray Cast Iron?" },
+          "hints": ["Expand the Geometry branch in the Outline tree first."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_03_fixed_support_1",
+          "app": "mechanical",
+          "title": "Apply the first Fixed Support",
+          "description": "Select branch Static Structural. In the 3D view, select one end flange surface (activate the Face selection filter first if necessary). Right-click Static Structural -> Insert -> Fixed Support.",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "select_face" },
+          "verify": { "type": "manual", "prompt": "Does the Outline show a 'Fixed Support' item under Static Structural?" },
+          "hints": ["Use the Face selection filter in the toolbar if clicks select edges instead."],
+          "source_image": "mock_server/data/images/m01_intro_valve_body/me_03_fixed_support_1.png"
+        },
+        {
+          "step_id": "me_04_fixed_support_2",
+          "app": "mechanical",
+          "title": "Apply the second Fixed Support",
+          "description": "Select the opposite end flange surface. Right-click Static Structural -> Insert -> Fixed Support.",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "select_face" },
+          "verify": { "type": "manual", "prompt": "Does the Outline now show 'Fixed Support' and 'Fixed Support 2' under Static Structural?" },
+          "hints": ["This is the flange at the opposite end from step me_03."],
+          "source_image": "mock_server/data/images/m01_intro_valve_body/me_04_fixed_support_2.png"
+        },
+        {
+          "step_id": "me_05_select_internal_surfaces",
+          "app": "mechanical",
+          "title": "Select all internal (wetted) surfaces",
+          "description": "Select one end surface, then Ctrl-select the opposite end surface (2 cylinders selected). From the drop-down on the Display tab toolbar button 'Extend Selection', click 'Extend to Limits' (47 faces selected). Rotate the view to find the small unselected cylindrical surface near the center of the globe (the tee branch) and Ctrl-select it (48 faces selected total).",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "select_faces_multi" },
+          "verify": { "type": "manual", "prompt": "Does the status bar report '48 Faces Selected: Area = 58650 mm^2'?" },
+          "hints": ["Use Ctrl-click to add faces to the selection.", "The last small cylindrical face is easy to miss near the branch intersection -- rotate the model to find it."],
+          "source_image": "mock_server/data/images/m01_intro_valve_body/me_05_select_internal_surfaces.png"
+        },
+        {
+          "step_id": "me_06_apply_pressure",
+          "app": "mechanical",
+          "title": "Apply pressure to the internal surfaces",
+          "description": "With the 48 internal faces selected, right-click Static Structural -> Insert -> Pressure. In the Details view, set Definition -> Magnitude to '3 MPa' (use the Units menu to change the current units system if necessary).",
+          "selector": { "type": "uia", "name": "Pressure", "via": "Static Structural" },
+          "highlight": "uia",
+          "action": { "kind": "click_then_set_property", "property": "Definition/Magnitude", "value": "3 MPa" },
+          "verify": { "type": "manual", "prompt": "Does the Details of \"Pressure\" show Geometry = 48 Faces and Magnitude = 3. MPa (ramped)?" },
+          "hints": ["The Pressure load is scoped automatically to whatever faces were selected in step me_05."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_07_select_top_flange",
+          "app": "mechanical",
+          "title": "Select the top flange surface",
+          "description": "In the 3D view, select the top end flange surface (the branch outlet, not the two end faces already fixed).",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "select_face" },
+          "verify": { "type": "manual", "prompt": "Is the top flange face highlighted green?" },
+          "hints": ["This is the branch on the top of the tee, distinct from the two flanged ends."],
+          "source_image": "mock_server/data/images/m01_intro_valve_body/me_07_select_top_flange.png"
+        },
+        {
+          "step_id": "me_08_apply_force",
+          "app": "mechanical",
+          "title": "Apply the blow-off Force",
+          "description": "Right-click Static Structural -> Insert -> Force. In the Details view, set Definition -> Magnitude to '9,600 N'. Confirm that the force Direction is oriented in the +Z direction.",
+          "selector": { "type": "uia", "name": "Force", "via": "Static Structural" },
+          "highlight": "uia",
+          "action": { "kind": "click_then_set_property", "property": "Definition/Magnitude", "value": "9600 N" },
+          "verify": { "type": "manual", "prompt": "Does the Details of \"Force\" show Geometry = 1 Face, Magnitude = 9600. N (ramped), Direction pointing +Z?" },
+          "hints": ["If the arrow doesn't point +Z, click 'Click to Change' next to Direction and flip it."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_09_insert_equivalent_stress",
+          "app": "mechanical",
+          "title": "Insert an Equivalent Stress result",
+          "description": "Right-click Solution -> Insert -> Stress -> Equivalent (von-Mises).",
+          "selector": { "type": "uia", "name": "Equivalent (von-Mises)", "via": "Solution" },
+          "highlight": "uia",
+          "action": { "kind": "menu_select", "via": "Solution", "then": "context_menu", "value": "Stress > Equivalent (von-Mises)" },
+          "verify": { "type": "manual", "prompt": "Does the Outline show 'Equivalent Stress' under Solution?" },
+          "hints": ["Right-click Solution in the Outline tree, not an item under it."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_10_solve",
+          "app": "mechanical",
+          "title": "Solve the analysis",
+          "description": "Click Solve in the Home ribbon and wait for the solution to complete.",
+          "selector": { "type": "uia", "name": "Solve" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "script", "engine": "pymechanical", "check": "solve_completed", "args": {} },
+          "hints": ["Solving can take a minute; the status bar shows progress."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_11_view_results",
+          "app": "mechanical",
+          "title": "Review the Equivalent Stress result",
+          "description": "Select branch Equivalent Stress to display the von-Mises stress contour on the valve body.",
+          "selector": { "type": "uia", "name": "Equivalent Stress" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Does the legend show a Max value near 68.607 MPa and Min near 0.02936 MPa?" },
+          "hints": ["The maximum stress typically appears near the fillet at the tee intersection."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_12_save_project",
+          "app": "mechanical",
+          "title": "Save the project",
+          "description": "File -> Save Project, and save it as 'M01.wbpj'.",
+          "selector": { "type": "uia", "name": "Save Project", "via": "File" },
+          "highlight": "uia",
+          "action": { "kind": "menu_select", "via": "File", "then": "text_entry", "value": "M01" },
+          "verify": { "type": "manual", "prompt": "Has the project been saved as M01.wbpj?" },
+          "hints": ["Use File -> Save Project As... if this is the first save and you need to choose a location and filename."],
+          "source_image": null
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,563 @@
+{
+  "tutorial_id": "tut5_connections",
+  "version": 1,
+  "title": "Module 05 \u2014 Connections",
+  "problem": "Starting from the provided Globe_Valve_SS05_Start.wbpz archive, review and clean up the automatically-created bonded contact regions in the globe valve assembly: inspect contact/target scoping and behavior, trim contact faces where there is a physical gap (bolt shanks vs. holes), rename contacts based on their definition, group repetitive bolt-to-nut contacts, use the Contact Tool to find and suppress unused contact regions, and explore the pinball region setting.",
+  "apps": ["workbench", "mechanical"],
+  "_notes": {
+    "source": "Built from ANSYS Mechanical Getting Started, Release 2023 R1 \u2014 Module 05 Student Step-by-Step Guide: Connections.",
+    "selector_status": "UNVERIFIED \u2014 selectors use display names/labels taken from the source slide screenshots, following the same convention as tut1.json. Resolve real UIA automation_id/name via live testing before relying on them.",
+    "highlight_legend": "uia = overlay draws a box around a UIA element. ocr_text = overlay finds on-screen text via OCR (used for the Workbench Toolbox / Project Schematic, which are not exposed to UIA \u2014 see tut1.json's workbench_uia_finding note). instruction = 3D-viewport action UIA cannot see; shows a reference screenshot instead of a tracked box. none = no highlight (launch).",
+    "verify_legend": "This tutorial is exploratory (review/cleanup of an existing model, no single numeric answer), so every step uses verify.type == \"manual\" for now, matching tut1's own manual_verify_switch_2026-06 decision to prefer a simple confirm button over fragile OCR/UIA detection for a student-facing pilot.",
+    "report_checks_omitted": "No report_checks block: this module doesn't produce a report deliverable or a single expected numeric result, so per the template's guidance the tutorial simply has no report-upload step.",
+    "repeat_step": "me_14_repeat_other_bolts stands in for repeating the two-face-trim procedure (me_10-me_13) on the other 7 identically-named 'Bonded - Component1\\ValveBody To Component20\\bolt' contact regions, mirroring how the source slide collapses this into a single 'repeat the last two slides' instruction."
+  },
+  "sections": [
+    {
+      "section": "Open the starter project in Workbench",
+      "app": "workbench",
+      "steps": [
+        {
+          "step_id": "wb_01_open",
+          "app": "workbench",
+          "title": "Open Ansys Workbench",
+          "description": "Launch Ansys Workbench: Windows Start Menu button \u2192 All apps \u2192 ANSYS nn.n \u2192 Workbench nn.n.",
+          "selector": { "type": "window", "app": "workbench" },
+          "highlight": "none",
+          "action": { "kind": "launch" },
+          "verify": { "type": "manual", "prompt": "Is Ansys Workbench open?" },
+          "hints": ["Start it from the Windows Start menu or the lab launcher."],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_02_open_archive",
+          "app": "workbench",
+          "title": "Open the starter archive",
+          "description": "File \u2192 Open\u2026, browse for archive file Globe_Valve_SS05_Start.wbpz, click Open, then save it to a convenient location.",
+          "selector": { "type": "uia", "name": "Open", "via": "File" },
+          "highlight": "uia",
+          "action": { "kind": "menu_select", "via": "File", "then": "file_open", "value": "Globe_Valve_SS05_Start.wbpz" },
+          "verify": { "type": "manual", "prompt": "Project opened and saved to a convenient location?" },
+          "hints": ["Click File to open the menu, then choose Open\u2026"],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_03_edit_model",
+          "app": "workbench",
+          "title": "Edit the Model cell",
+          "description": "Right-click the Model cell in the Static Structural system block and choose Edit\u2026 to launch Ansys Mechanical.",
+          "selector": { "type": "ocr_text", "text": "Model", "scope": "schematic" },
+          "highlight": "ocr_text",
+          "action": { "kind": "right_click", "then": "menu_select", "value": "Edit..." },
+          "verify": { "type": "manual", "prompt": "Mechanical opened?" },
+          "hints": ["The system block is in the Project Schematic; 'Model' is the row with the lightning-bolt icon."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Review the existing contact regions",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_01_expand_connections",
+          "app": "mechanical",
+          "title": "Expand the Connections branch",
+          "description": "In the Outline tree, expand the Connections branch.",
+          "selector": { "type": "uia", "name": "Connections" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Connections branch expanded?" },
+          "hints": ["Click the small expand arrow to the left of 'Connections'."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_02_expand_contacts",
+          "app": "mechanical",
+          "title": "Expand the Contacts branch",
+          "description": "Expand the Contacts branch underneath Connections.",
+          "selector": { "type": "uia", "name": "Contacts" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Contacts branch expanded, showing the list of contact regions?" },
+          "hints": ["The expand arrow is to the left of 'Contacts'."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_03_select_first_contact_type",
+          "app": "mechanical",
+          "title": "Review the first contact region's Type",
+          "description": "Select the first contact region in the tree and review its detail Type.",
+          "selector": { "type": "uia", "name": "Bonded" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Details panel shows this contact's Type?" },
+          "hints": ["Type is in the Definition section of the Details panel."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_04_select_second_contact_type",
+          "app": "mechanical",
+          "title": "Review another contact region's Type",
+          "description": "Select another contact region and review its detail Type.",
+          "selector": { "type": "uia", "name": "Bonded" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Compared Type between two contact regions?" },
+          "hints": ["Pick any other row under Contacts."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_05_review_type_dropdown",
+          "app": "mechanical",
+          "title": "Review the available contact types",
+          "description": "Click in the Bonded field, then click the down-arrow to review the menu of available contact types.",
+          "selector": { "type": "uia", "name": "Bonded" },
+          "highlight": "uia",
+          "action": { "kind": "click", "then": "open_dropdown" },
+          "verify": { "type": "manual", "prompt": "Contact-type dropdown reviewed (do not change the value)?" },
+          "hints": ["Type is a dropdown field; click it, then the arrow, to see the list."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_06_rename_based_on_definition",
+          "app": "mechanical",
+          "title": "Rename contacts based on their definition",
+          "description": "Right-click the Contacts branch and choose 'Rename Based on Definition' so each contact region's name reflects its scoping.",
+          "selector": { "type": "uia", "name": "Contacts" },
+          "highlight": "uia",
+          "action": { "kind": "right_click", "then": "menu_select", "value": "Rename Based on Definition" },
+          "verify": { "type": "manual", "prompt": "Contact region names updated to reflect their bodies (e.g. 'Bonded - Component1\\ValveBody To Component2\\flange')?" },
+          "hints": ["Right-click directly on the 'Contacts' branch, not an individual contact."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Inspect tolerance and graphics display",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_07_select_contacts_branch_tolerance",
+          "app": "mechanical",
+          "title": "Review Tolerance Slider and Tolerance Value",
+          "description": "Select the Contacts branch and review the details Tolerance Slider and Tolerance Value.",
+          "selector": { "type": "uia", "name": "Contacts" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Tolerance Slider and Tolerance Value reviewed in Details?" },
+          "hints": ["These are in the Definition section when the Contacts branch itself is selected."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_08_review_graphics_display",
+          "app": "mechanical",
+          "title": "Review graphics display features",
+          "description": "Select the first contact region and review its graphics display features (Contact Bodies highlighted red, Target Bodies highlighted blue in the Geometry view).",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "observe" },
+          "verify": { "type": "manual", "prompt": "Red (contact) and blue (target) highlighting observed in the Geometry view?" },
+          "hints": ["Contact = red, Target = blue \u2014 this color convention holds throughout Mechanical."],
+          "source_image": "mock_server/data/images/tut5_connections/me_08_review_graphics_display.png"
+        }
+      ]
+    },
+    {
+      "section": "Trim the bolt-shank contact regions",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_09_select_bolt_contact",
+          "app": "mechanical",
+          "title": "Select a ValveBody-to-bolt contact region",
+          "description": "Select the contact region 'Bonded - Component1\\ValveBody To Component20\\bolt'. There is a physical gap between the bolt shank and the valve-body hole, so its faces need to be trimmed.",
+          "selector": { "type": "uia", "name": "Bonded - Component1\\ValveBody To Component20\\bolt" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Contact region selected and Details panel showing Scope?" },
+          "hints": ["There are 8 contact regions with this exact name; any one works to start."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_10_edit_target_faces",
+          "app": "mechanical",
+          "title": "Activate edit mode for the Target faces",
+          "description": "Click the '2 Faces' field next to detail Target to activate edit mode for the target surfaces \u2014 the Apply and Cancel buttons appear.",
+          "selector": { "type": "uia", "name": "Target" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Target field in edit mode (Apply/Cancel buttons visible)?" },
+          "hints": ["Target is in the Scope section of Details."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_11_select_target_face",
+          "app": "mechanical",
+          "title": "Keep only the face under the bolt head",
+          "description": "In the Target Body View, single-click the surface under the bolt head to select it (or Ctrl+click the bolt shank face to deselect it), then click Apply next to detail Target. Target should now read '1 Face'.",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "select_face", "then": "click", "value": "Apply" },
+          "verify": { "type": "manual", "prompt": "Detail Target now shows '1 Face'?" },
+          "hints": ["Use Ctrl+click to deselect the shank face if both got selected together."],
+          "source_image": "mock_server/data/images/tut5_connections/me_11_select_target_face.png"
+        },
+        {
+          "step_id": "me_12_edit_contact_faces",
+          "app": "mechanical",
+          "title": "Activate edit mode for the Contact faces",
+          "description": "Click the '2 Faces' field next to detail Contact to activate edit mode for the contact surfaces.",
+          "selector": { "type": "uia", "name": "Contact" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Contact field in edit mode (Apply/Cancel buttons visible)?" },
+          "hints": ["Contact is just above Target in the Scope section of Details."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_13_select_contact_face",
+          "app": "mechanical",
+          "title": "Keep only the outer annular surface",
+          "description": "In the Contact Body View, single-click the outer annular surface of the valve body to select it (or Ctrl+click the cylindrical hole face to deselect it), then click Apply next to detail Contact. Contact should now read '1 Face'.",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "select_face", "then": "click", "value": "Apply" },
+          "verify": { "type": "manual", "prompt": "Detail Contact now shows '1 Face'?" },
+          "hints": ["Use Ctrl+click to deselect the cylindrical bore face if both got selected together."],
+          "source_image": "mock_server/data/images/tut5_connections/me_13_select_contact_face.png"
+        },
+        {
+          "step_id": "me_14_repeat_other_bolts",
+          "app": "mechanical",
+          "title": "Repeat for the other 7 bolt contact regions",
+          "description": "Repeat steps me_10-me_13 (trim Target to 1 face, trim Contact to 1 face) for each of the other 7 contact regions named 'Bonded - Component1\\ValveBody To Component20\\bolt'.",
+          "selector": { "type": "uia", "name": "Bonded - Component1\\ValveBody To Component20\\bolt" },
+          "highlight": "uia",
+          "action": { "kind": "repeat", "value": 7 },
+          "verify": { "type": "manual", "prompt": "All 8 ValveBody-to-bolt contact regions now trimmed to 1 Contact face and 1 Target face?" },
+          "hints": ["Letters A-H in the Geometry view mark the 8 bolt locations around the flange."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Review the flange-to-bolt contacts (no changes)",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_15_note_flange_bolt_gap",
+          "app": "mechanical",
+          "title": "Observe the unneeded flange-to-bolt contacts",
+          "description": "Select one of the 8 contact regions named 'Bonded - Component2\\flange To Component20\\bolt'. Observe that these are not needed \u2014 there is a significant gap between the outer surfaces of the bolt shanks and the inner surfaces of the holes \u2014 but do not make any changes at this time.",
+          "selector": { "type": "uia", "name": "Bonded - Component2\\flange To Component20\\bolt" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Gap between bolt shank and hole observed; confirmed no changes were made here?" },
+          "hints": ["This contact region will later show up as one of the 'orange' unused rows in the Contact Tool worksheet."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_16_select_valve_flange_contact",
+          "app": "mechanical",
+          "title": "Select the ValveBody-to-flange contact",
+          "description": "Select the contact region 'Bonded - Component1\\ValveBody To Component2\\flange'.",
+          "selector": { "type": "uia", "name": "Bonded - Component1\\ValveBody To Component2\\flange" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Contact region selected?" },
+          "hints": ["This is the main body-to-flange contact, not a bolt contact."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_17_experiment_surface_selection",
+          "app": "mechanical",
+          "title": "Experiment with surface selection",
+          "description": "Experiment with surface selection in the Contact Body View and the Target Body View for this contact region.",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "select_face" },
+          "verify": { "type": "manual", "prompt": "Explored selecting/deselecting faces in both Body Views?" },
+          "hints": ["No Apply needed here \u2014 this step is just for familiarization."],
+          "source_image": "mock_server/data/images/tut5_connections/me_17_experiment_surface_selection.png"
+        }
+      ]
+    },
+    {
+      "section": "Group the nut-to-bolt contacts",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_18_select_nut_bolt_contacts",
+          "app": "mechanical",
+          "title": "Select the 8 nut-to-bolt contact regions",
+          "description": "Ctrl-select the 8 contact regions named 'Bonded - Component21\\nut To Component20\\bolt' in the Outline tree.",
+          "selector": { "type": "uia", "name": "Bonded - Component21\\nut To Component20\\bolt" },
+          "highlight": "uia",
+          "action": { "kind": "multi_select" },
+          "verify": { "type": "manual", "prompt": "All 8 nut-to-bolt contact regions highlighted?" },
+          "hints": ["Click the first, then Ctrl+click the remaining 7."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_19_group_contacts",
+          "app": "mechanical",
+          "title": "Group the selected contacts",
+          "description": "Right-click any one of the selected contact regions and choose Group.",
+          "selector": { "type": "uia", "name": "Group" },
+          "highlight": "uia",
+          "action": { "kind": "right_click", "then": "menu_select", "value": "Group" },
+          "verify": { "type": "manual", "prompt": "A new folder appeared under Contacts containing the 8 selected contacts?" },
+          "hints": ["Right-click on any one of the highlighted rows, not empty space."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_20_name_group_folder",
+          "app": "mechanical",
+          "title": "Name the new group folder",
+          "description": "Enter a name for the new group folder.",
+          "selector": { "type": "uia", "name": "New Folder" },
+          "highlight": "uia",
+          "action": { "kind": "text_entry", "value": "Nut To Bolt Contacts" },
+          "verify": { "type": "manual", "prompt": "Group folder renamed?" },
+          "hints": ["The folder name is in edit mode immediately after grouping; just type and press Enter."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Use Go To tools to cross-check bodies and contacts",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_21_activate_body_filter",
+          "app": "mechanical",
+          "title": "Activate the Body filter",
+          "description": "Activate the Body filter in the Selection toolbar.",
+          "selector": { "type": "uia", "name": "Body" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Body filter button now active/highlighted?" },
+          "hints": ["The filter buttons are in the Selection toolbar above the Geometry view."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_22_select_flange_body",
+          "app": "mechanical",
+          "title": "Select the flange body",
+          "description": "Select part Component2\\flange in the Geometry view.",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "select_body" },
+          "verify": { "type": "manual", "prompt": "Component2\\flange highlighted as the selected body?" },
+          "hints": ["With the Body filter active, a single click selects the whole part."],
+          "source_image": "mock_server/data/images/tut5_connections/me_22_select_flange_body.png"
+        },
+        {
+          "step_id": "me_23_goto_contacts_for_selected_bodies",
+          "app": "mechanical",
+          "title": "Go To Contacts for Selected Bodies",
+          "description": "In any background area of the Geometry view, right-click \u2192 Go To \u2192 Contacts for Selected Bodies. Observe the selected contact regions under the Contacts branch in the Outline.",
+          "selector": { "type": "uia", "name": "Contacts for Selected Bodies" },
+          "highlight": "uia",
+          "action": { "kind": "right_click", "then": "menu_select", "value": "Go To > Contacts for Selected Bodies" },
+          "verify": { "type": "manual", "prompt": "Contact regions involving Component2\\flange highlighted in the Outline?" },
+          "hints": ["Right-click empty space in the Geometry view, not on the part itself."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_24_goto_bodies_without_contacts",
+          "app": "mechanical",
+          "title": "Go To Bodies Without Contacts in Tree",
+          "description": "In any background area of the Geometry view, right-click \u2192 Go To \u2192 Bodies Without Contacts in Tree. This should result in no bodies being selected.",
+          "selector": { "type": "uia", "name": "Bodies Without Contacts in Tree" },
+          "highlight": "uia",
+          "action": { "kind": "right_click", "then": "menu_select", "value": "Go To > Bodies Without Contacts in Tree" },
+          "verify": { "type": "manual", "prompt": "No bodies were selected (confirming every body has at least one contact)?" },
+          "hints": ["An empty result here is the expected/correct outcome."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Run the Contact Tool and suppress unused regions",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_25_insert_contact_tool",
+          "app": "mechanical",
+          "title": "Insert the Contact Tool",
+          "description": "Right-click Connections \u2192 Insert \u2192 Contact Tool.",
+          "selector": { "type": "uia", "name": "Contact Tool" },
+          "highlight": "uia",
+          "action": { "kind": "right_click", "then": "menu_select", "value": "Insert > Contact Tool" },
+          "verify": { "type": "manual", "prompt": "Contact Tool branch added under Connections?" },
+          "hints": ["Right-click directly on 'Connections'."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_26_generate_initial_contact_results",
+          "app": "mechanical",
+          "title": "Generate Initial Contact Results",
+          "description": "Right-click Contact Tool \u2192 Generate Initial Contact Results.",
+          "selector": { "type": "uia", "name": "Generate Initial Contact Results" },
+          "highlight": "uia",
+          "action": { "kind": "right_click", "then": "menu_select", "value": "Generate Initial Contact Results" },
+          "verify": { "type": "manual", "prompt": "Initial Information branch populated under Contact Tool?" },
+          "hints": ["This may take a few seconds to run."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_27_review_initial_information",
+          "app": "mechanical",
+          "title": "Review the Initial Information worksheet",
+          "description": "Select the Initial Information branch and review the worksheet (Status, Number Contacting, Penetration, Gap, Resulting Pinball, and other columns for every contact region).",
+          "selector": { "type": "uia", "name": "Initial Information" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Initial Information worksheet reviewed?" },
+          "hints": ["Right-click a column header for additional column options."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_28_select_orange_rows",
+          "app": "mechanical",
+          "title": "Select the unused (orange) contact rows",
+          "description": "Observe the 8 contact regions coded in orange at the bottom of the table, and Ctrl-select all of them in the Initial Information table.",
+          "selector": { "type": "uia", "name": "Initial Information" },
+          "highlight": "uia",
+          "action": { "kind": "multi_select" },
+          "verify": { "type": "manual", "prompt": "All 8 orange-coded rows selected (the unused flange-to-bolt contacts)?" },
+          "hints": ["Orange rows indicate 'Number Contacting' is 0 \u2014 these are the flange-to-bolt-shank contacts noted earlier."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_29_goto_selected_items_in_tree",
+          "app": "mechanical",
+          "title": "Go To Selected Items in Tree",
+          "description": "Right-click any one of the selected contact regions in the table and choose 'Go To Selected Items in Tree'.",
+          "selector": { "type": "uia", "name": "Go To Selected Items in Tree" },
+          "highlight": "uia",
+          "action": { "kind": "right_click", "then": "menu_select", "value": "Go To Selected Items in Tree" },
+          "verify": { "type": "manual", "prompt": "The same 8 contact regions now highlighted in the Outline tree?" },
+          "hints": ["The context menu is on the table row itself."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_30_suppress_unused_contacts",
+          "app": "mechanical",
+          "title": "Suppress the unused contact regions",
+          "description": "Right-click any one of the 8 selected contact regions in the Outline tree and choose Suppress.",
+          "selector": { "type": "uia", "name": "Suppress" },
+          "highlight": "uia",
+          "action": { "kind": "right_click", "then": "menu_select", "value": "Suppress" },
+          "verify": { "type": "manual", "prompt": "The 8 unused contact regions now show as suppressed (greyed out) in the Outline?" },
+          "hints": ["Suppressing removes them from the analysis without deleting them."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Explore the pinball region setting",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_31_zoom_to_fit",
+          "app": "mechanical",
+          "title": "Zoom to Fit",
+          "description": "Click the Zoom to Fit toolbar button.",
+          "selector": { "type": "uia", "name": "Zoom to Fit" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Geometry view re-framed to fit the whole model?" },
+          "hints": ["Zoom to Fit is in the Select toolbar above the Geometry view."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_32_select_flange_nut_contact",
+          "app": "mechanical",
+          "title": "Select a flange-to-nut contact and compare surfaces",
+          "description": "Select one of the contact regions named 'Bonded - Component2\\flange To Component21\\nut1' and examine the relative sizes and shapes of the contact (red) and target (blue) surfaces.",
+          "selector": { "type": "uia", "name": "Bonded - Component2\\flange To Component21\\nut1" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Contact (red, large flange face) and Target (blue, small nut-seat face) surfaces compared?" },
+          "hints": ["Note how much larger the contact surface is than the target surface here."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_33_set_pinball_region_radius",
+          "app": "mechanical",
+          "title": "Set Pinball Region to Radius",
+          "description": "Change the value of detail Pinball Region to Radius.",
+          "selector": { "type": "uia", "name": "Pinball Region" },
+          "highlight": "uia",
+          "action": { "kind": "click", "then": "select", "value": "Radius" },
+          "verify": { "type": "manual", "prompt": "Pinball Region set to Radius, revealing a new Pinball Radius field?" },
+          "hints": ["Pinball Region is in the Advanced section of Details."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_34_set_pinball_radius_value",
+          "app": "mechanical",
+          "title": "Set Pinball Radius to 2 mm",
+          "description": "Change the value of detail Pinball Radius to 2 mm.",
+          "selector": { "type": "uia", "name": "Pinball Radius" },
+          "highlight": "uia",
+          "action": { "kind": "text_entry", "value": "2 mm" },
+          "verify": { "type": "manual", "prompt": "Pinball Radius shows 2. mm?" },
+          "hints": ["Type the value and press Enter/Tab to commit it."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_35_observe_pinball_sphere",
+          "app": "mechanical",
+          "title": "Observe the pinball sphere",
+          "description": "Observe the red sphere in the Geometry view representing the specified size of the pinball region.",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "observe" },
+          "verify": { "type": "manual", "prompt": "Red 2 mm sphere visible at the contact location?" },
+          "hints": ["The sphere is drawn at the contact/target boundary."],
+          "source_image": "mock_server/data/images/tut5_connections/me_35_observe_pinball_sphere.png"
+        },
+        {
+          "step_id": "me_36_review_resulting_pinball_column",
+          "app": "mechanical",
+          "title": "Review the Resulting Pinball column",
+          "description": "Select the Initial Information branch and observe the Resulting Pinball column of data.",
+          "selector": { "type": "uia", "name": "Initial Information" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Resulting Pinball column values reviewed across contact regions?" },
+          "hints": ["Compare this row's value to the 2 mm just set for the manually-overridden contact."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_37_reset_pinball_program_controlled",
+          "app": "mechanical",
+          "title": "Reset Pinball Region to Program Controlled",
+          "description": "Select the same contact region ('Bonded - Component2\\flange To Component21\\nut1') and change the value of detail Pinball Region back to Program Controlled.",
+          "selector": { "type": "uia", "name": "Pinball Region" },
+          "highlight": "uia",
+          "action": { "kind": "click", "then": "select", "value": "Program Controlled" },
+          "verify": { "type": "manual", "prompt": "Pinball Region reset to Program Controlled?" },
+          "hints": ["This restores the default automatic pinball sizing."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_38_explore_insert_options",
+          "app": "mechanical",
+          "title": "Explore other connection types",
+          "description": "Right-click Connections \u2192 Insert and observe the options available for other types of connections (Connection Group, Manual Contact Region, Spot Weld, Contact Tool, Solution Information, Joint, Spring, Bearing, Beam, AM Bond, Interstage).",
+          "selector": { "type": "uia", "name": "Insert" },
+          "highlight": "uia",
+          "action": { "kind": "right_click" },
+          "verify": { "type": "manual", "prompt": "Insert submenu reviewed (no selection needed)?" },
+          "hints": ["Just review the menu \u2014 no item needs to be chosen for this step."],
+          "source_image": null
+        }
+      ]
+    }
+  ]
+}
