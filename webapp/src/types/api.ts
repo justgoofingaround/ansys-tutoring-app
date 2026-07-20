@@ -169,6 +169,119 @@ export interface Faq {
   answer: string;
 }
 
+/* ── instructor ─────────────────────────────────────────────────────── */
+
+export interface ProgressCell {
+  status: TutorialStatus;
+  percent: number;
+  steps_completed: number;
+  steps_total: number;
+  report_ok: boolean;
+  quiz_attempts: number | null;
+  quiz_best: number | null;
+}
+
+export interface ProgressMatrix {
+  tutorials: { tutorial_id: string; title: string; is_mandatory: boolean }[];
+  students: {
+    username: string;
+    opaque_token: string;
+    section: string | null;
+    cells: Record<string, ProgressCell>;
+  }[];
+  tiles: {
+    students: number;
+    avg_completion: number;
+    tutorials_completed: number;
+    reports_passed: number;
+    quiz_avg: number | null;
+  };
+}
+
+export interface ActivityItem {
+  kind: "event" | "report" | "quiz";
+  detail: string;
+  step_id: string | null;
+  tutorial_id: string;
+  tutorial_title: string;
+  username: string;
+  score: number | null;
+  total: number | null;
+  timestamp: number;
+}
+
+export interface QuizStats {
+  quiz_id: string;
+  title: string;
+  tutorial_id: string;
+  total_questions: number;
+  students: number;
+  attempts: number;
+  avg_pct: number | null;
+  histogram: { correct: number; count: number }[];
+}
+
+export interface QuizAnalytics {
+  quiz_id: string;
+  title: string;
+  tutorial_id: string;
+  first_attempt_students: number;
+  questions: {
+    question_id: number;
+    position: number;
+    text: string;
+    concept_tag: string;
+    correct_index: number;
+    options: string[];
+    attempts: number;
+    correct_pct: number | null;
+  }[];
+  concepts: { tag: string; correct: number; total: number; pct: number | null }[];
+}
+
+export interface FaqCandidate {
+  id: number;
+  tutorial_id: string;
+  step_id: string;
+  failed_check: string;
+  distinct_students: number;
+  cohort_size: number;
+  failure_rate: number;
+  status: "candidate" | "drafted" | "approved" | "rejected";
+  draft_question: string | null;
+  draft_answer: string | null;
+  draft_model: string | null;
+  step_title: string | null;
+  step_description: string | null;
+  step_hints: string[];
+}
+
+export interface PublishedFaq {
+  faq_id: number;
+  tutorial_id: string;
+  step_id: string | null;
+  question: string;
+  answer: string;
+  created_at: number;
+}
+
+export interface ValidationFinding {
+  severity: "error" | "warning";
+  where: string;
+  message: string;
+}
+
+export interface LibraryTutorial {
+  tutorial_id: string;
+  title: string;
+  product: string;
+  is_mandatory: boolean;
+  quiz_id: string | null;
+  published_version: number | null;
+  is_archived: boolean;
+  versions: { version: number; uploaded_at: number; warnings: ValidationFinding[] }[];
+}
+
 /** Raw tutorial JSON as served by GET /api/tutorials/{id} (authored fields). */
 export interface TutorialContentStep {
   step_id: string;

@@ -29,8 +29,13 @@ class TutorialValidationError(Exception):
 
 
 def _findings_as_dicts(findings) -> list[dict]:
+    # Validator severities are "ERROR"/"WARN"; the API contract is lowercase.
     return [
-        {"severity": sev, "where": where, "message": msg}
+        {
+            "severity": "error" if sev == "ERROR" else "warning",
+            "where": where,
+            "message": msg,
+        }
         for sev, where, msg in findings.items
     ]
 
@@ -58,11 +63,15 @@ def import_tutorial(
     else:
         tmp_path = Path(source)
 
-    findings = validate(tmp_path)
-    if findings.errors:
-        raise TutorialValidationError(_findings_as_dicts(findings))
-
-    data = json.loads(tmp_path.read_text(encoding="utf-8"))
+    try:
+        findings = validate(tmp_path)
+        if findings.errors:
+            raise TutorialValidationError(_findings_as_dicts(findings))
+        data = json.loads(tmp_path.read_text(encoding="utf-8"))
+    except Exception:
+        if isinstance(source, bytes):
+            tmp_path.unlink(missing_ok=True)
+        raise
     tutorial_id = data["tutorial_id"]
     title = data.get("title", tutorial_id)
 

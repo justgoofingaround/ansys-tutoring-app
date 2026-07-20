@@ -17,7 +17,9 @@ import { RunPage } from "@/pages/student/RunPage";
 import { QuizPage } from "@/pages/student/QuizPage";
 import { ChatPage } from "@/pages/student/ChatPage";
 import { ClassDashboardPage } from "@/pages/instructor/ClassDashboardPage";
-import { Placeholder } from "@/pages/Placeholder";
+import { TutorialLibraryPage } from "@/pages/instructor/TutorialLibraryPage";
+import { QuizzesPage } from "@/pages/instructor/QuizzesPage";
+import { FaqQueuePage } from "@/pages/instructor/FaqQueuePage";
 
 function SessionExpiryListener({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -66,9 +68,9 @@ const router = createBrowserRouter([
         children: [
           { path: "/instructor", element: <Navigate to="/instructor/class" replace /> },
           { path: "/instructor/class", element: <ClassDashboardPage /> },
-          { path: "/instructor/tutorials", element: <Placeholder title="Tutorial library" milestone="milestone 5" /> },
-          { path: "/instructor/quizzes", element: <Placeholder title="Quizzes" milestone="milestone 6" /> },
-          { path: "/instructor/faqs", element: <Placeholder title="FAQ review" milestone="milestone 6" /> },
+          { path: "/instructor/tutorials", element: <TutorialLibraryPage /> },
+          { path: "/instructor/quizzes", element: <QuizzesPage /> },
+          { path: "/instructor/faqs", element: <FaqQueuePage /> },
         ],
       },
       { path: "*", element: <Navigate to="/" replace /> },

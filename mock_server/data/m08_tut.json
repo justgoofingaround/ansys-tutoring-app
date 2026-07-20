@@ -1,0 +1,1653 @@
+{
+  "tutorial_id": "tut8_results_validation",
+  "version": 1,
+  "title": "Module 08 \u2014 Results and Validation",
+  "problem": "Starting from the provided Globe_Valve_SS08_Start.wbpz archive (solved Static Structural analysis), review and animate Total Deformation, add scoped Equivalent Stress results for the Valve Body and Flange, customize contour scaling/display, probe numerical values, create Reaction Force results for each Frictionless Support, check radial/tangential stress against thick-walled-cylinder theory using a local cylindrical coordinate system, compute a Safety Factor with a Mohr-Coulomb Stress Tool (147 MPa tensile/compressive limits), add Principal Stress results, run a Stress Convergence study on the Valve Body's outer surface (5% allowable change, up to 4 refinement loops, iterative solver), and finally generate and review a report.",
+  "report_checks": {
+    "required_sections": [
+      "Static Structural",
+      "Solution",
+      "Results",
+      "Stress Tool"
+    ],
+    "preferred_sections": [
+      "Total Deformation",
+      "Equivalent Stress",
+      "Safety Factor",
+      "Convergence"
+    ],
+    "must_contain": [
+      "Mohr-Coulomb",
+      "147 MPa"
+    ],
+    "expected_result": {
+      "value": 0.91968,
+      "tolerance": 0.05,
+      "units": "",
+      "aliases": [
+        "0.91968",
+        "0.9197",
+        "0.92"
+      ]
+    }
+  },
+  "apps": [
+    "workbench",
+    "mechanical"
+  ],
+  "_notes": {
+    "source": "Built from ANSYS Mechanical Getting Started, Release 2023 R1 \u2014 Module 08 Student Step-by-Step Guide: Results and Validation.",
+    "selector_status": "UNVERIFIED \u2014 selectors use display names/labels taken from the source slide screenshots, following the same convention as tut1.json. Resolve real UIA automation_id/name via live testing before relying on them.",
+    "highlight_legend": "uia = overlay draws a box around a UIA element (Outline tree items, ribbon buttons, Details fields). ocr_text = OCR-based highlight for the Workbench Toolbox / Project Schematic (not exposed to UIA \u2014 see tut1.json's workbench_uia_finding note). instruction = 3D-viewport/graphics-window action UIA cannot see (includes contour-legend drag/edit/reset, since the legend is drawn inside the graphics window, not a separate UIA-exposed control); shows a reference screenshot instead of a tracked box. none = no highlight (launch).",
+    "verify_legend": "Solve and every 'Insert > result/tool' action use script(pymechanical)/uia checks (real, checkable model-state changes), matching tut1.json's pattern for solve/result steps. Field edits, contour-display toggles, probe interactions, and the final report preview use verify.type == \"manual\", per tut1's manual_verify_switch_2026-06 decision.",
+    "report_checks_rationale": "This module ends with an explicit pass/fail design check (Safety Factor Min against the Mohr-Coulomb 147 MPa limits), so expected_result targets the converged Safety Factor minimum shown on slide 16 (0.91968), with a generous \u00b10.05 tolerance since the exact converged value depends on the Stress Convergence loop count and mesh state carried over from earlier modules \u2014 confirm by re-running live.",
+    "update_project_step": "wb_03_update_project reflects slide 3's instruction to run Update Project (not just open the archive) so the model is already solved before opening Mechanical \u2014 unlike tut5-tut7, which open an unsolved starter file and solve later inside Mechanical.",
+    "wb_steps_reused": "wb_01_open / wb_02_open_archive / wb_04_edit_model mirror the equivalent steps in tut5-tut7 (archive filename Globe_Valve_SS08_Start.wbpz differs); wb_03_update_project is the one addition specific to this module.",
+    "drag_drop_step": "me_23_drag_frictionless_supports_to_solution uses action.kind 'drag' on Outline-tree items (Frictionless Support 1-4 onto Solution), the same tree-drag pattern as wb_03_add_static_structural's Toolbox drag in tut1.json, just within Mechanical's UIA-visible Outline tree instead of Workbench's non-UIA schematic."
+  },
+  "sections": [
+    {
+      "section": "Open the starter project and solve it in Workbench",
+      "app": "workbench",
+      "steps": [
+        {
+          "step_id": "wb_01_open",
+          "app": "workbench",
+          "title": "Open Ansys Workbench",
+          "description": "Launch Ansys Workbench: Windows Start Menu button \u2192 All apps \u2192 ANSYS nn.n \u2192 Workbench nn.n.",
+          "selector": {
+            "type": "window",
+            "app": "workbench"
+          },
+          "highlight": "none",
+          "action": {
+            "kind": "launch"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Is Ansys Workbench open?"
+          },
+          "hints": [
+            "Start it from the Windows Start menu or the lab launcher."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_02_open_archive",
+          "app": "workbench",
+          "title": "Open the starter archive",
+          "description": "File \u2192 Open\u2026, browse for archive file Globe_Valve_SS08_Start.wbpz, and click Open.",
+          "selector": {
+            "type": "uia",
+            "name": "Open",
+            "via": "File"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "menu_select",
+            "via": "File",
+            "then": "file_open",
+            "value": "Globe_Valve_SS08_Start.wbpz"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Project opened, showing Static Structural with Engineering Data/Geometry checked and Model/Setup/Solution/Results pending?"
+          },
+          "hints": [
+            "Click File to open the menu, then choose Open\u2026"
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_03_update_project",
+          "app": "workbench",
+          "title": "Update Project to solve the model",
+          "description": "Click Update Project in the toolbar so the model solves before opening Mechanical.",
+          "selector": {
+            "type": "uia",
+            "name": "Update Project"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Setup, Solution, and Results cells all show green checkmarks?"
+          },
+          "hints": [
+            "Update Project is next to Refresh Project on the Project toolbar."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_04_edit_model",
+          "app": "workbench",
+          "title": "Open Mechanical",
+          "description": "Right-click the Model cell in the Static Structural system block and choose Edit\u2026 to launch Ansys Mechanical.",
+          "selector": {
+            "type": "ocr_text",
+            "text": "Model",
+            "scope": "schematic"
+          },
+          "highlight": "ocr_text",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Edit..."
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Mechanical opened, showing the already-solved Solution branch?"
+          },
+          "hints": [
+            "The system block is in the Project Schematic; 'Model' is the row with the lightning-bolt icon."
+          ],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Review and animate the Total Deformation result",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_01_select_total_deformation",
+          "app": "mechanical",
+          "title": "Select Total Deformation",
+          "description": "Select Total Deformation in the Outline tree.",
+          "selector": {
+            "type": "uia",
+            "name": "Total Deformation"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Total Deformation contour showing in the Geometry view?"
+          },
+          "hints": [
+            "Total Deformation is under Solution in the Outline tree."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_02_play_animation",
+          "app": "mechanical",
+          "title": "Play the deformation animation",
+          "description": "Click the Animation \"Play\" button in the Animation controller below the graphics window.",
+          "selector": {
+            "type": "uia",
+            "name": "Play"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Model animated through the 20-frame deformation cycle?"
+          },
+          "hints": [
+            "The Animation controller is docked below the Geometry view once a result is selected."
+          ],
+          "source_image": "mock_server/data/images/tut8_results_validation/me_02_play_animation.png"
+        }
+      ]
+    },
+    {
+      "section": "Add Equivalent Stress results for the Valve Body and Flange",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_03_review_equivalent_stress_plot",
+          "app": "mechanical",
+          "title": "Review the overall Equivalent Stress plot",
+          "description": "Select Equivalent Stress in the Outline tree and review the plot.",
+          "selector": {
+            "type": "uia",
+            "name": "Equivalent Stress"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Overall Equivalent (von-Mises) Stress contour reviewed?"
+          },
+          "hints": [
+            "This is the whole-assembly stress result already present from Module 07."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_04_select_solution",
+          "app": "mechanical",
+          "title": "Select the Solution branch",
+          "description": "Select Solution in the Outline tree.",
+          "selector": {
+            "type": "uia",
+            "name": "Solution"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Solution branch selected?"
+          },
+          "hints": [
+            "Solution sits above the existing result branches."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_05_select_valve_body_geometry",
+          "app": "mechanical",
+          "title": "Select the Valve Body in the graphics",
+          "description": "Select the Valve Body part in the Geometry view.",
+          "selector": {
+            "type": "viewport"
+          },
+          "highlight": "instruction",
+          "action": {
+            "kind": "select_body"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Valve Body highlighted as the selected part?"
+          },
+          "hints": [
+            "With the Body filter active, a single click selects the whole part."
+          ],
+          "source_image": "mock_server/data/images/tut8_results_validation/me_05_select_valve_body_geometry.png"
+        },
+        {
+          "step_id": "me_06_insert_equivalent_stress_valve_body",
+          "app": "mechanical",
+          "title": "Insert Equivalent Stress scoped to the Valve Body",
+          "description": "Right-click \u2192 Insert \u2192 Stress \u2192 Equivalent, scoped to the selected Valve Body.",
+          "selector": {
+            "type": "uia",
+            "name": "Equivalent (von-Mises)"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Insert > Stress > Equivalent"
+          },
+          "verify": {
+            "type": "uia",
+            "check": "exists",
+            "target": "Equivalent Stress 2"
+          },
+          "hints": [
+            "This creates 'Equivalent Stress 2' under Solution."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_07_select_flange_geometry",
+          "app": "mechanical",
+          "title": "Select the Flange in the graphics",
+          "description": "Select the Flange part in the Geometry view.",
+          "selector": {
+            "type": "viewport"
+          },
+          "highlight": "instruction",
+          "action": {
+            "kind": "select_body"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Flange highlighted as the selected part?"
+          },
+          "hints": [
+            "Click one of the two flange parts on either end of the valve."
+          ],
+          "source_image": "mock_server/data/images/tut8_results_validation/me_07_select_flange_geometry.png"
+        },
+        {
+          "step_id": "me_08_insert_equivalent_stress_flange",
+          "app": "mechanical",
+          "title": "Insert Equivalent Stress scoped to the Flange",
+          "description": "Right-click \u2192 Insert \u2192 Stress \u2192 Equivalent, scoped to the selected Flange.",
+          "selector": {
+            "type": "uia",
+            "name": "Equivalent (von-Mises)"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Insert > Stress > Equivalent"
+          },
+          "verify": {
+            "type": "uia",
+            "check": "exists",
+            "target": "Equivalent Stress 3"
+          },
+          "hints": [
+            "This creates 'Equivalent Stress 3' under Solution."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_09_evaluate_all_results_1",
+          "app": "mechanical",
+          "title": "Evaluate all results",
+          "description": "Right-click Solution and choose Evaluate All Results.",
+          "selector": {
+            "type": "uia",
+            "name": "Solution"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Evaluate All Results"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "result_evaluated",
+            "args": {
+              "result": "Equivalent Stress 3"
+            }
+          },
+          "hints": [
+            "Both new scoped stress results evaluate together."
+          ],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Adjust the contour legend scaling",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_10_select_stress_result_plot_a",
+          "app": "mechanical",
+          "title": "Select any stress result plot",
+          "description": "Select any of the Equivalent Stress results in the Outline tree.",
+          "selector": {
+            "type": "uia",
+            "name": "Equivalent Stress"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "A stress contour plot with its legend showing?"
+          },
+          "hints": [
+            "Any Equivalent Stress branch works for this exercise."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_11_drag_contour_divider_line",
+          "app": "mechanical",
+          "title": "Drag a contour-legend divider line",
+          "description": "Click and drag a line on the contour legend that separates two adjacent colors.",
+          "selector": {
+            "type": "viewport"
+          },
+          "highlight": "instruction",
+          "action": {
+            "kind": "drag"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Contour band boundary moved by dragging?"
+          },
+          "hints": [
+            "The divider lines sit between the color bands on the legend, left of the Geometry view."
+          ],
+          "source_image": "mock_server/data/images/tut8_results_validation/me_11_drag_contour_divider_line.png"
+        },
+        {
+          "step_id": "me_12_edit_contour_value_100",
+          "app": "mechanical",
+          "title": "Set a contour legend value to 100",
+          "description": "Right-click one of the existing contour legend values and choose Edit, then type 100.",
+          "selector": {
+            "type": "viewport"
+          },
+          "highlight": "instruction",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Edit",
+            "then_value": "100"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "One of the legend bands now reads exactly 100?"
+          },
+          "hints": [
+            "Right-click directly on a numeric value in the legend, not the color swatch."
+          ],
+          "source_image": "mock_server/data/images/tut8_results_validation/me_12_edit_contour_value_100.png"
+        },
+        {
+          "step_id": "me_13_add_contour_colors",
+          "app": "mechanical",
+          "title": "Add more contour colors",
+          "description": "Click on the legend, then use + / - to add contour colors/bands.",
+          "selector": {
+            "type": "viewport"
+          },
+          "highlight": "none",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Number of contour bands increased using +?"
+          },
+          "hints": [
+            "The +/- controls appear when the legend is active/selected."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_14_reset_contour_legend",
+          "app": "mechanical",
+          "title": "Reset the contour legend",
+          "description": "Right-click on the Contour Legend and choose Reset All to restore the automatic legend.",
+          "selector": {
+            "type": "viewport"
+          },
+          "highlight": "instruction",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Reset All"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Legend back to automatic values (e.g. 136.06 Max)?"
+          },
+          "hints": [
+            "'Reset All' is at the bottom of the legend's right-click menu."
+          ],
+          "source_image": "mock_server/data/images/tut8_results_validation/me_14_reset_contour_legend.png"
+        }
+      ]
+    },
+    {
+      "section": "Adjust deformed shape scale and contour display",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_15_select_stress_result_plot_b",
+          "app": "mechanical",
+          "title": "Select any stress result plot",
+          "description": "Select any Equivalent Stress result in the Outline tree.",
+          "selector": {
+            "type": "uia",
+            "name": "Equivalent Stress"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Result Toolbar visible above the Geometry view?"
+          },
+          "hints": [
+            "The Result Toolbar appears when a result branch is selected."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_16_adjust_displacement_scaling",
+          "app": "mechanical",
+          "title": "Adjust the deformed shape scale",
+          "description": "Use the displacement scaling dropdown on the Result Toolbar (e.g. Undeformed, True Scale, Auto Scale, 2x Auto, 5x Auto) to compare deformed shapes.",
+          "selector": {
+            "type": "uia",
+            "name": "Auto Scale"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click",
+            "then": "select"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Deformed shape visibly changed scale (e.g. between Undeformed and 5x Auto)?"
+          },
+          "hints": [
+            "The scale dropdown is at the left end of the Result Toolbar."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_17_toggle_smooth_banded_contours",
+          "app": "mechanical",
+          "title": "Toggle Smooth / Banded contours",
+          "description": "Use the Contours dropdown on the Result Toolbar to switch between Smooth Contours, Contour Bands, Isolines, and Solid Fill.",
+          "selector": {
+            "type": "uia",
+            "name": "Contours"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click",
+            "then": "select"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Contour style visibly changed between Smooth and Banded?"
+          },
+          "hints": [
+            "The Contours dropdown is next to Geometry on the Result Toolbar."
+          ],
+          "source_image": "mock_server/data/images/tut8_results_validation/me_17_toggle_smooth_banded_contours.png"
+        },
+        {
+          "step_id": "me_18_show_element_outlines_and_undeformed",
+          "app": "mechanical",
+          "title": "Show element outlines and undeformed geometry",
+          "description": "Use the Edges dropdown to try Show Elements, Show Undeformed Model, and Show Undeformed WireFrame.",
+          "selector": {
+            "type": "uia",
+            "name": "Edges"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click",
+            "then": "select"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Element outlines and/or undeformed wireframe visible overlaid on the contour?"
+          },
+          "hints": [
+            "The Edges dropdown is next to Contours on the Result Toolbar."
+          ],
+          "source_image": "mock_server/data/images/tut8_results_validation/me_18_show_element_outlines_and_undeformed.png"
+        }
+      ]
+    },
+    {
+      "section": "Use a Probe to read numerical values",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_19_select_stress_result_plot_c",
+          "app": "mechanical",
+          "title": "Select any stress result plot",
+          "description": "Select any Equivalent Stress result in the Outline tree.",
+          "selector": {
+            "type": "uia",
+            "name": "Equivalent Stress"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Stress contour and Result Toolbar showing?"
+          },
+          "hints": [
+            "Any Equivalent Stress branch works."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_20_activate_probe",
+          "app": "mechanical",
+          "title": "Activate the Probe tool",
+          "description": "Click the Probe icon on the Result Toolbar.",
+          "selector": {
+            "type": "uia",
+            "name": "Probe"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Probe cursor mode active?"
+          },
+          "hints": [
+            "Probe is at the right end of the Result Toolbar, next to Maximum/Minimum."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_21_click_probe_location",
+          "app": "mechanical",
+          "title": "Click a location on the contour plot",
+          "description": "Click a desired location on the contour plot to place a numeric-value annotation.",
+          "selector": {
+            "type": "viewport"
+          },
+          "highlight": "instruction",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "A Result annotation with a numeric value appeared at the clicked location?"
+          },
+          "hints": [
+            "Repeat for several locations to compare values, e.g. near stress concentrations."
+          ],
+          "source_image": "mock_server/data/images/tut8_results_validation/me_21_click_probe_location.png"
+        },
+        {
+          "step_id": "me_22_delete_all_probe_annotations",
+          "app": "mechanical",
+          "title": "Delete all Probe annotations",
+          "description": "In the Graphics Annotations window, right-click a Result row and choose Delete All.",
+          "selector": {
+            "type": "uia",
+            "name": "Delete All"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Delete All"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "All probe annotations removed from Graphics Annotations and the graphics view?"
+          },
+          "hints": [
+            "Graphics Annotations is a dockable panel; right-click any row in it."
+          ],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Create Reaction Force results for each support",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_23_drag_frictionless_supports_to_solution",
+          "app": "mechanical",
+          "title": "Drag each Frictionless Support onto Solution",
+          "description": "In the Outline tree, drag/drop each of the 4 Frictionless Support branches onto the Solution branch to create a Force Reaction result for each.",
+          "selector": {
+            "type": "uia",
+            "name": "Frictionless Support"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "drag"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Force Reaction, Force Reaction 2, Force Reaction 3, and Force Reaction 4 all created under Solution?"
+          },
+          "hints": [
+            "Ctrl+select all 4 Frictionless Support branches, then drag them together onto Solution."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_24_evaluate_all_results_2",
+          "app": "mechanical",
+          "title": "Evaluate all results",
+          "description": "Right-click Solution and choose Evaluate All Results.",
+          "selector": {
+            "type": "uia",
+            "name": "Solution"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Evaluate All Results"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "result_evaluated",
+            "args": {
+              "result": "Force Reaction 4"
+            }
+          },
+          "hints": [
+            "All 4 Force Reaction results evaluate together."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_25_review_force_reactions",
+          "app": "mechanical",
+          "title": "Review each Force Reaction",
+          "description": "Select, in turn, Force Reaction, Force Reaction 2, Force Reaction 3, and Force Reaction 4 and review each for magnitude and direction.",
+          "selector": {
+            "type": "uia",
+            "name": "Force Reaction"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "All 4 reaction force arrows (magnitude + direction) reviewed on their respective flange/hole faces?"
+          },
+          "hints": [
+            "The reaction arrow direction should make physical sense given the pressure load direction."
+          ],
+          "source_image": "mock_server/data/images/tut8_results_validation/me_25_review_force_reactions.png"
+        }
+      ]
+    },
+    {
+      "section": "Check radial and tangential stress against thick-walled-cylinder theory",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_26_insert_normal_stress_inside",
+          "app": "mechanical",
+          "title": "Insert Normal Stress on the inside surface",
+          "description": "Select the inside cylindrical surface of the Valve Body's straight section, then right-click Solution \u2192 Insert \u2192 Stress \u2192 Normal.",
+          "selector": {
+            "type": "viewport"
+          },
+          "highlight": "instruction",
+          "action": {
+            "kind": "select_face",
+            "then": "right_click",
+            "value": "Insert > Stress > Normal"
+          },
+          "verify": {
+            "type": "uia",
+            "check": "exists",
+            "target": "Normal Stress"
+          },
+          "hints": [
+            "This creates 'Normal Stress' under Solution, scoped to 1 Face."
+          ],
+          "source_image": "mock_server/data/images/tut8_results_validation/me_26_insert_normal_stress_inside.png"
+        },
+        {
+          "step_id": "me_27_insert_normal_stress_outside",
+          "app": "mechanical",
+          "title": "Insert Normal Stress on the outside surface",
+          "description": "Select the outside cylindrical surface of the Valve Body's straight section, then right-click Solution \u2192 Insert \u2192 Stress \u2192 Normal.",
+          "selector": {
+            "type": "viewport"
+          },
+          "highlight": "instruction",
+          "action": {
+            "kind": "select_face",
+            "then": "right_click",
+            "value": "Insert > Stress > Normal"
+          },
+          "verify": {
+            "type": "uia",
+            "check": "exists",
+            "target": "Normal Stress 2"
+          },
+          "hints": [
+            "This creates 'Normal Stress 2' under Solution, scoped to 1 Face."
+          ],
+          "source_image": "mock_server/data/images/tut8_results_validation/me_27_insert_normal_stress_outside.png"
+        },
+        {
+          "step_id": "me_28_create_cylindrical_coordinate_system",
+          "app": "mechanical",
+          "title": "Create a local cylindrical coordinate system",
+          "description": "Insert a new Coordinate System, set its Type to Cylindrical, and define its origin by clicking the outside surface of the Valve Body (Origin defined by Geometry Selection).",
+          "selector": {
+            "type": "uia",
+            "name": "Coordinate System"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Insert > Coordinate System"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "New Coordinate System shows Type = Cylindrical with Origin defined on the Valve Body's outside surface?"
+          },
+          "hints": [
+            "Set Type to Cylindrical in Details, then click the outer surface for Origin > Geometry."
+          ],
+          "source_image": "mock_server/data/images/tut8_results_validation/me_28_create_cylindrical_coordinate_system.png"
+        },
+        {
+          "step_id": "me_29_reference_coord_system_normal_stress_1",
+          "app": "mechanical",
+          "title": "Reference the cylindrical CS in Normal Stress",
+          "description": "Select Normal Stress, and in its Details set Coordinate System to the new local cylindrical Coordinate System, and Orientation to X Axis (radial).",
+          "selector": {
+            "type": "uia",
+            "name": "Coordinate System"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click",
+            "then": "select"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Normal Stress now references the local cylindrical coordinate system?"
+          },
+          "hints": [
+            "Coordinate System and Orientation are both in the Definition section of Details."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_30_reference_coord_system_normal_stress_2",
+          "app": "mechanical",
+          "title": "Reference the cylindrical CS in Normal Stress 2",
+          "description": "Select Normal Stress 2, and in its Details set Coordinate System to the new local cylindrical Coordinate System, and Orientation as needed (X = radial, Y = tangential).",
+          "selector": {
+            "type": "uia",
+            "name": "Coordinate System"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click",
+            "then": "select"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Normal Stress 2 now references the local cylindrical coordinate system?"
+          },
+          "hints": [
+            "Repeat the same Details change made for Normal Stress."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_31_evaluate_all_results_3",
+          "app": "mechanical",
+          "title": "Evaluate all results",
+          "description": "Right-click Solution and choose Evaluate All Results.",
+          "selector": {
+            "type": "uia",
+            "name": "Solution"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Evaluate All Results"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "result_evaluated",
+            "args": {
+              "result": "Normal Stress 2"
+            }
+          },
+          "hints": [
+            "Both Normal Stress results evaluate together."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_32_probe_compare_theoretical_values",
+          "app": "mechanical",
+          "title": "Probe and compare against thick-walled-cylinder theory",
+          "description": "Use Probe on the inside/outside Normal Stress plots to read radial (X component) and tangential (Y component) stress values, and compare against theoretical thick-walled-cylinder formulas.",
+          "selector": {
+            "type": "viewport"
+          },
+          "highlight": "instruction",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Probed radial/tangential values compared to the theoretical thick-walled-cylinder formulas and found reasonably close?"
+          },
+          "hints": [
+            "Radial stress should be near zero on the outside (free surface) and near -internal pressure on the inside."
+          ],
+          "source_image": "mock_server/data/images/tut8_results_validation/me_32_probe_compare_theoretical_values.png"
+        }
+      ]
+    },
+    {
+      "section": "Calculate a Safety Factor with a Stress Tool",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_33_insert_stress_tool",
+          "app": "mechanical",
+          "title": "Insert a Stress Tool",
+          "description": "Right-click Solution \u2192 Insert \u2192 Stress Tool \u2192 Mohr-Coulomb Stress.",
+          "selector": {
+            "type": "uia",
+            "name": "Stress Tool"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Insert > Stress Tool > Mohr-Coulomb Stress"
+          },
+          "verify": {
+            "type": "uia",
+            "check": "exists",
+            "target": "Stress Tool"
+          },
+          "hints": [
+            "This creates a 'Stress Tool' branch with a 'Safety Factor' child under Solution."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_34_set_theory_mohr_coulomb",
+          "app": "mechanical",
+          "title": "Set Theory to Mohr-Coulomb",
+          "description": "In the Stress Tool Details, confirm/set Theory to Mohr-Coulomb Stress.",
+          "selector": {
+            "type": "uia",
+            "name": "Theory"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click",
+            "then": "select",
+            "value": "Mohr-Coulomb Stress"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Theory shows Mohr-Coulomb Stress?"
+          },
+          "hints": [
+            "Theory is in the Definition section of the Stress Tool Details."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_35_set_tensile_limit_type_custom",
+          "app": "mechanical",
+          "title": "Set Tensile Limit Type to Custom",
+          "description": "Change Tensile Limit Type to Custom Value.",
+          "selector": {
+            "type": "uia",
+            "name": "Tensile Limit Type"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click",
+            "then": "select",
+            "value": "Custom Value"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Tensile Limit Type shows Custom Value, revealing a Tensile Limit field?"
+          },
+          "hints": [
+            "This is right below Theory in the Definition section."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_36_set_compressive_limit_type_custom",
+          "app": "mechanical",
+          "title": "Set Compressive Limit Type to Custom",
+          "description": "Change Compressive Limit Type to Custom Value.",
+          "selector": {
+            "type": "uia",
+            "name": "Compressive Limit Type"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click",
+            "then": "select",
+            "value": "Custom Value"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Compressive Limit Type shows Custom Value, revealing a Compressive Limit field?"
+          },
+          "hints": [
+            "Right below Tensile Limit Type."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_37_set_limits_147mpa",
+          "app": "mechanical",
+          "title": "Set both limits to 147 MPa",
+          "description": "Set both Tensile Limit and Compressive Limit to 147 MPa (half of the 294 MPa ultimate strength).",
+          "selector": {
+            "type": "uia",
+            "name": "Tensile Limit"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "text_entry",
+            "value": "147 MPa"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Both Tensile Limit and Compressive Limit read 147 MPa?"
+          },
+          "hints": [
+            "Repeat the same value entry for Compressive Limit."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_38_scope_safety_factor_to_valve_body",
+          "app": "mechanical",
+          "title": "Scope Safety Factor to the Valve Body",
+          "description": "Select the Safety Factor result under Stress Tool and change its scoping (Geometry) to the Valve Body part.",
+          "selector": {
+            "type": "uia",
+            "name": "Safety Factor"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click",
+            "then": "select_body"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Safety Factor's Geometry now scoped to only the Valve Body part?"
+          },
+          "hints": [
+            "Geometry is in the Scope section of the Safety Factor Details."
+          ],
+          "source_image": "mock_server/data/images/tut8_results_validation/me_38_scope_safety_factor_to_valve_body.png"
+        },
+        {
+          "step_id": "me_39_evaluate_all_results_4",
+          "app": "mechanical",
+          "title": "Evaluate all results",
+          "description": "Right-click Solution and choose Evaluate All Results.",
+          "selector": {
+            "type": "uia",
+            "name": "Solution"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Evaluate All Results"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "result_evaluated",
+            "args": {
+              "result": "Safety Factor"
+            }
+          },
+          "hints": [
+            "Safety Factor evaluates using the 147 MPa Mohr-Coulomb limits."
+          ],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Add Principal Stress results for the Valve Body",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_40_insert_max_principal_stress",
+          "app": "mechanical",
+          "title": "Insert Maximum Principal Stress",
+          "description": "Select the Valve Body, then right-click Solution \u2192 Insert \u2192 Stress \u2192 Maximum Principal.",
+          "selector": {
+            "type": "viewport"
+          },
+          "highlight": "none",
+          "action": {
+            "kind": "select_body",
+            "then": "right_click",
+            "value": "Insert > Stress > Maximum Principal"
+          },
+          "verify": {
+            "type": "uia",
+            "check": "exists",
+            "target": "Maximum Principal Stress"
+          },
+          "hints": [
+            "Select the Valve Body part before inserting so the result scopes to it."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_41_insert_middle_principal_stress",
+          "app": "mechanical",
+          "title": "Insert Middle Principal Stress",
+          "description": "With the Valve Body still selected, right-click Solution \u2192 Insert \u2192 Stress \u2192 Middle Principal.",
+          "selector": {
+            "type": "uia",
+            "name": "Solution"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Insert > Stress > Middle Principal"
+          },
+          "verify": {
+            "type": "uia",
+            "check": "exists",
+            "target": "Middle Principal Stress"
+          },
+          "hints": [
+            "Same right-click menu, choose Middle Principal this time."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_42_insert_min_principal_stress",
+          "app": "mechanical",
+          "title": "Insert Minimum Principal Stress",
+          "description": "With the Valve Body still selected, right-click Solution \u2192 Insert \u2192 Stress \u2192 Minimum Principal.",
+          "selector": {
+            "type": "uia",
+            "name": "Solution"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Insert > Stress > Minimum Principal"
+          },
+          "verify": {
+            "type": "uia",
+            "check": "exists",
+            "target": "Minimum Principal Stress"
+          },
+          "hints": [
+            "Same right-click menu, choose Minimum Principal."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_43_evaluate_all_results_5",
+          "app": "mechanical",
+          "title": "Evaluate all results",
+          "description": "Right-click Solution and choose Evaluate All Results.",
+          "selector": {
+            "type": "uia",
+            "name": "Solution"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Evaluate All Results"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "result_evaluated",
+            "args": {
+              "result": "Minimum Principal Stress"
+            }
+          },
+          "hints": [
+            "All three principal stress results evaluate together."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_44_check_contour_bands_with_element_outlines",
+          "app": "mechanical",
+          "title": "Check contour smoothness with element outlines",
+          "description": "With element outlines turned on (Edges \u2192 Show Elements), review whether the contour bands are smooth in the critical regions of minimum safety factor.",
+          "selector": {
+            "type": "viewport"
+          },
+          "highlight": "instruction",
+          "action": {
+            "kind": "observe"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Contour bands reviewed with element outlines on \u2014 are they smooth (well-converged) in the critical region, or jagged/mesh-dependent?"
+          },
+          "hints": [
+            "Jagged, element-sized contour bands in the hot spot suggest the mesh isn't fine enough there yet."
+          ],
+          "source_image": "mock_server/data/images/tut8_results_validation/me_44_check_contour_bands_with_element_outlines.png"
+        }
+      ]
+    },
+    {
+      "section": "Run a Stress Convergence study",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_45_insert_equivalent_stress_valve_body_outer",
+          "app": "mechanical",
+          "title": "Insert Equivalent Stress on the Valve Body's outer surfaces",
+          "description": "Select one outer surface of the Valve Body, use Extend to Limits to grow the selection to all connected outer surfaces, then right-click Solution \u2192 Insert \u2192 Stress \u2192 Equivalent.",
+          "selector": {
+            "type": "viewport"
+          },
+          "highlight": "instruction",
+          "action": {
+            "kind": "select_face",
+            "then": "click",
+            "value": "Extend to Limits"
+          },
+          "verify": {
+            "type": "uia",
+            "check": "exists",
+            "target": "Equivalent Stress"
+          },
+          "hints": [
+            "Extend to Limits is on the Selection toolbar; it grows a single-face pick to the whole connected outer shell (63 faces in the source example)."
+          ],
+          "source_image": "mock_server/data/images/tut8_results_validation/me_45_insert_equivalent_stress_valve_body_outer.png"
+        },
+        {
+          "step_id": "me_46_evaluate_all_results_6",
+          "app": "mechanical",
+          "title": "Evaluate all results",
+          "description": "Right-click Solution and choose Evaluate All Results.",
+          "selector": {
+            "type": "uia",
+            "name": "Solution"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Evaluate All Results"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "result_evaluated",
+            "args": {
+              "result": "Equivalent Stress"
+            }
+          },
+          "hints": [
+            "The new outer-surface Equivalent Stress result evaluates along with the rest."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_47_insert_convergence",
+          "app": "mechanical",
+          "title": "Insert a Convergence check",
+          "description": "Right-click the newly created Equivalent Stress result (outer-surface scoped) \u2192 Insert \u2192 Convergence.",
+          "selector": {
+            "type": "uia",
+            "name": "Convergence"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Insert > Convergence"
+          },
+          "verify": {
+            "type": "uia",
+            "check": "exists",
+            "target": "Convergence"
+          },
+          "hints": [
+            "Right-click the specific Equivalent Stress branch scoped to the Valve Body's outer surfaces, not the whole-body one."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_48_set_allowable_change_5pct",
+          "app": "mechanical",
+          "title": "Set Allowable Change to 5%",
+          "description": "In the Convergence Details, set Allowable Change to 5%.",
+          "selector": {
+            "type": "uia",
+            "name": "Allowable Change"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "text_entry",
+            "value": "5"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Allowable Change shows 5. %?"
+          },
+          "hints": [
+            "Allowable Change is in the Definition section of the Convergence Details."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_49_set_max_refinement_loops_4",
+          "app": "mechanical",
+          "title": "Set Max Refinement Loops to 4",
+          "description": "Select Solution and, in Details \u2192 Adaptive Mesh Refinement, set Max Refinement Loops to 4.",
+          "selector": {
+            "type": "uia",
+            "name": "Max Refinement Loops"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "text_entry",
+            "value": "4"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Max Refinement Loops shows 4?"
+          },
+          "hints": [
+            "Adaptive Mesh Refinement is a section of the Solution Details, not the Convergence Details."
+          ],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Switch to a more efficient solver and re-solve",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_50_set_solver_type_iterative",
+          "app": "mechanical",
+          "title": "Set Solver Type to Iterative",
+          "description": "Select Analysis Settings and, in Details \u2192 Solver Controls, set Solver Type to Iterative (more efficient for this linear problem).",
+          "selector": {
+            "type": "uia",
+            "name": "Solver Type"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click",
+            "then": "select",
+            "value": "Iterative"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Solver Type shows Iterative?"
+          },
+          "hints": [
+            "Solver Type is in the Solver Controls section of Analysis Settings Details."
+          ],
+          "source_image": "mock_server/data/images/tut8_results_validation/me_50_set_solver_type_iterative.png"
+        },
+        {
+          "step_id": "me_51_solve",
+          "app": "mechanical",
+          "title": "Solve",
+          "description": "Click Solve on the Home ribbon to re-solve with adaptive mesh refinement driven by the new Convergence criterion.",
+          "selector": {
+            "type": "uia",
+            "name": "Solve"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "solve_status",
+            "args": {
+              "status": "Done"
+            }
+          },
+          "hints": [
+            "This may take longer than earlier solves since it can run up to 4 refinement loops."
+          ],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Review convergence and the final Safety Factor",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_52_review_convergence_history",
+          "app": "mechanical",
+          "title": "Review the Convergence History",
+          "description": "Click on Convergence (under the outer-surface Equivalent Stress result) and review its Convergence History chart/table.",
+          "selector": {
+            "type": "uia",
+            "name": "Convergence"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Convergence chart shows Last Change under the 5% Allowable Change and Converged = Yes?"
+          },
+          "hints": [
+            "The chart plots Equivalent Stress vs. Solution Number across refinement loops."
+          ],
+          "source_image": "mock_server/data/images/tut8_results_validation/me_52_review_convergence_history.png"
+        },
+        {
+          "step_id": "me_53_view_valve_body_stress_element_outlines",
+          "app": "mechanical",
+          "title": "View the converged Valve Body stress",
+          "description": "View the Valve Body equivalent stress contour with element outlines turned on, to confirm the contour is now smooth after refinement.",
+          "selector": {
+            "type": "viewport"
+          },
+          "highlight": "instruction",
+          "action": {
+            "kind": "observe"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Contour bands in the previously-jagged critical region now smooth after mesh refinement?"
+          },
+          "hints": [
+            "Compare this view to me_44's earlier, coarser-mesh contour."
+          ],
+          "source_image": "mock_server/data/images/tut8_results_validation/me_53_view_valve_body_stress_element_outlines.png"
+        },
+        {
+          "step_id": "me_54_view_final_safety_factor",
+          "app": "mechanical",
+          "title": "View the final Safety Factor result",
+          "description": "Select the Safety Factor result and review its Min value. Has the design criteria been met (Min > 1)?",
+          "selector": {
+            "type": "uia",
+            "name": "Safety Factor"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Safety Factor Min reviewed (approximately 0.92) \u2014 design criteria (Min > 1) NOT met; note where the minimum occurs."
+          },
+          "hints": [
+            "Expected result from the source guide: Safety Factor Min \u2248 0.91968, below the target of 1.0."
+          ],
+          "source_image": "mock_server/data/images/tut8_results_validation/me_54_view_final_safety_factor.png"
+        }
+      ]
+    },
+    {
+      "section": "Generate and review a report",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_55_insert_figure_geometry",
+          "app": "mechanical",
+          "title": "Insert a Figure on Geometry",
+          "description": "Select Geometry in the Outline tree, then Home ribbon \u2192 Images \u2192 Figure to capture it for the report.",
+          "selector": {
+            "type": "uia",
+            "name": "Figure"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Figure inserted under Geometry?"
+          },
+          "hints": [
+            "Images is in the Insert group of the Home ribbon."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_56_insert_figure_mesh",
+          "app": "mechanical",
+          "title": "Insert a Figure on Mesh",
+          "description": "Select Mesh in the Outline tree, then Home ribbon \u2192 Images \u2192 Figure.",
+          "selector": {
+            "type": "uia",
+            "name": "Figure"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Figure inserted under Mesh?"
+          },
+          "hints": [
+            "Same Images > Figure control, with Mesh selected instead."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_57_insert_figure_static_structural",
+          "app": "mechanical",
+          "title": "Insert a Figure on Static Structural",
+          "description": "Select Static Structural (the environment branch) in the Outline tree, then Home ribbon \u2192 Images \u2192 Figure.",
+          "selector": {
+            "type": "uia",
+            "name": "Figure"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Figure inserted under Static Structural, capturing the loads/supports view?"
+          },
+          "hints": [
+            "This captures the same annotated loads/supports view reviewed back in Module 07."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_58_insert_figure_total_deformation",
+          "app": "mechanical",
+          "title": "Insert a Figure on Total Deformation",
+          "description": "Select Total Deformation, then Home ribbon \u2192 Images \u2192 Figure.",
+          "selector": {
+            "type": "uia",
+            "name": "Figure"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Figure inserted under Total Deformation?"
+          },
+          "hints": [
+            "Same Images > Figure control."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_59_insert_figure_converged_stress",
+          "app": "mechanical",
+          "title": "Insert a Figure on the converged Valve Body stress",
+          "description": "Select the converged, outer-surface-scoped Equivalent Stress result (with the Convergence child), then Home ribbon \u2192 Images \u2192 Figure.",
+          "selector": {
+            "type": "uia",
+            "name": "Figure"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Figure inserted under the converged Equivalent Stress result?"
+          },
+          "hints": [
+            "This is the result created in me_45, not the original whole-assembly Equivalent Stress."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_60_insert_figure_safety_factor",
+          "app": "mechanical",
+          "title": "Insert a Figure on Safety Factor",
+          "description": "Select the Safety Factor result, then Home ribbon \u2192 Images \u2192 Figure.",
+          "selector": {
+            "type": "uia",
+            "name": "Figure"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Figure inserted under Safety Factor?"
+          },
+          "hints": [
+            "Same Images > Figure control."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "me_61_report_preview",
+          "app": "mechanical",
+          "title": "Preview the report",
+          "description": "Click Report Preview on the Home tab to generate and review the full report.",
+          "selector": {
+            "type": "uia",
+            "name": "Report Preview"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Report generated, including all inserted Figures and their captions?"
+          },
+          "hints": [
+            "Report Preview is in the Tools group of the Home ribbon."
+          ],
+          "source_image": "mock_server/data/images/tut8_results_validation/me_61_report_preview.png"
+        }
+      ]
+    }
+  ]
+}
