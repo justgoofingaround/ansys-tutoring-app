@@ -1,0 +1,203 @@
+{
+  "tutorial_id": "tut6_mesh",
+  "version": 1,
+  "title": "Module 06 \u2014 Meshing",
+  "problem": "Starting from the provided Globe_Valve_SS06_Start.wbpz archive, generate a mesh for the globe valve assembly: first the program-controlled default mesh, then a refined global mesh (Adaptive Sizing off, 6.35 mm global element size), then a local Body Sizing control on the valve body (3.175 mm) to further refine the mesh in that region, saving the project when done.",
+  "apps": ["workbench", "mechanical"],
+  "_notes": {
+    "source": "Built from ANSYS Mechanical Getting Started, Release 2023 R1 \u2014 Module 06 Step-by-Step Guide: Mesh.",
+    "selector_status": "UNVERIFIED \u2014 selectors use display names/labels taken from the source slide screenshots, following the same convention as tut1.json. Resolve real UIA automation_id/name via live testing before relying on them.",
+    "highlight_legend": "uia = overlay draws a box around a UIA element. ocr_text = overlay finds on-screen text via OCR (used for the Workbench Toolbox / Project Schematic, which are not exposed to UIA \u2014 see tut1.json's workbench_uia_finding note). instruction = 3D-viewport action UIA cannot see; shows a reference screenshot instead of a tracked box. none = no highlight (launch).",
+    "verify_legend": "Mesh generation is a real, checkable model-state change (element/node counts, mesh existence), so those steps use verify.type == \"script\" (engine pymechanical) the way tut1.json does for solve/result steps. Steps with no clean automatable check (menu opens, field entry, save) use verify.type == \"manual\", matching tut1's manual_verify_switch_2026-06 decision for anything not worth chasing OCR/UIA fragility on for a student-facing pilot.",
+    "report_checks_omitted": "No report_checks block: this module doesn't ask the student to compute or report a numeric result (it's a meshing exercise, not a solved analysis), so per the template's guidance the tutorial simply has no report-upload step.",
+    "wb_steps_reused_from_tut5": "wb_01_open / wb_02_open_archive / wb_03_edit_model mirror the same three steps in tut5_connections.json (only the archive filename differs: Globe_Valve_SS06_Start.wbpz here vs. SS05 there), since both modules start the same way \u2014 open Workbench, open the starter archive, edit the Model cell into Mechanical."
+  },
+  "sections": [
+    {
+      "section": "Open the starter project in Workbench",
+      "app": "workbench",
+      "steps": [
+        {
+          "step_id": "wb_01_open",
+          "app": "workbench",
+          "title": "Open Ansys Workbench",
+          "description": "Launch Ansys Workbench: Windows Start Menu button \u2192 All apps \u2192 ANSYS nn.n \u2192 Workbench nn.n.",
+          "selector": { "type": "window", "app": "workbench" },
+          "highlight": "none",
+          "action": { "kind": "launch" },
+          "verify": { "type": "manual", "prompt": "Is Ansys Workbench open?" },
+          "hints": ["Start it from the Windows Start menu or the lab launcher."],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_02_open_archive",
+          "app": "workbench",
+          "title": "Open the starter archive",
+          "description": "File \u2192 Open\u2026, browse for archive file Globe_Valve_SS06_Start.wbpz, and click Open.",
+          "selector": { "type": "uia", "name": "Open", "via": "File" },
+          "highlight": "uia",
+          "action": { "kind": "menu_select", "via": "File", "then": "file_open", "value": "Globe_Valve_SS06_Start.wbpz" },
+          "verify": { "type": "manual", "prompt": "Project opened, showing the Static Structural system with Engineering Data and Geometry already checked?" },
+          "hints": ["Click File to open the menu, then choose Open\u2026"],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_03_edit_model",
+          "app": "workbench",
+          "title": "Open Mechanical",
+          "description": "Right-click the Model cell in the Static Structural system block and choose Edit\u2026 to launch Ansys Mechanical.",
+          "selector": { "type": "ocr_text", "text": "Model", "scope": "schematic" },
+          "highlight": "ocr_text",
+          "action": { "kind": "right_click", "then": "menu_select", "value": "Edit..." },
+          "verify": { "type": "manual", "prompt": "Mechanical opened?" },
+          "hints": ["The system block is in the Project Schematic; 'Model' is the row with the lightning-bolt icon."],
+          "source_image": null
+        }
+      ]
+    },
+    {
+      "section": "Generate the default mesh",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_01_generate_default_mesh",
+          "app": "mechanical",
+          "title": "Generate the default mesh",
+          "description": "Right-click Mesh in the Outline tree and choose Generate Mesh to create the program-controlled default mesh.",
+          "selector": { "type": "uia", "name": "Mesh" },
+          "highlight": "uia",
+          "action": { "kind": "right_click", "then": "menu_select", "value": "Generate Mesh" },
+          "verify": { "type": "script", "engine": "pymechanical", "check": "mesh_generated", "args": {} },
+          "hints": ["Right-click directly on the 'Mesh' branch in the Outline tree."],
+          "source_image": "mock_server/data/images/tut6_mesh/me_01_generate_default_mesh.png"
+        }
+      ]
+    },
+    {
+      "section": "Refine the global mesh settings",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_02_select_mesh_branch",
+          "app": "mechanical",
+          "title": "Select the Mesh branch",
+          "description": "Select Mesh in the Outline tree to show its Details panel.",
+          "selector": { "type": "uia", "name": "Mesh" },
+          "highlight": "uia",
+          "action": { "kind": "click" },
+          "verify": { "type": "manual", "prompt": "Details of \"Mesh\" panel showing Defaults and Sizing sections?" },
+          "hints": ["The Details panel appears at the bottom-left when Mesh is selected."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_03_disable_adaptive_sizing",
+          "app": "mechanical",
+          "title": "Turn off Use Adaptive Sizing",
+          "description": "In Details of Mesh \u2192 Sizing, set Use Adaptive Sizing to No.",
+          "selector": { "type": "uia", "name": "Use Adaptive Sizing" },
+          "highlight": "uia",
+          "action": { "kind": "click", "then": "select", "value": "No" },
+          "verify": { "type": "manual", "prompt": "Use Adaptive Sizing set to No?" },
+          "hints": ["Use Adaptive Sizing is a dropdown in the Sizing section of Details."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_04_set_global_element_size",
+          "app": "mechanical",
+          "title": "Set the global Element Size to 6.35 mm",
+          "description": "In Details of Mesh \u2192 Defaults, set Element Size to 6.35 mm.",
+          "selector": { "type": "uia", "name": "Element Size" },
+          "highlight": "uia",
+          "action": { "kind": "text_entry", "value": "6.35 mm" },
+          "verify": { "type": "manual", "prompt": "Element Size shows 6.35 mm?" },
+          "hints": ["Element Size is in the Defaults section, above Sizing."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_05_generate_mesh_global",
+          "app": "mechanical",
+          "title": "Generate Mesh with the new global size",
+          "description": "Right-click Mesh in the Outline tree and choose Generate Mesh again to apply the 6.35 mm global element size.",
+          "selector": { "type": "uia", "name": "Mesh" },
+          "highlight": "uia",
+          "action": { "kind": "right_click", "then": "menu_select", "value": "Generate Mesh" },
+          "verify": { "type": "script", "engine": "pymechanical", "check": "mesh_generated", "args": {} },
+          "hints": ["Same right-click menu as the first mesh generation."],
+          "source_image": "mock_server/data/images/tut6_mesh/me_05_generate_mesh_global.png"
+        }
+      ]
+    },
+    {
+      "section": "Add local Body Sizing on the valve body",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_06_insert_body_sizing",
+          "app": "mechanical",
+          "title": "Insert a Body Sizing control",
+          "description": "Right-click Mesh in the Outline tree \u2192 Insert \u2192 Sizing to add a Body Sizing control.",
+          "selector": { "type": "uia", "name": "Sizing" },
+          "highlight": "uia",
+          "action": { "kind": "right_click", "then": "menu_select", "value": "Insert > Sizing" },
+          "verify": { "type": "uia", "check": "exists", "target": "Body Sizing" },
+          "hints": ["'Sizing' is under the Insert submenu when right-clicking Mesh."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_07_scope_body_sizing",
+          "app": "mechanical",
+          "title": "Scope Body Sizing to the valve body",
+          "description": "Select the valve body in the Geometry view, then click Apply next to detail Geometry in the Body Sizing Details so Geometry reads '1 Body'.",
+          "selector": { "type": "viewport" },
+          "highlight": "instruction",
+          "action": { "kind": "select_body", "then": "click", "value": "Apply" },
+          "verify": { "type": "manual", "prompt": "Detail Geometry now shows '1 Body' (the valve body)?" },
+          "hints": ["Click the Body Sizing branch first so its Details panel and Geometry field are active."],
+          "source_image": "mock_server/data/images/tut6_mesh/me_07_scope_body_sizing.png"
+        },
+        {
+          "step_id": "me_08_set_body_element_size",
+          "app": "mechanical",
+          "title": "Set the Body Sizing Element Size to 3.175 mm",
+          "description": "In the Body Sizing Details \u2192 Definition, set Element Size to 3.175 mm.",
+          "selector": { "type": "uia", "name": "Element Size" },
+          "highlight": "uia",
+          "action": { "kind": "text_entry", "value": "3.175 mm" },
+          "verify": { "type": "manual", "prompt": "Body Sizing's Element Size shows 3.175 mm?" },
+          "hints": ["Element Size is in the Definition section of the Body Sizing Details."],
+          "source_image": null
+        },
+        {
+          "step_id": "me_09_generate_mesh_final",
+          "app": "mechanical",
+          "title": "Generate the final mesh",
+          "description": "Right-click Mesh in the Outline tree and choose Generate Mesh to apply the local Body Sizing on top of the global 6.35 mm size.",
+          "selector": { "type": "uia", "name": "Mesh" },
+          "highlight": "uia",
+          "action": { "kind": "right_click", "then": "menu_select", "value": "Generate Mesh" },
+          "verify": { "type": "script", "engine": "pymechanical", "check": "mesh_generated", "args": {} },
+          "hints": ["The valve body should now appear visibly finer than the flanges/bolts in the Geometry view."],
+          "source_image": "mock_server/data/images/tut6_mesh/me_09_generate_mesh_final.png"
+        }
+      ]
+    },
+    {
+      "section": "Save the project",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_10_save_project",
+          "app": "mechanical",
+          "title": "Save the project",
+          "description": "File \u2192 Save Project, to save the meshed model for use later if desired.",
+          "selector": { "type": "uia", "name": "Save Project", "via": "File" },
+          "highlight": "uia",
+          "action": { "kind": "menu_select", "via": "File", "value": "Save Project" },
+          "verify": { "type": "manual", "prompt": "Project saved?" },
+          "hints": ["Click File to open the menu, then choose Save Project."],
+          "source_image": null
+        }
+      ]
+    }
+  ]
+}
