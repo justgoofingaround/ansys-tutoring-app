@@ -1,20 +1,36 @@
 {
   "tutorial_id": "tut7_analysis_settings_loads_supports",
   "version": 1,
-  "title": "Module 07 \u2014 Analysis Settings, Loads, and Supports",
+  "title": "Tutorial 8 \u2014 Analysis Settings, Loads, and Supports",
   "problem": "Starting from the provided Globe_Valve_SS07_Start.wbpz archive, select all 55 internal 'wetted' surfaces of the globe valve (48 on ValveBody, 2 on flange, 5 on seal) and apply a 7 MPa Pressure load. Apply Frictionless Supports to both end-flange faces and to all 9 bolt-hole surfaces on each end flange. Solve, then review Total Deformation and Equivalent (von-Mises) Stress.",
   "report_checks": {
-    "required_sections": ["Static Structural", "Solution", "Results"],
-    "preferred_sections": ["Total Deformation", "Equivalent Stress"],
-    "must_contain": ["Pressure", "Frictionless Support"],
+    "required_sections": [
+      "Static Structural",
+      "Solution",
+      "Results"
+    ],
+    "preferred_sections": [
+      "Total Deformation",
+      "Equivalent Stress"
+    ],
+    "must_contain": [
+      "Pressure",
+      "Frictionless Support"
+    ],
     "expected_result": {
       "value": 133.15,
       "tolerance": 5,
       "units": "MPa",
-      "aliases": ["133.15", "133.15 MPa"]
+      "aliases": [
+        "133.15",
+        "133.15 MPa"
+      ]
     }
   },
-  "apps": ["workbench", "mechanical"],
+  "apps": [
+    "workbench",
+    "mechanical"
+  ],
   "_notes": {
     "source": "Built from ANSYS Mechanical Getting Started, Release 2023 R1 \u2014 Module 07 Student Step-by-Step Guide: Analysis Settings, Loads, and Supports.",
     "selector_status": "UNVERIFIED \u2014 selectors use display names/labels taken from the source slide screenshots, following the same convention as tut1.json. Resolve real UIA automation_id/name via live testing before relying on them.",
@@ -34,11 +50,21 @@
           "app": "workbench",
           "title": "Open Ansys Workbench",
           "description": "Launch Ansys Workbench: Windows Start Menu button \u2192 All apps \u2192 ANSYS nn.n \u2192 Workbench nn.n.",
-          "selector": { "type": "window", "app": "workbench" },
+          "selector": {
+            "type": "window",
+            "app": "workbench"
+          },
           "highlight": "none",
-          "action": { "kind": "launch" },
-          "verify": { "type": "manual", "prompt": "Is Ansys Workbench open?" },
-          "hints": ["Start it from the Windows Start menu or the lab launcher."],
+          "action": {
+            "kind": "launch"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Is Ansys Workbench open?"
+          },
+          "hints": [
+            "Start it from the Windows Start menu or the lab launcher."
+          ],
           "source_image": null
         },
         {
@@ -46,11 +72,25 @@
           "app": "workbench",
           "title": "Open the starter archive",
           "description": "File \u2192 Open\u2026, browse for archive file Globe_Valve_SS07_Start.wbpz, click Open, then save it to a convenient location.",
-          "selector": { "type": "uia", "name": "Open", "via": "File" },
+          "selector": {
+            "type": "uia",
+            "name": "Open",
+            "via": "File"
+          },
           "highlight": "uia",
-          "action": { "kind": "menu_select", "via": "File", "then": "file_open", "value": "Globe_Valve_SS07_Start.wbpz" },
-          "verify": { "type": "manual", "prompt": "Project opened and saved to a convenient location?" },
-          "hints": ["Click File to open the menu, then choose Open\u2026"],
+          "action": {
+            "kind": "menu_select",
+            "via": "File",
+            "then": "file_open",
+            "value": "Globe_Valve_SS07_Start.wbpz"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Project opened and saved to a convenient location?"
+          },
+          "hints": [
+            "Click File to open the menu, then choose Open\u2026"
+          ],
           "source_image": null
         },
         {
@@ -58,11 +98,24 @@
           "app": "workbench",
           "title": "Edit the Model cell",
           "description": "Right-click the Model cell in the Static Structural system block and choose Edit\u2026 to launch Ansys Mechanical.",
-          "selector": { "type": "ocr_text", "text": "Model", "scope": "schematic" },
+          "selector": {
+            "type": "ocr_text",
+            "text": "Model",
+            "scope": "schematic"
+          },
           "highlight": "ocr_text",
-          "action": { "kind": "right_click", "then": "menu_select", "value": "Edit..." },
-          "verify": { "type": "manual", "prompt": "Mechanical opened?" },
-          "hints": ["The system block is in the Project Schematic; 'Model' is the row with the lightning-bolt icon."],
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Edit..."
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Mechanical opened?"
+          },
+          "hints": [
+            "The system block is in the Project Schematic; 'Model' is the row with the lightning-bolt icon."
+          ],
           "source_image": null
         }
       ]
@@ -76,11 +129,22 @@
           "app": "mechanical",
           "title": "Define Section Plane 1",
           "description": "Define Section Plane 1 to cut through the assembly, for ease in viewing the internal 'wetted' surfaces.",
-          "selector": { "type": "uia", "name": "New Section Plane" },
+          "selector": {
+            "type": "uia",
+            "name": "New Section Plane"
+          },
           "highlight": "uia",
-          "action": { "kind": "click", "then": "drag" },
-          "verify": { "type": "manual", "prompt": "Section Plane 1 created, exposing the interior of the valve, flange, and seal?" },
-          "hints": ["The Section Plane tool is on the Graphics toolbar above the Geometry view."],
+          "action": {
+            "kind": "click",
+            "then": "drag"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Section Plane 1 created, exposing the interior of the valve, flange, and seal?"
+          },
+          "hints": [
+            "The Section Plane tool is on the Graphics toolbar above the Geometry view."
+          ],
           "source_image": "mock_server/data/images/tut7_analysis_settings_loads_supports/me_01_define_section_plane.png"
         },
         {
@@ -88,11 +152,21 @@
           "app": "mechanical",
           "title": "Select all 55 wetted surfaces",
           "description": "Ctrl+click to select all internal 'wetted' surfaces: 48 on the ValveBody part, 2 on the flange part, and 5 on the seal part, for a total of 55 surfaces.",
-          "selector": { "type": "viewport" },
+          "selector": {
+            "type": "viewport"
+          },
           "highlight": "instruction",
-          "action": { "kind": "select_face" },
-          "verify": { "type": "manual", "prompt": "55 faces selected in total (48 ValveBody + 2 flange + 5 seal)?" },
-          "hints": ["Use the same technique as the Module 01 Step-by-Step Guide for the surfaces on the valve body.", "Rotate the model with the section plane active to reach hidden faces."],
+          "action": {
+            "kind": "select_face"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "55 faces selected in total (48 ValveBody + 2 flange + 5 seal)?"
+          },
+          "hints": [
+            "Use the same technique as the Module 01 Step-by-Step Guide for the surfaces on the valve body.",
+            "Rotate the model with the section plane active to reach hidden faces."
+          ],
           "source_image": "mock_server/data/images/tut7_analysis_settings_loads_supports/me_02_select_wetted_surfaces.png"
         }
       ]
@@ -106,11 +180,24 @@
           "app": "mechanical",
           "title": "Insert a Pressure load",
           "description": "Right-click Static Structural in the Outline tree \u2192 Insert \u2192 Pressure, scoped to the 55 faces just selected.",
-          "selector": { "type": "uia", "name": "Pressure" },
+          "selector": {
+            "type": "uia",
+            "name": "Pressure"
+          },
           "highlight": "uia",
-          "action": { "kind": "right_click", "then": "menu_select", "value": "Insert > Pressure" },
-          "verify": { "type": "uia", "check": "exists", "target": "Pressure" },
-          "hints": ["Right-click directly on 'Static Structural', not on an individual body."],
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Insert > Pressure"
+          },
+          "verify": {
+            "type": "uia",
+            "check": "exists",
+            "target": "Pressure"
+          },
+          "hints": [
+            "Right-click directly on 'Static Structural', not on an individual body."
+          ],
           "source_image": null
         },
         {
@@ -118,11 +205,28 @@
           "app": "mechanical",
           "title": "Set the Pressure magnitude to 7 MPa",
           "description": "In the Pressure Details, set Magnitude to 7 MPa.",
-          "selector": { "type": "uia", "name": "Magnitude" },
+          "selector": {
+            "type": "uia",
+            "name": "Magnitude"
+          },
           "highlight": "uia",
-          "action": { "kind": "text_entry", "value": "7 MPa" },
-          "verify": { "type": "script", "engine": "pymechanical", "check": "pressure_magnitude", "args": { "value": 7, "unit": "MPa", "tol": 0.1 } },
-          "hints": ["Magnitude is in the Definition section of Details."],
+          "action": {
+            "kind": "text_entry",
+            "value": "7 MPa"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "pressure_magnitude",
+            "args": {
+              "value": 7,
+              "unit": "MPa",
+              "tol": 0.1
+            }
+          },
+          "hints": [
+            "Magnitude is in the Definition section of Details."
+          ],
           "source_image": null
         }
       ]
@@ -136,11 +240,20 @@
           "app": "mechanical",
           "title": "Select one end flange face",
           "description": "Click one end flange surface in the Geometry view.",
-          "selector": { "type": "viewport" },
+          "selector": {
+            "type": "viewport"
+          },
           "highlight": "instruction",
-          "action": { "kind": "select_face" },
-          "verify": { "type": "manual", "prompt": "One end flange face highlighted?" },
-          "hints": ["This is the flat annular face at the very end of one branch of the valve."],
+          "action": {
+            "kind": "select_face"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "One end flange face highlighted?"
+          },
+          "hints": [
+            "This is the flat annular face at the very end of one branch of the valve."
+          ],
           "source_image": "mock_server/data/images/tut7_analysis_settings_loads_supports/me_05_select_flange_face_1.png"
         },
         {
@@ -148,11 +261,27 @@
           "app": "mechanical",
           "title": "Insert Frictionless Support on it",
           "description": "Right-click Static Structural \u2192 Insert \u2192 Frictionless Support, scoped to the selected flange face.",
-          "selector": { "type": "uia", "name": "Frictionless Support" },
+          "selector": {
+            "type": "uia",
+            "name": "Frictionless Support"
+          },
           "highlight": "uia",
-          "action": { "kind": "right_click", "then": "menu_select", "value": "Insert > Frictionless Support" },
-          "verify": { "type": "script", "engine": "pymechanical", "check": "bc_exists", "args": { "type": "Frictionless Support" } },
-          "hints": ["This becomes 'Frictionless Support' in the Outline tree."],
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Insert > Frictionless Support"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "bc_exists",
+            "args": {
+              "type": "Frictionless Support"
+            }
+          },
+          "hints": [
+            "This becomes 'Frictionless Support' in the Outline tree."
+          ],
           "source_image": null
         },
         {
@@ -160,11 +289,20 @@
           "app": "mechanical",
           "title": "Select the other end flange face",
           "description": "Click the other end flange surface in the Geometry view.",
-          "selector": { "type": "viewport" },
+          "selector": {
+            "type": "viewport"
+          },
           "highlight": "instruction",
-          "action": { "kind": "select_face" },
-          "verify": { "type": "manual", "prompt": "The opposite end flange face highlighted?" },
-          "hints": ["This is the flat annular face at the end of the other branch."],
+          "action": {
+            "kind": "select_face"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "The opposite end flange face highlighted?"
+          },
+          "hints": [
+            "This is the flat annular face at the end of the other branch."
+          ],
           "source_image": "mock_server/data/images/tut7_analysis_settings_loads_supports/me_07_select_flange_face_2.png"
         },
         {
@@ -172,11 +310,27 @@
           "app": "mechanical",
           "title": "Insert Frictionless Support on it",
           "description": "Right-click Static Structural \u2192 Insert \u2192 Frictionless Support, scoped to this second flange face.",
-          "selector": { "type": "uia", "name": "Frictionless Support" },
+          "selector": {
+            "type": "uia",
+            "name": "Frictionless Support"
+          },
           "highlight": "uia",
-          "action": { "kind": "right_click", "then": "menu_select", "value": "Insert > Frictionless Support" },
-          "verify": { "type": "script", "engine": "pymechanical", "check": "bc_exists", "args": { "type": "Frictionless Support" } },
-          "hints": ["This becomes 'Frictionless Support 2' in the Outline tree."],
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Insert > Frictionless Support"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "bc_exists",
+            "args": {
+              "type": "Frictionless Support"
+            }
+          },
+          "hints": [
+            "This becomes 'Frictionless Support 2' in the Outline tree."
+          ],
           "source_image": null
         }
       ]
@@ -190,11 +344,20 @@
           "app": "mechanical",
           "title": "Select the 9 bolt-hole surfaces on one end flange",
           "description": "Ctrl+click to select all 9 cylindrical hole surfaces on one end flange.",
-          "selector": { "type": "viewport" },
+          "selector": {
+            "type": "viewport"
+          },
           "highlight": "instruction",
-          "action": { "kind": "select_face" },
-          "verify": { "type": "manual", "prompt": "All 9 cylindrical hole faces on this flange selected?" },
-          "hints": ["Rotate the view to make sure all 9 holes around the bolt circle are included."],
+          "action": {
+            "kind": "select_face"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "All 9 cylindrical hole faces on this flange selected?"
+          },
+          "hints": [
+            "Rotate the view to make sure all 9 holes around the bolt circle are included."
+          ],
           "source_image": "mock_server/data/images/tut7_analysis_settings_loads_supports/me_09_select_holes_flange_1.png"
         },
         {
@@ -202,11 +365,27 @@
           "app": "mechanical",
           "title": "Insert Frictionless Support on the holes",
           "description": "Right-click Static Structural \u2192 Insert \u2192 Frictionless Support, scoped to the 9 selected hole faces.",
-          "selector": { "type": "uia", "name": "Frictionless Support" },
+          "selector": {
+            "type": "uia",
+            "name": "Frictionless Support"
+          },
           "highlight": "uia",
-          "action": { "kind": "right_click", "then": "menu_select", "value": "Insert > Frictionless Support" },
-          "verify": { "type": "script", "engine": "pymechanical", "check": "bc_exists", "args": { "type": "Frictionless Support" } },
-          "hints": ["This becomes 'Frictionless Support 3' in the Outline tree."],
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Insert > Frictionless Support"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "bc_exists",
+            "args": {
+              "type": "Frictionless Support"
+            }
+          },
+          "hints": [
+            "This becomes 'Frictionless Support 3' in the Outline tree."
+          ],
           "source_image": null
         },
         {
@@ -214,11 +393,20 @@
           "app": "mechanical",
           "title": "Select the 9 bolt-hole surfaces on the other end flange",
           "description": "Ctrl+click to select all 9 cylindrical hole surfaces on the other end flange.",
-          "selector": { "type": "viewport" },
+          "selector": {
+            "type": "viewport"
+          },
           "highlight": "instruction",
-          "action": { "kind": "select_face" },
-          "verify": { "type": "manual", "prompt": "All 9 cylindrical hole faces on the second flange selected?" },
-          "hints": ["Same technique as the previous flange, on the opposite end."],
+          "action": {
+            "kind": "select_face"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "All 9 cylindrical hole faces on the second flange selected?"
+          },
+          "hints": [
+            "Same technique as the previous flange, on the opposite end."
+          ],
           "source_image": "mock_server/data/images/tut7_analysis_settings_loads_supports/me_11_select_holes_flange_2.png"
         },
         {
@@ -226,11 +414,27 @@
           "app": "mechanical",
           "title": "Insert Frictionless Support on the holes",
           "description": "Right-click Static Structural \u2192 Insert \u2192 Frictionless Support, scoped to these 9 selected hole faces.",
-          "selector": { "type": "uia", "name": "Frictionless Support" },
+          "selector": {
+            "type": "uia",
+            "name": "Frictionless Support"
+          },
           "highlight": "uia",
-          "action": { "kind": "right_click", "then": "menu_select", "value": "Insert > Frictionless Support" },
-          "verify": { "type": "script", "engine": "pymechanical", "check": "bc_exists", "args": { "type": "Frictionless Support" } },
-          "hints": ["This becomes 'Frictionless Support 4' in the Outline tree."],
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Insert > Frictionless Support"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "bc_exists",
+            "args": {
+              "type": "Frictionless Support"
+            }
+          },
+          "hints": [
+            "This becomes 'Frictionless Support 4' in the Outline tree."
+          ],
           "source_image": null
         }
       ]
@@ -244,11 +448,21 @@
           "app": "mechanical",
           "title": "Review the loads and supports graphically",
           "description": "Select the environment (Static Structural) branch and review the graphics display: Pressure (A), and Frictionless Supports (B, C, D, E) should all be visible with their annotation labels.",
-          "selector": { "type": "uia", "name": "Static Structural" },
+          "selector": {
+            "type": "uia",
+            "name": "Static Structural"
+          },
           "highlight": "uia",
-          "action": { "kind": "click" },
-          "verify": { "type": "manual", "prompt": "All 5 labeled loads/supports (A-E) visible in the Geometry view?" },
-          "hints": ["Pressure is usually labeled A (red); the four Frictionless Supports are B-E (blue/purple)."],
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "All 5 labeled loads/supports (A-E) visible in the Geometry view?"
+          },
+          "hints": [
+            "Pressure is usually labeled A (red); the four Frictionless Supports are B-E (blue/purple)."
+          ],
           "source_image": "mock_server/data/images/tut7_analysis_settings_loads_supports/me_13_review_environment_graphics.png"
         }
       ]
@@ -262,11 +476,25 @@
           "app": "mechanical",
           "title": "Solve",
           "description": "Click Solve on the Home ribbon.",
-          "selector": { "type": "uia", "name": "Solve" },
+          "selector": {
+            "type": "uia",
+            "name": "Solve"
+          },
           "highlight": "uia",
-          "action": { "kind": "click" },
-          "verify": { "type": "script", "engine": "pymechanical", "check": "solve_status", "args": { "status": "Done" } },
-          "hints": ["Solving may take a moment; watch the status bar."],
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "solve_status",
+            "args": {
+              "status": "Done"
+            }
+          },
+          "hints": [
+            "Solving may take a moment; watch the status bar."
+          ],
           "source_image": null
         },
         {
@@ -274,11 +502,24 @@
           "app": "mechanical",
           "title": "Insert Total Deformation",
           "description": "Right-click Solution \u2192 Insert \u2192 Deformation \u2192 Total.",
-          "selector": { "type": "uia", "name": "Solution" },
+          "selector": {
+            "type": "uia",
+            "name": "Solution"
+          },
           "highlight": "uia",
-          "action": { "kind": "right_click", "then": "menu_select", "value": "Insert > Deformation > Total" },
-          "verify": { "type": "uia", "check": "exists", "target": "Total Deformation" },
-          "hints": ["Solution is under the Static Structural branch in the Outline."],
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Insert > Deformation > Total"
+          },
+          "verify": {
+            "type": "uia",
+            "check": "exists",
+            "target": "Total Deformation"
+          },
+          "hints": [
+            "Solution is under the Static Structural branch in the Outline."
+          ],
           "source_image": null
         },
         {
@@ -286,11 +527,24 @@
           "app": "mechanical",
           "title": "Insert Equivalent Stress",
           "description": "Right-click Solution \u2192 Insert \u2192 Stress \u2192 Equivalent.",
-          "selector": { "type": "uia", "name": "Solution" },
+          "selector": {
+            "type": "uia",
+            "name": "Solution"
+          },
           "highlight": "uia",
-          "action": { "kind": "right_click", "then": "menu_select", "value": "Insert > Stress > Equivalent" },
-          "verify": { "type": "uia", "check": "exists", "target": "Equivalent Stress" },
-          "hints": ["Same right-click menu, this time choose Stress > Equivalent."],
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Insert > Stress > Equivalent"
+          },
+          "verify": {
+            "type": "uia",
+            "check": "exists",
+            "target": "Equivalent Stress"
+          },
+          "hints": [
+            "Same right-click menu, this time choose Stress > Equivalent."
+          ],
           "source_image": null
         },
         {
@@ -298,11 +552,27 @@
           "app": "mechanical",
           "title": "Evaluate all results",
           "description": "Right-click Solution and choose Evaluate All Results.",
-          "selector": { "type": "uia", "name": "Solution" },
+          "selector": {
+            "type": "uia",
+            "name": "Solution"
+          },
           "highlight": "uia",
-          "action": { "kind": "right_click", "then": "menu_select", "value": "Evaluate All Results" },
-          "verify": { "type": "script", "engine": "pymechanical", "check": "result_evaluated", "args": { "result": "Total Deformation" } },
-          "hints": ["Both Total Deformation and Equivalent Stress evaluate together."],
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Evaluate All Results"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "result_evaluated",
+            "args": {
+              "result": "Total Deformation"
+            }
+          },
+          "hints": [
+            "Both Total Deformation and Equivalent Stress evaluate together."
+          ],
           "source_image": null
         },
         {
@@ -310,11 +580,21 @@
           "app": "mechanical",
           "title": "Review Total Deformation",
           "description": "Select the Total Deformation branch to review the deformation contour result.",
-          "selector": { "type": "uia", "name": "Total Deformation" },
+          "selector": {
+            "type": "uia",
+            "name": "Total Deformation"
+          },
           "highlight": "uia",
-          "action": { "kind": "click" },
-          "verify": { "type": "manual", "prompt": "Total Deformation contour reviewed in the Geometry view?" },
-          "hints": ["The legend on the left shows the Min/Max deformation values."],
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Total Deformation contour reviewed in the Geometry view?"
+          },
+          "hints": [
+            "The legend on the left shows the Min/Max deformation values."
+          ],
           "source_image": "mock_server/data/images/tut7_analysis_settings_loads_supports/me_18_review_total_deformation.png"
         },
         {
@@ -322,11 +602,21 @@
           "app": "mechanical",
           "title": "Review Equivalent Stress",
           "description": "Select the Equivalent Stress branch to review the von-Mises stress contour result. Expected maximum is approximately 133.15 MPa.",
-          "selector": { "type": "uia", "name": "Equivalent Stress" },
+          "selector": {
+            "type": "uia",
+            "name": "Equivalent Stress"
+          },
           "highlight": "uia",
-          "action": { "kind": "click" },
-          "verify": { "type": "manual", "prompt": "Equivalent Stress contour reviewed, with a Max around 133.15 MPa?" },
-          "hints": ["The highest stress concentrations appear near the bolt holes and the body-to-bonnet junction."],
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Equivalent Stress contour reviewed, with a Max around 133.15 MPa?"
+          },
+          "hints": [
+            "The highest stress concentrations appear near the bolt holes and the body-to-bonnet junction."
+          ],
           "source_image": "mock_server/data/images/tut7_analysis_settings_loads_supports/me_19_review_equivalent_stress.png"
         }
       ]

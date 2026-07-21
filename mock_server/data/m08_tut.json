@@ -1,7 +1,7 @@
 {
   "tutorial_id": "tut8_results_validation",
   "version": 1,
-  "title": "Module 08 \u2014 Results and Validation",
+  "title": "Tutorial 9 \u2014 Results and Validation",
   "problem": "Starting from the provided Globe_Valve_SS08_Start.wbpz archive (solved Static Structural analysis), review and animate Total Deformation, add scoped Equivalent Stress results for the Valve Body and Flange, customize contour scaling/display, probe numerical values, create Reaction Force results for each Frictionless Support, check radial/tangential stress against thick-walled-cylinder theory using a local cylindrical coordinate system, compute a Safety Factor with a Mohr-Coulomb Stress Tool (147 MPa tensile/compressive limits), add Principal Stress results, run a Stress Convergence study on the Valve Body's outer surface (5% allowable change, up to 4 refinement loops, iterative solver), and finally generate and review a report.",
   "report_checks": {
     "required_sections": [

@@ -1,7 +1,7 @@
 {
   "tutorial_id": "mod02_problem_statement",
   "version": 1,
-  "title": "Module 02 -- Getting Started: Navigating the Globe Valve Assembly in Mechanical",
+  "title": "Tutorial 3 \u2014 Getting Started: Navigating the Globe Valve Assembly in Mechanical",
   "problem": "Open the Globe_Valve_SS02_Start.wbpz archive in Workbench and edit the Static Structural model (cell B4) in Mechanical. Practice navigating the Model Outline and geometry of a globe valve assembly (valve body, flange, valve rod, seal, nuts, and bolts): expand the Geometry branch and highlight individual and multiple bodies from the Outline, hide and show bodies from the graphics window and via keyboard shortcut (F9 / Shift+F9), use the Explode tool to separate the assembly, use the Body selection filter to pick bodies directly in the graphics window, create and remove a section plane to view the valve's internal surfaces, use Paint Select with the Face selection filter to select all internal surfaces of the valve body, and review the Loads and Supports available under the Static Structural branch.",
   "report_checks": {
     "required_sections": [

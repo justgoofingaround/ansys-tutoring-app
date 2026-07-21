@@ -1,7 +1,7 @@
 {
   "tutorial_id": "tut04_geometry_materials_coordinate_systems",
   "version": 1,
-  "title": "Module 04 \u2014 Geometry, Materials, and Coordinate Systems for a Globe Valve",
+  "title": "Tutorial 5 \u2014 Geometry, Materials, and Coordinate Systems for a Globe Valve",
   "problem": "Build a Static Structural analysis workflow for the globe valve assembly (globe_valve.scdoc): create Engineering Data, Geometry, and Static Structural systems and link them; define AISI 6150 Steel, Type 40 Gray Cast Iron, and Type 302 Stainless Steel materials; import the CAD geometry and assign the correct material to each of the 20 bodies; then create a local Cartesian coordinate system (rotated 30\u00b0 about Z) and a local cylindrical coordinate system on the valve body's outer surface.",
   "report_checks": {
     "required_sections": [
