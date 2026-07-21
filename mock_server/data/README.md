@@ -84,3 +84,15 @@ only when `report_checks` exists):
 - [ ] Walked through live on a lab PC (2025 R2): every `uia`/`ocr_text` box finds its element
 - [ ] Every `instruction` step shows its screenshot
 - [ ] Uploaded a real generated report → `report_checks` passes on a correct report, fails on a wrong one
+
+## Quizzes
+
+A quiz is one JSON file attached to a tutorial. Copy `quizzes/_template.json`
+(fill in `quiz_id`, an existing `tutorial_id`, and the questions — the
+template's `_readme` explains every rule; `quizzes/tut1_3d_bar.json` is a full
+real example), then either upload it on the instructor **Quizzes** page
+("Upload a quiz" validates it and publishes immediately) or drop it in
+`quizzes/` and restart the server. Re-uploading the same `quiz_id` replaces
+its questions; each tutorial has one active quiz. Give every question a
+`concept_tag` (reused across quizzes) and an `explanation` — they power the
+concept-mastery analytics and the post-answer feedback.

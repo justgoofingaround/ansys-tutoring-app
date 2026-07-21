@@ -20,7 +20,7 @@ from fastapi.responses import PlainTextResponse
 from ..deps import csrf_check, get_db, get_settings, require_instructor
 from ..models import SectionCreate, SectionResponse
 from ..security import new_class_code
-from ..services import faq_service, progress, tutorial_store
+from ..services import faq_service, progress, quiz_store, tutorial_store
 from ..services.tutorial_store import TutorialValidationError
 
 router = APIRouter(
@@ -353,6 +353,40 @@ def tutorial_settings(
         "SELECT * FROM tutorials WHERE tutorial_id = ?", (tutorial_id,)
     ).fetchone()
     return _library_entry(conn, meta)
+
+
+# ── quiz upload ──────────────────────────────────────────────────────────
+
+
+@router.post("/quizzes", status_code=201, dependencies=[Depends(csrf_check)])
+def upload_quiz(
+    file: UploadFile,
+    conn: sqlite3.Connection = Depends(get_db),
+) -> dict:
+    """Upload an authored quiz JSON (see mock_server/data/quizzes/_template.json).
+    Validator errors reject with 422 + findings; a valid quiz publishes
+    immediately (re-uploading the same quiz_id replaces its questions)."""
+    try:
+        data = json.loads(file.file.read().decode("utf-8-sig"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={"findings": [{"severity": "error", "where": "file", "message": f"not valid JSON: {exc}"}]},
+        )
+    findings = quiz_store.validate_quiz(conn, data)
+    if any(f["severity"] == "error" for f in findings):
+        raise HTTPException(status_code=422, detail={"findings": findings})
+    replaced = conn.execute(
+        "SELECT 1 FROM quizzes WHERE quiz_id = ?", (data["quiz_id"],)
+    ).fetchone() is not None
+    quiz_id = quiz_store.import_quiz(conn, data)
+    return {
+        "quiz_id": quiz_id,
+        "tutorial_id": data["tutorial_id"],
+        "questions": len(data["questions"]),
+        "replaced": replaced,
+        "warnings": [f for f in findings if f["severity"] == "warning"],
+    }
 
 
 # ── quiz analytics ───────────────────────────────────────────────────────

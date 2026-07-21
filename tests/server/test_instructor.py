@@ -157,6 +157,76 @@ def test_mandatory_toggle(client, seeded):
     assert r.status_code == 200 and r.json()["is_mandatory"] is False
 
 
+def _quiz_upload(client, data: dict):
+    return client.post(
+        "/api/instructor/quizzes",
+        files={"file": ("quiz.json", io.BytesIO(json.dumps(data).encode()), "application/json")},
+        headers={"X-Requested-With": "fetch"},
+    )
+
+
+def test_quiz_upload_validation_errors(client, seeded):
+    login(client, "prof", "prof-pass-123")
+
+    r = client.post(
+        "/api/instructor/quizzes",
+        files={"file": ("bad.json", io.BytesIO(b"not json"), "application/json")},
+        headers={"X-Requested-With": "fetch"},
+    )
+    assert r.status_code == 422
+
+    r = _quiz_upload(client, {
+        "quiz_id": "quiz_x", "tutorial_id": "no_such_tutorial", "title": "X",
+        "questions": [
+            {"text": "Q?", "options": ["a", "b"], "correct_index": 5},
+            {"text": "", "options": ["only-one"], "correct_index": 0},
+        ],
+    })
+    assert r.status_code == 422
+    messages = " | ".join(f["message"] for f in r.json()["detail"]["findings"])
+    assert "does not exist" in messages
+    assert "out of range" in messages
+    assert "at least 2" in messages
+
+
+def test_quiz_upload_and_replace(client, seeded):
+    login(client, "prof", "prof-pass-123")
+    r = _quiz_upload(client, {
+        "quiz_id": QUIZ_ID,  # replaces the seeded tut1 quiz
+        "tutorial_id": "tut1_3d_bar",
+        "title": "Tutorial 1 — new quiz",
+        "questions": [
+            {"text": "2+2?", "options": ["3", "4"], "correct_index": 1,
+             "concept_tag": "math", "explanation": "It is 4."},
+        ],
+    })
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["replaced"] is True and body["questions"] == 1
+    assert any("replaced" in w["message"] for w in body["warnings"])
+
+    quiz = client.get(f"/api/quizzes/{QUIZ_ID}").json()
+    assert quiz["title"] == "Tutorial 1 — new quiz"
+    assert len(quiz["questions"]) == 1
+
+    # brand-new quiz for the same tutorial relinks it
+    r = _quiz_upload(client, {
+        "quiz_id": "quiz_tut1_v2", "tutorial_id": "tut1_3d_bar", "title": "V2",
+        "questions": [{"text": "Q", "options": ["a", "b"], "correct_index": 0}],
+    })
+    assert r.status_code == 201 and r.json()["replaced"] is False
+    client.post("/api/auth/logout", json={})
+    register_student(client, seeded)
+    detail = client.get("/api/student/tutorials/tut1_3d_bar").json()
+    assert detail["quiz"]["quiz_id"] == "quiz_tut1_v2"
+
+
+def test_student_cannot_upload_quiz(client, seeded):
+    register_student(client, seeded)
+    r = _quiz_upload(client, {"quiz_id": "q", "tutorial_id": "t", "title": "t", "questions": []})
+    assert r.status_code == 403
+
+
 def test_students_cannot_reach_instructor_endpoints(client, seeded):
     register_student(client, seeded)
     for path in ("/api/instructor/progress", "/api/instructor/activity",

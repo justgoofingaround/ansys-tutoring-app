@@ -1,0 +1,53 @@
+{
+  "_readme": [
+    "QUIZ TEMPLATE — copy this file, fill it in, and either upload it on the",
+    "instructor Quizzes page ('Upload quiz JSON') or drop it in this folder",
+    "named <anything>.json and restart the server. Files starting with _ are",
+    "ignored by the server, so the template itself never becomes a live quiz.",
+    "A full real example is tut1_3d_bar.json next to this file.",
+    "",
+    "Rules the upload validator enforces:",
+    "  - quiz_id: unique id for this quiz. Re-uploading the same quiz_id",
+    "    replaces its questions (quizzes are not versioned).",
+    "  - tutorial_id: must be an EXISTING tutorial's id — the quiz attaches",
+    "    to that tutorial and appears on its page as 'Check your understanding'.",
+    "  - questions: at least 1; each needs text, 2+ options, and a 0-based",
+    "    correct_index pointing at the right option.",
+    "  - concept_tag (recommended): groups questions for the concept-mastery",
+    "    analytics. Reuse the same short tag across quizzes for the same concept.",
+    "  - explanation (recommended): shown to the student right after they",
+    "    answer — say WHY the right answer is right.",
+    "  - Keys starting with _ are authoring comments and are ignored."
+  ],
+  "quiz_id": "quiz_my_tutorial",
+  "tutorial_id": "REPLACE_WITH_EXISTING_TUTORIAL_ID",
+  "title": "Tutorial N — Check your understanding",
+  "questions": [
+    {
+      "_comment": "A concept question. correct_index 1 means option B is right.",
+      "text": "Why does a static structural model need at least one support before solving?",
+      "options": [
+        "Supports make the mesh finer",
+        "Without a constraint the part can move as a rigid body and the solver has no unique answer",
+        "Supports are optional decoration",
+        "The license requires one"
+      ],
+      "correct_index": 1,
+      "concept_tag": "boundary-conditions",
+      "explanation": "A static solve finds one equilibrium. An unconstrained body can translate or rotate freely, so the equations have no unique solution until a support anchors it."
+    },
+    {
+      "_comment": "A tutorial-specific question — reference the actual numbers/steps students just did.",
+      "text": "In this tutorial, which result did you insert to read the final answer?",
+      "options": [
+        "Total Deformation only",
+        "Equivalent (von-Mises) Stress",
+        "The result the tutorial's last section inserts",
+        "No result is needed"
+      ],
+      "correct_index": 2,
+      "concept_tag": "results",
+      "explanation": "Tie the question to the concrete step the student performed, and explain what that result shows."
+    }
+  ]
+}

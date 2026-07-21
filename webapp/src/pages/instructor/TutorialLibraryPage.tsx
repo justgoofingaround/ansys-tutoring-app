@@ -15,7 +15,7 @@ import { timeAgo } from "./ClassDashboardPage";
 
 /* ── validation findings list ───────────────────────────────────────── */
 
-function FindingsList({ findings }: { findings: ValidationFinding[] }) {
+export function FindingsList({ findings }: { findings: ValidationFinding[] }) {
   return (
     <ul className="mt-2 space-y-1.5">
       {findings.map((f, i) => (

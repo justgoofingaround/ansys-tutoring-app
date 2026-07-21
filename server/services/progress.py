@@ -83,8 +83,12 @@ def _report_state(conn: sqlite3.Connection, token: str, tutorial_id: str) -> dic
 
 
 def _quiz_state(conn: sqlite3.Connection, token: str, tutorial_id: str) -> dict | None:
+    # The tutorial's ACTIVE quiz is the one tutorials.quiz_id points at —
+    # scanning quizzes by tutorial_id would pick arbitrarily when a quiz
+    # has been replaced by a new upload.
     quiz = conn.execute(
-        "SELECT quiz_id FROM quizzes WHERE tutorial_id = ? AND is_published = 1",
+        """SELECT q.quiz_id FROM tutorials t JOIN quizzes q ON q.quiz_id = t.quiz_id
+           WHERE t.tutorial_id = ? AND q.is_published = 1""",
         (tutorial_id,),
     ).fetchone()
     if quiz is None:

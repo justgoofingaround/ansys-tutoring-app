@@ -21,6 +21,73 @@ from ..config import REPO_ROOT
 QUIZZES_DIR = REPO_ROOT / "mock_server" / "data" / "quizzes"
 
 
+def validate_quiz(conn: sqlite3.Connection, data: dict) -> list[dict]:
+    """Findings for an authored quiz dict — same {severity, where, message}
+    shape as tutorial validation. Errors block import; warnings don't.
+    Keys starting with '_' are authoring comments and ignored."""
+    f: list[dict] = []
+
+    def err(where, msg):
+        f.append({"severity": "error", "where": where, "message": msg})
+
+    def warn(where, msg):
+        f.append({"severity": "warning", "where": where, "message": msg})
+
+    if not isinstance(data, dict):
+        err("$", "quiz file must be a JSON object")
+        return f
+    for key in ("quiz_id", "tutorial_id", "title"):
+        if not isinstance(data.get(key), str) or not data.get(key, "").strip():
+            err("$", f"'{key}' is required and must be a non-empty string")
+    tutorial_id = data.get("tutorial_id")
+    if isinstance(tutorial_id, str) and tutorial_id:
+        row = conn.execute(
+            "SELECT quiz_id FROM tutorials WHERE tutorial_id = ?", (tutorial_id,)
+        ).fetchone()
+        if row is None:
+            err("$", f"tutorial_id '{tutorial_id}' does not exist — upload/publish the tutorial first")
+        elif row["quiz_id"] and row["quiz_id"] != data.get("quiz_id"):
+            warn("$", f"tutorial already has quiz '{row['quiz_id']}' — this upload will replace the link")
+    if isinstance(data.get("quiz_id"), str):
+        existing = conn.execute(
+            "SELECT 1 FROM quizzes WHERE quiz_id = ?", (data["quiz_id"],)
+        ).fetchone()
+        if existing:
+            warn("$", f"quiz '{data['quiz_id']}' exists — its questions will be replaced")
+
+    questions = data.get("questions")
+    if not isinstance(questions, list) or not questions:
+        err("$", "'questions' is required and must be a non-empty array")
+        return f
+    for i, q in enumerate(questions, start=1):
+        where = f"questions[{i}]"
+        if not isinstance(q, dict):
+            err(where, "each question must be an object")
+            continue
+        if not isinstance(q.get("text"), str) or not q.get("text", "").strip():
+            err(where, "'text' is required")
+        options = q.get("options")
+        if not isinstance(options, list) or len(options) < 2 or not all(
+            isinstance(o, str) and o.strip() for o in options
+        ):
+            err(where, "'options' must be an array of at least 2 non-empty strings")
+            options = None
+        ci = q.get("correct_index")
+        if not isinstance(ci, int) or isinstance(ci, bool):
+            err(where, "'correct_index' is required and must be an integer (0-based)")
+        elif options is not None and not (0 <= ci < len(options)):
+            err(where, f"'correct_index' {ci} is out of range for {len(options)} options")
+        if not q.get("concept_tag"):
+            warn(where, "no 'concept_tag' — question won't appear in concept-mastery analytics")
+        if not q.get("explanation"):
+            warn(where, "no 'explanation' — students get no feedback text after answering")
+        unknown = [k for k in q if not k.startswith("_")
+                   and k not in ("text", "options", "correct_index", "concept_tag", "explanation")]
+        if unknown:
+            warn(where, f"unknown key(s) {unknown} — typo? (keys starting with _ are comments)")
+    return f
+
+
 def import_quiz(conn: sqlite3.Connection, data: dict, publish: bool = True) -> str:
     """Insert or replace a quiz and its questions from an authored dict."""
     quiz_id = data["quiz_id"]
@@ -49,6 +116,12 @@ def import_quiz(conn: sqlite3.Connection, data: dict, publish: bool = True) -> s
         )
     conn.execute(
         "UPDATE tutorials SET quiz_id = ? WHERE tutorial_id = ?", (quiz_id, tutorial_id)
+    )
+    # One active quiz per tutorial: superseded quizzes are unpublished so
+    # they drop out of stats/analytics listings (submissions are kept).
+    conn.execute(
+        "UPDATE quizzes SET is_published = 0 WHERE tutorial_id = ? AND quiz_id != ?",
+        (tutorial_id, quiz_id),
     )
     conn.commit()
     return quiz_id
