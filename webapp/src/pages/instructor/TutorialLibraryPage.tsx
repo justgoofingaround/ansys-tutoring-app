@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  AlertTriangle, BookOpen, CheckCircle2, FileUp, ListChecks, XCircle,
+  AlertTriangle, BookOpen, CheckCircle2, ClipboardList, FileUp, ListChecks, XCircle,
 } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { LibraryTutorial, ValidationFinding } from "@/types/api";
@@ -183,6 +183,16 @@ function TutorialRow({ t }: { t: LibraryTutorial }) {
     onSuccess: invalidate,
   });
   const [open, setOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [draft, setDraft] = useState(t.report_guidelines ?? "");
+  const saveGuidelines = useMutation({
+    mutationFn: () =>
+      apiFetch(`/api/instructor/tutorials/${t.tutorial_id}/settings`, {
+        json: { report_guidelines: draft },
+      }),
+    onSuccess: invalidate,
+  });
+  const guidelinesDirty = draft.trim() !== (t.report_guidelines ?? "");
   const hasDraft = t.versions.some((v) => v.version !== t.published_version);
 
   return (
@@ -214,12 +224,49 @@ function TutorialRow({ t }: { t: LibraryTutorial }) {
           <Button
             variant="secondary"
             className="h-8 px-3 text-[13px]"
+            onClick={() => setGuideOpen(!guideOpen)}
+          >
+            <ClipboardList className="size-3.5" />
+            Guidelines
+            {t.report_guidelines && <span className="size-1.5 rounded-full bg-violet" />}
+          </Button>
+          <Button
+            variant="secondary"
+            className="h-8 px-3 text-[13px]"
             onClick={() => setOpen(!open)}
           >
             Versions
           </Button>
         </div>
       </div>
+      {guideOpen && (
+        <div className="mt-2 rounded-(--radius-control) border border-hairline bg-paper p-3">
+          <div className="text-[13px] font-medium text-ink">Report-checking guidelines</div>
+          <p className="mt-0.5 text-[12px] text-ink-faint">
+            Shown to students next to the report upload box and used by the AI report
+            review as its primary criteria. Leave empty to clear.
+          </p>
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            maxLength={4000}
+            rows={4}
+            placeholder="e.g. The report must discuss mesh convergence, include the deformation contour plot, and state the final elongation with units…"
+            className="mt-2 w-full rounded-(--radius-control) border border-hairline bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:outline-2 focus:outline-violet"
+          />
+          <div className="mt-1.5 flex items-center justify-between">
+            <span className="text-[11px] text-ink-faint">{draft.length}/4000</span>
+            <Button
+              className="h-8 px-3 text-[13px]"
+              disabled={!guidelinesDirty}
+              loading={saveGuidelines.isPending}
+              onClick={() => saveGuidelines.mutate()}
+            >
+              Save guidelines
+            </Button>
+          </div>
+        </div>
+      )}
       {open && (
         <ul className="mt-2 space-y-1.5 rounded-(--radius-control) border border-hairline bg-paper px-3 py-2">
           {t.versions.map((v) => (

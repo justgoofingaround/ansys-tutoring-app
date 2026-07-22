@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS tutorials (
     quiz_id                  TEXT,
     latest_published_version INTEGER,
     is_archived              INTEGER NOT NULL DEFAULT 0,
+    report_guidelines        TEXT,    -- instructor's free-text report criteria
     created_at               REAL NOT NULL
 );
 

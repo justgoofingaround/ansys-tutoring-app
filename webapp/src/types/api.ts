@@ -111,6 +111,7 @@ export interface TutorialDetailData {
   sections: { section: string; app: string; steps: StepRow[] }[];
   needs_report: boolean;
   report: ReportState | null;
+  report_guidelines: string | null;
   report_submissions: {
     submission_id: number;
     filename: string;
@@ -279,6 +280,7 @@ export interface LibraryTutorial {
   quiz_id: string | null;
   published_version: number | null;
   is_archived: boolean;
+  report_guidelines: string | null;
   versions: { version: number; uploaded_at: number; warnings: ValidationFinding[] }[];
 }
 

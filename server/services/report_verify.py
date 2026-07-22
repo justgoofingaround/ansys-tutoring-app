@@ -145,8 +145,14 @@ def _report_excerpt(text, rubric, limit_lines=70):
     return "\n".join(excerpt)
 
 
-def _review_report_with_llm(text, rubric, validation_summary):
-    """Run a local-only LLM review over the extracted report text."""
+def _review_report_with_llm(text, rubric, validation_summary, guidelines=None):
+    """Run a local-only LLM review over the extracted report text.
+
+    `guidelines` is the instructor's free-text report-checking criteria
+    (tutorials.report_guidelines, set in the web app). When present it is
+    inserted as a clearly delimited prompt section so the review judges the
+    report against the instructor's expectations; when absent the prompt is
+    byte-identical to the guideline-less version."""
 
     try:
         import ollama
@@ -166,6 +172,17 @@ def _review_report_with_llm(text, rubric, validation_summary):
         OLLAMA_MODEL = "gemma3:4b"
 
     excerpt = _report_excerpt(text, rubric)
+    guidelines_block = ""
+    if guidelines and guidelines.strip():
+        guidelines_block = f"""
+Instructor's report-checking guidelines for this tutorial. Treat these as the
+primary review criteria, in addition to the checklist. They describe what the
+instructor wants to see; judge the report against them, but still return ONLY
+the JSON object described above.
+--- BEGIN INSTRUCTOR GUIDELINES ---
+{guidelines.strip()[:4000]}
+--- END INSTRUCTOR GUIDELINES ---
+"""
     prompt = f"""
 You are reviewing an Ansys Mechanical report for a student lab assignment.
 Stay local-only and use ONLY the report excerpt and checklist summary below.
@@ -180,7 +197,7 @@ Return valid JSON with exactly these keys:
 - caveats: array of 1-4 concrete issues, omissions, ambiguities, or weak spots
 - suggestions: array of 1-4 practical fixes the student can make
 - confidence: one of low, medium, high
-
+{guidelines_block}
 Checklist summary:
 {json.dumps(validation_summary, indent=2, ensure_ascii=False)}
 
@@ -292,11 +309,14 @@ def _format_feedback(checks, ok):
     return "\n".join(lines)
 
 
-def validate_report(report_path, tutorial_data, use_llm=True):
+def validate_report(report_path, tutorial_data, use_llm=True, guidelines=None):
     """Validate a generated report against the tutorial rubric.
 
     use_llm=False skips the local-Ollama review (tests; machines without
-    Ollama). Returns a dict with:
+    Ollama). `guidelines` is optional instructor free text threaded into the
+    LLM review only — the deterministic ok/score/checks below never depend
+    on it (and the desktop guide, which calls this positionally without
+    guidelines, keeps working unchanged). Returns a dict with:
       ok: bool
       score: int
       total: int
@@ -389,6 +409,7 @@ def validate_report(report_path, tutorial_data, use_llm=True):
                     for check in checks
                 ],
             },
+            guidelines=guidelines,
         )
     else:
         llm_review = {

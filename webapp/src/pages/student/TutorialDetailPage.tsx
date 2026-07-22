@@ -285,6 +285,16 @@ function ReportUploadCard({ detail }: { detail: TutorialDetailData }) {
         Upload the report you generated from Mechanical (.html, .docx, .pdf…). It's graded
         against the tutorial rubric.
       </p>
+      {detail.report_guidelines && (
+        <div className="mt-3 rounded-(--radius-control) border border-violet/30 bg-violet-tint px-4 py-3">
+          <div className="text-xs font-semibold uppercase tracking-wide text-violet">
+            Instructor's guidelines
+          </div>
+          <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-ink">
+            {detail.report_guidelines}
+          </p>
+        </div>
+      )}
       <div
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}

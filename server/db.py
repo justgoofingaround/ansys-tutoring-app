@@ -22,6 +22,12 @@ def init_db(db_path: Path) -> None:
     conn = connect(db_path)
     try:
         conn.executescript(SCHEMA_PATH.read_text(encoding="utf-8"))
+        # Migrations for columns added after a deployment's DB was created —
+        # executescript's CREATE TABLE IF NOT EXISTS won't touch existing
+        # tables. Idempotent; runs on every boot.
+        cols = {row[1] for row in conn.execute("PRAGMA table_info(tutorials)")}
+        if "report_guidelines" not in cols:
+            conn.execute("ALTER TABLE tutorials ADD COLUMN report_guidelines TEXT")
         conn.commit()
     finally:
         conn.close()

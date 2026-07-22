@@ -56,7 +56,14 @@ def upload_report(
             out.write(chunk)
 
     try:
-        result = report_verify.validate_report(dest, content, use_llm=settings.enable_llm)
+        # guidelines live on the tutorials row (web-edited, unversioned); the
+        # desktop guide's local pre-check doesn't see them — this endpoint is
+        # the authoritative graded path.
+        result = report_verify.validate_report(
+            dest, content,
+            use_llm=settings.enable_llm,
+            guidelines=meta["report_guidelines"],
+        )
     except (ValueError, RuntimeError) as exc:
         dest.unlink(missing_ok=True)
         raise HTTPException(status_code=422, detail=str(exc))

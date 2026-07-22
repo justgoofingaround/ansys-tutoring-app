@@ -272,6 +272,7 @@ def _library_entry(conn: sqlite3.Connection, meta: sqlite3.Row) -> dict:
         "quiz_id": meta["quiz_id"],
         "published_version": meta["latest_published_version"],
         "is_archived": bool(meta["is_archived"]),
+        "report_guidelines": meta["report_guidelines"],
         "versions": versions,
     }
 
@@ -347,6 +348,17 @@ def tutorial_settings(
         conn.execute(
             "UPDATE tutorials SET is_mandatory = ? WHERE tutorial_id = ?",
             (int(bool(body["is_mandatory"])), tutorial_id),
+        )
+    if "report_guidelines" in body:
+        raw = body["report_guidelines"]
+        if raw is not None and not isinstance(raw, str):
+            raise HTTPException(status_code=422, detail="report_guidelines_must_be_string")
+        text = (raw or "").strip()
+        if len(text) > 4000:
+            raise HTTPException(status_code=422, detail="report_guidelines_too_long")
+        conn.execute(
+            "UPDATE tutorials SET report_guidelines = ? WHERE tutorial_id = ?",
+            (text or None, tutorial_id),
         )
     conn.commit()
     meta = conn.execute(

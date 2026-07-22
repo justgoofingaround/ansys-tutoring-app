@@ -128,6 +128,7 @@ def tutorial_detail(
         "sections": sections,
         "needs_report": summary["needs_report"],
         "report": summary["report"],
+        "report_guidelines": meta["report_guidelines"],
         "report_submissions": submissions,
         "quiz": summary["quiz"],
     }
