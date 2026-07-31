@@ -1,0 +1,16 @@
+# Render blueprint — free-tier team-testing deployment.
+# In the Render dashboard: New + -> Blueprint -> connect this repo.
+# Set INSTRUCTOR_PASSWORD in the dashboard when prompted (never in git).
+services:
+  - type: web
+    name: tutoring-hub
+    runtime: docker
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: INSTRUCTOR_USERNAME
+        value: prof
+      - key: INSTRUCTOR_PASSWORD
+        sync: false
+      - key: ENABLE_LLM
+        value: "0"

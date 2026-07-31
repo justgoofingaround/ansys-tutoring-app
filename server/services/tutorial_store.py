@@ -180,10 +180,22 @@ def runtime_step_ids(content: dict) -> list[str]:
 
 
 def seed_if_empty(conn: sqlite3.Connection, settings: Settings) -> None:
-    """First boot: import tut1 from the authoring dir so the server is
-    demoable with real content immediately."""
+    """First boot: import tut1 (always) — and with settings.seed_all_tutorials,
+    the entire authoring catalog — so the server is demoable immediately.
+    The full seed is for cloud/demo deployments whose ephemeral disks
+    re-seed on every restart."""
     row = conn.execute("SELECT COUNT(*) AS n FROM tutorials").fetchone()
-    if row["n"] == 0 and DEFAULT_SEED.is_file():
+    if row["n"] != 0:
+        return
+    if settings.seed_all_tutorials:
+        for path in sorted(DEFAULT_SEED.parent.glob("*.json")):
+            if path.name.startswith("_"):
+                continue
+            import_tutorial(
+                conn, settings, path,
+                product="mechanical", is_mandatory=path == DEFAULT_SEED,
+            )
+    elif DEFAULT_SEED.is_file():
         import_tutorial(
             conn, settings, DEFAULT_SEED, product="mechanical", is_mandatory=True
         )

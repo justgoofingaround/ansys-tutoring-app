@@ -1,0 +1,16 @@
+.git
+.venv
+.gstack
+server_data
+webapp/node_modules
+webapp/dist
+chatbot_spike
+spikes
+tests
+__pycache__
+*.pyc
+*.png
+!mock_server/data/images/**/*.png
+*.docx
+*.md
+!mock_server/data/README.md

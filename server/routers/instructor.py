@@ -20,7 +20,7 @@ from fastapi.responses import PlainTextResponse
 from ..deps import csrf_check, get_db, get_settings, require_instructor
 from ..models import SectionCreate, SectionResponse
 from ..security import new_class_code
-from ..services import faq_service, progress, quiz_store, tutorial_store
+from ..services import faq_service, pdf_tutorial, progress, quiz_store, tutorial_store
 from ..services.tutorial_store import TutorialValidationError
 
 router = APIRouter(
@@ -314,6 +314,49 @@ def upload_tutorial(
             detail={"findings": [{"severity": "error", "where": "file", "message": str(exc)}]},
         )
     return result
+
+
+@router.post("/tutorials/from-pdf", status_code=201, dependencies=[Depends(csrf_check)])
+def convert_pdf_tutorial(
+    request: Request,
+    file: UploadFile,
+    product: str = Form("mechanical"),
+    is_mandatory: bool = Form(False),
+    conn: sqlite3.Connection = Depends(get_db),
+    user: sqlite3.Row = Depends(require_instructor),
+) -> dict:
+    """Convert an uploaded tutorial PDF into a DRAFT tutorial via the local
+    LLM. Synchronous — the browser waits (minutes); fine for a
+    single-instructor pilot. The generated JSON flows through the same
+    import/validate pipeline as a hand-authored upload."""
+    settings = get_settings(request)
+    raw = file.file.read()
+    if len(raw) > settings.max_report_bytes:
+        raise HTTPException(status_code=413, detail="pdf_too_large")
+    existing_ids = {
+        r["tutorial_id"] for r in conn.execute("SELECT tutorial_id FROM tutorials")
+    }
+    try:
+        tutorial, gen_info = pdf_tutorial.convert_pdf(
+            raw, file.filename or "upload.pdf", settings, existing_ids
+        )
+    except pdf_tutorial.PdfExtractionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    except pdf_tutorial.LlmUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=f"llm_unavailable: {exc}")
+    except pdf_tutorial.GenerationFailedError as exc:
+        raise HTTPException(status_code=502, detail=f"conversion_failed: {exc}")
+
+    try:
+        result = tutorial_store.import_tutorial(
+            conn, settings, json.dumps(tutorial).encode("utf-8"),
+            product=product, is_mandatory=is_mandatory,
+            uploaded_by=user["id"], publish=False,
+        )
+    except TutorialValidationError as exc:
+        # near-impossible (assembly is deterministic), kept as belt-and-braces
+        raise HTTPException(status_code=422, detail={"findings": exc.findings})
+    return {**result, "generated": gen_info}
 
 
 @router.post("/tutorials/{tutorial_id}/publish", dependencies=[Depends(csrf_check)])

@@ -22,9 +22,17 @@ SESSION_COOKIE = "session"
 
 @dataclass
 class Settings:
-    data_dir: Path = REPO_ROOT / "server_data"
+    # DATA_DIR env lets deployments point at a mounted volume; tests and
+    # local runs keep the repo-relative default (kwarg always wins).
+    data_dir: Path = field(
+        default_factory=lambda: Path(os.environ.get("DATA_DIR", REPO_ROOT / "server_data"))
+    )
     session_ttl_days: float = 14.0
     enable_llm: bool = os.environ.get("ENABLE_LLM", "1") == "1"
+    # Cloud/demo deployments seed the whole mock_server/data catalog on first
+    # boot (ephemeral disks re-seed on every restart); local/dev/tests seed
+    # only tut1 as before.
+    seed_all_tutorials: bool = os.environ.get("SEED_ALL_TUTORIALS", "0") == "1"
     faq_threshold: float = 0.30
     faq_min_cohort: int = 5
     max_report_bytes: int = 20 * 1024 * 1024

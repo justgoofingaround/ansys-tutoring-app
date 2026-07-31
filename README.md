@@ -47,6 +47,33 @@ Quizzes are JSON-authored like tutorials: drop a file in `mock_server/data/quizz
 
 Tests (no Ansys or Ollama needed): `.venv\Scripts\python -m pytest tests\server`
 
+### Host it for free (team testing / demo)
+
+The repo ships a `Dockerfile` + `render.yaml` for a free [Render](https://render.com)
+deployment. **This is for team testing and demos only** — the pilot's FERPA
+invariant means real student data stays on NYU infrastructure, never a
+third-party cloud. In the cloud the AI features (Compass chat, AI report
+review, FAQ drafting, PDF→tutorial conversion) are disabled (`ENABLE_LLM=0`)
+and degrade gracefully; everything else works, and the full 9-tutorial
+catalog + quizzes seed automatically on every boot (`SEED_ALL_TUTORIALS=1`).
+
+1. Push the repo to GitHub, sign up at render.com (free), then **New + →
+   Blueprint** → connect the repo. Render reads `render.yaml`.
+2. When prompted, set `INSTRUCTOR_PASSWORD` (the instructor signs in as
+   `prof` / that password; create a section and share its class code).
+3. First deploy takes a few minutes; your app lives at
+   `https://<name>.onrender.com`.
+4. **Keep it awake**: free Render instances sleep after 15 idle minutes and
+   wake with an empty database. Create a free [UptimeRobot](https://uptimerobot.com)
+   HTTP(s) monitor pointed at your URL with a 5-minute interval — then data
+   persists until the next `git push` deploy or a rare platform restart.
+5. Caveat: the free tier's disk is **ephemeral** — any redeploy/restart wipes
+   registrations and progress (content re-seeds automatically). Download the
+   CSV exports from the Class page if you want to keep testing data.
+
+Local Docker run (same image): `docker build -t tutoring-hub . && docker run
+-p 8000:8000 -e INSTRUCTOR_USERNAME=prof -e INSTRUCTOR_PASSWORD=pick-one tutoring-hub`
+
 ## Status
 
 **Desktop overlay** — the Phase 0 spike (`spikes/guide_tut1.py`): a working, manually-driven walkthrough of Tut-1, used to de-risk the real architecture's assumptions before it gets built for real under `student_app/`. It covers Workbench setup through Mechanical's results steps and then a final generated-report upload/validation checkpoint.

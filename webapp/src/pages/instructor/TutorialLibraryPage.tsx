@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  AlertTriangle, BookOpen, CheckCircle2, ClipboardList, FileUp, ListChecks, XCircle,
+  AlertTriangle, BookOpen, CheckCircle2, ClipboardList, FileUp, ListChecks,
+  Sparkles, XCircle,
 } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { LibraryTutorial, ValidationFinding } from "@/types/api";
@@ -156,6 +157,171 @@ function UploadCard() {
         <div className="mt-3 flex items-center gap-2 rounded-(--radius-control) border border-success/40 bg-success-tint px-4 py-3 text-sm text-ink">
           <CheckCircle2 className="size-4 text-success" />
           Stored <code className="font-mono">{uploaded.tutorial_id}</code> as draft v{uploaded.version} — publish it below when ready.
+        </div>
+      )}
+    </Card>
+  );
+}
+
+/* ── PDF conversion card ────────────────────────────────────────────── */
+
+interface ConvertResult {
+  tutorial_id: string;
+  version: number;
+  warnings: ValidationFinding[];
+  generated: { model: string; pages: number; chunks: number; skipped_chunks: number };
+}
+
+function ConvertPdfCard() {
+  const qc = useQueryClient();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [product, setProduct] = useState("mechanical");
+  const [mandatory, setMandatory] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [findings, setFindings] = useState<ValidationFinding[] | null>(null);
+  const [done, setDone] = useState<ConvertResult | null>(null);
+
+  const convert = useMutation({
+    mutationFn: async () => {
+      const file = fileRef.current?.files?.[0];
+      if (!file) throw new Error("no file");
+      const form = new FormData();
+      form.append("file", file);
+      form.append("product", product);
+      form.append("is_mandatory", String(mandatory));
+      const res = await fetch("/api/instructor/tutorials/from-pdf", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "X-Requested-With": "fetch" },
+        body: form,
+      });
+      if (!res.ok) {
+        let detail: unknown = `http_${res.status}`;
+        try {
+          detail = (await res.json()).detail;
+        } catch { /* non-JSON body */ }
+        if (res.status === 422 && typeof detail === "object" && detail !== null && "findings" in detail) {
+          setFindings((detail as { findings: ValidationFinding[] }).findings);
+          setError(null);
+        } else if (res.status === 503) {
+          setError("The local AI model is not available. Make sure Ollama is running on this machine, then try again.");
+        } else if (res.status === 502) {
+          setError("The model could not produce a usable tutorial from this PDF. Try a text-based (not scanned) PDF with clear numbered steps.");
+        } else if (res.status === 413) {
+          setError("File too large (20 MB max).");
+        } else {
+          setError(typeof detail === "string" ? detail : `Upload failed (${res.status}).`);
+        }
+        setDone(null);
+        throw new ApiError(res.status, "convert_failed");
+      }
+      return (await res.json()) as ConvertResult;
+    },
+    onSuccess: (r) => {
+      setDone(r);
+      setError(null);
+      setFindings(r.warnings.length > 0 ? r.warnings : null);
+      setFileName(null);
+      if (fileRef.current) fileRef.current.value = "";
+      qc.invalidateQueries({ queryKey: ["instructor", "library"] });
+    },
+  });
+
+  return (
+    <Card>
+      <div className="flex items-center gap-2">
+        <Sparkles className="size-5 text-violet" />
+        <CardTitle>Convert a PDF with AI</CardTitle>
+      </div>
+      <p className="mt-2 text-sm text-ink-soft">
+        Upload a tutorial PDF and the local AI model drafts a tutorial from it:
+        title, problem statement, and step-by-step instructions. The draft uses
+        manual step confirmation (no live highlighting) — review it, refine the
+        JSON if needed, then publish.
+      </p>
+      <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-(--radius-control) border border-dashed border-ink-faint bg-paper px-4 py-6 text-sm text-ink-soft hover:border-violet hover:text-ink">
+        <FileUp className="size-4" />
+        {fileName ?? "Choose a .pdf file…"}
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".pdf,application/pdf"
+          className="hidden"
+          onChange={(e) => {
+            setFileName(e.target.files?.[0]?.name ?? null);
+            setError(null);
+            setFindings(null);
+            setDone(null);
+          }}
+        />
+      </label>
+      <div className="mt-3 flex flex-wrap items-center gap-4">
+        <label className="flex items-center gap-2 text-sm text-ink">
+          Product
+          <select
+            value={product}
+            onChange={(e) => setProduct(e.target.value)}
+            className="h-9 rounded-(--radius-control) border border-hairline bg-surface px-2 text-sm"
+          >
+            <option value="mechanical">Mechanical</option>
+            <option value="fluent">Fluent</option>
+            <option value="discovery">Discovery</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-2 text-sm text-ink">
+          <input
+            type="checkbox"
+            checked={mandatory}
+            onChange={(e) => setMandatory(e.target.checked)}
+            className="size-4 accent-(--color-violet)"
+          />
+          Mandatory
+        </label>
+        <Button
+          className="ml-auto"
+          disabled={!fileName}
+          loading={convert.isPending}
+          onClick={() => convert.mutate()}
+        >
+          <Sparkles className="size-4" /> Convert &amp; create draft
+        </Button>
+      </div>
+      {convert.isPending && (
+        <p className="mt-2 text-[13px] text-ink-faint">
+          Converting with the local AI model — this can take a few minutes.
+          Keep this tab open.
+        </p>
+      )}
+      {error && (
+        <div className="mt-3 rounded-(--radius-control) border border-error/40 bg-error-tint px-4 py-3 text-sm text-error">
+          {error}
+        </div>
+      )}
+      {findings && (
+        <div className="mt-3 rounded-(--radius-control) border border-warning/40 bg-warning-tint px-4 py-3">
+          <div className="text-sm font-semibold text-warning">
+            {done ? "Draft created with warnings" : "Validation findings"}
+          </div>
+          <FindingsList findings={findings} />
+        </div>
+      )}
+      {done && (
+        <div className="mt-3 rounded-(--radius-control) border border-success/40 bg-success-tint px-4 py-3 text-sm text-ink">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="size-4 shrink-0 text-success" />
+            <span>
+              Draft <code className="font-mono">{done.tutorial_id}</code> v{done.version} created
+              from {done.generated.pages} page{done.generated.pages === 1 ? "" : "s"} — review the
+              steps and publish it in the list.
+            </span>
+          </div>
+          {done.generated.skipped_chunks > 0 && (
+            <p className="mt-1.5 text-[13px] text-warning">
+              {done.generated.skipped_chunks} section{done.generated.skipped_chunks === 1 ? "" : "s"} of
+              the PDF could not be converted — check the draft for gaps.
+            </p>
+          )}
         </div>
       )}
     </Card>
@@ -333,7 +499,10 @@ export function TutorialLibraryPage() {
             )}
           </div>
         </Card>
-        <UploadCard />
+        <div className="space-y-4">
+          <UploadCard />
+          <ConvertPdfCard />
+        </div>
       </div>
     </>
   );
