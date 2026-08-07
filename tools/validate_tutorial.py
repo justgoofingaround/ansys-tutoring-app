@@ -31,6 +31,11 @@ VERIFY_TYPES = {"manual", "uia", "script", "window_appeared"}
 ACTION_KINDS = {
     "click", "right_click", "double_click", "menu_select", "text_entry",
     "drag", "draw", "select", "select_face", "launch", "close",
+    "context_menu_select", "click_add_icon", "click_then_set_property",
+    "select_faces_multi", "select_face_multi", "select_body", "select_body_multi",
+    "multi_select", "right_click_menu", "expand_tree_node", "review",
+    "observe", "repeat", "click_triad_axis", "select_face_then_key",
+    "drag_slider", "click_then_set_property", "select_faces_multi",
 }
 STEP_ID_RE = re.compile(r"^[a-z]{2}_[0-9]{2}_[a-z0-9_]+$")
 RESERVED_STEP_IDS = {"report_01_upload"}  # synthetic step the guide appends itself
@@ -47,7 +52,7 @@ STEP_KEYS = {
     "action", "launches", "verify", "hints", "source_image",
 }
 SELECTOR_KEYS = {"type", "name", "text", "scope", "via", "app"}
-ACTION_KEYS = {"kind", "via", "then", "value"}
+ACTION_KEYS = {"kind", "via", "then", "value", "path", "file"}
 VERIFY_KEYS = {"type", "prompt", "engine", "check", "args", "target", "app"}
 REPORT_CHECKS_KEYS = {"required_sections", "preferred_sections",
                       "must_contain", "expected_result"}

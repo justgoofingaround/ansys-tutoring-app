@@ -73,6 +73,36 @@ def test_tutorial_id_collision_suffix():
     assert data["tutorial_id"] == "thermal_analysis_of_a_bracket_3"
 
 
+def test_validator_accepts_repo_action_kinds(tmp_path):
+    data = {
+        "tutorial_id": "sample_tut",
+        "version": 1,
+        "title": "Sample tutorial",
+        "problem": "Sample problem",
+        "apps": ["mechanical"],
+        "sections": [
+            {
+                "section": "Example",
+                "steps": [
+                    {
+                        "step_id": "me_01_example",
+                        "app": "mechanical",
+                        "title": "Example step",
+                        "description": "Do the thing",
+                        "highlight": "none",
+                        "action": {"kind": "context_menu_select", "path": ["Edit..."]},
+                        "verify": {"type": "manual", "prompt": "Did you do it?"},
+                    }
+                ],
+            }
+        ],
+    }
+    path = tmp_path / "sample.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    findings = validate(path)
+    assert findings.errors == []
+
+
 # ── endpoint ─────────────────────────────────────────────────────────────
 
 

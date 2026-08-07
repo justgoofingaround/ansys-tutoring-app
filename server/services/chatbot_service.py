@@ -45,8 +45,16 @@ class OllamaEngine:
 
     def generate(self, question, tutorial_context, on_token):
         with self._lock:
-            from retrieve import retrieve
-            from generate import stream_answer
+            try:
+                from retrieve import retrieve
+                from generate import stream_answer
+            except ModuleNotFoundError as exc:
+                if exc.name == "retrieve":
+                    raise RuntimeError(
+                        "Chatbot retrieval assets are not available in this environment. "
+                        "Install the chatbot_spike dependency set or run the app from the repo root with the bundled chatbot_spike package on PYTHONPATH."
+                    ) from exc
+                raise
 
             chunks = retrieve(question)
             return stream_answer(
