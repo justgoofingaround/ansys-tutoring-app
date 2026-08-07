@@ -4,9 +4,10 @@ Paths after /api match the sibling repo's api_client.py contract."""
 import sqlite3
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
 
 from ..deps import current_user, get_db
-from ..services import tutorial_store
+from ..services import guide_bundle, tutorial_store
 
 router = APIRouter(prefix="/api", tags=["tutorials"], dependencies=[Depends(current_user)])
 
@@ -70,3 +71,21 @@ def step_faqs(
         (tutorial_id, step_id),
     ).fetchall()
     return _faq_rows(rows)
+
+@router.get("/tutorials/{tutorial_id}/desktop-guide-bundle")
+def desktop_guide_bundle(tutorial_id: str, conn: sqlite3.Connection = Depends(get_db)) -> Response:
+    try:
+        payload, filename, missing = guide_bundle.build_desktop_guide_bundle(conn, tutorial_id)
+    except ValueError as exc:
+        if str(exc) == "tutorial_not_found":
+            raise HTTPException(status_code=404, detail="tutorial_not_found") from exc
+        raise
+
+    return Response(
+        content=payload,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "X-Guide-Missing-Assets": ",".join(missing),
+        },
+    )

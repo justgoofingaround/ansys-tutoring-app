@@ -37,16 +37,28 @@ def seeded(settings, app):
     """Instructor 'prof'/'prof-pass-123', one section, its class code."""
     conn = dbmod.connect(settings.db_path)
     try:
-        conn.execute(
-            "INSERT INTO users (username, password_hash, role, created_at)"
-            " VALUES ('prof', ?, 'instructor', ?)",
-            (hash_password("prof-pass-123"), time.time()),
-        )
-        code = new_class_code()
-        conn.execute(
-            "INSERT INTO sections (name, class_code, created_at) VALUES ('Section A', ?, ?)",
-            (code, time.time()),
-        )
+        existing_user = conn.execute(
+            "SELECT 1 FROM users WHERE username = ?", ("prof",)
+        ).fetchone()
+        if existing_user is None:
+            conn.execute(
+                "INSERT INTO users (username, password_hash, role, created_at)"
+                " VALUES ('prof', ?, 'instructor', ?)",
+                (hash_password("prof-pass-123"), time.time()),
+            )
+
+        existing_section = conn.execute(
+            "SELECT class_code FROM sections WHERE name = ? LIMIT 1", ("Section A",)
+        ).fetchone()
+        if existing_section is None:
+            code = new_class_code()
+            conn.execute(
+                "INSERT INTO sections (name, class_code, created_at) VALUES ('Section A', ?, ?)",
+                (code, time.time()),
+            )
+        else:
+            code = existing_section["class_code"]
+
         conn.commit()
     finally:
         conn.close()

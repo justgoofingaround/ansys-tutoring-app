@@ -1,7 +1,10 @@
 """Tutorial store, content endpoints, events ingestion, progress, reports."""
 
 import io
+import zipfile
 import time
+
+import fitz
 
 from .conftest import login, register_student
 
@@ -120,6 +123,19 @@ def _upload(client, content: str, filename="report.txt"):
     )
 
 
+def _pdf_upload(client, content: str, filename="report.pdf"):
+    doc = fitz.open()
+    page = doc.new_page()
+    page.insert_text((72, 72), content)
+    pdf_bytes = doc.tobytes()
+    doc.close()
+    return client.post(
+        "/api/tutorials/tut1_3d_bar/report",
+        files={"file": (filename, io.BytesIO(pdf_bytes), "application/pdf")},
+        headers={"X-Requested-With": "fetch"},
+    )
+
+
 def test_report_upload_pass_and_fail(client, seeded):
     register_student(client, seeded)
 
@@ -145,6 +161,15 @@ def test_report_upload_pass_and_fail(client, seeded):
     history = client.get("/api/tutorials/tut1_3d_bar/reports/mine").json()
     assert len(history) == 2
     assert history[0]["ok"] is True
+
+
+def test_report_upload_pdf_passes(client, seeded):
+    register_student(client, seeded)
+    r = _pdf_upload(client, GOOD_REPORT)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["ok"] is True
+    assert body["score"] == body["total"] == 4
 
 
 def test_report_upload_rejects_bad_extension(client, seeded):
@@ -176,6 +201,19 @@ def test_step_reference_images_served(client, seeded):
     r = client.get("/tutorial-images/tut1/me_04_generate_mesh.png")
     assert r.status_code == 200
     assert r.headers["content-type"] == "image/png"
+
+
+def test_desktop_guide_bundle_download(client, seeded):
+    register_student(client, seeded)
+    r = client.get("/api/tutorials/tut1_3d_bar/desktop-guide-bundle")
+    assert r.status_code == 200, r.text
+    assert r.headers["content-type"] == "application/zip"
+    bundle = zipfile.ZipFile(io.BytesIO(r.content))
+    names = set(bundle.namelist())
+    assert "README.txt" in names
+    assert "mock_server/data/tut1_3d_bar.json" in names
+    assert "spikes/guide_tut1.py" in names
+    assert "tools/register_guide_protocol.py" in names
 
 
 def test_web_marked_step_shows_as_completed(client, seeded):

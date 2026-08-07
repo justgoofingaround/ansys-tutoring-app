@@ -1,3 +1,8 @@
+from fastapi.testclient import TestClient
+
+from server.app import create_app
+from server.config import Settings
+
 from .conftest import login, register_student
 
 
@@ -17,6 +22,21 @@ def test_register_login_me_flow(client, seeded):
 
     me2 = login(client, "anna", "hunter2-long")
     assert me2["opaque_token"] == me["opaque_token"]
+
+
+def test_first_boot_creates_default_instructor_and_section(tmp_path):
+    settings = Settings(data_dir=tmp_path / "server_data", enable_llm=False)
+    with TestClient(create_app(settings)) as client:
+        login_resp = client.post(
+            "/api/auth/login",
+            json={"username": "prof", "password": "prof-pass-123"},
+        )
+        assert login_resp.status_code == 200
+
+        sections_resp = client.get("/api/instructor/sections")
+        assert sections_resp.status_code == 200
+        body = sections_resp.json()
+        assert body and body[0]["name"] == "Section A"
 
 
 def test_register_rejects_bad_class_code(client, seeded):

@@ -51,14 +51,21 @@ def _read_text_file(path):
         return json.dumps(raw)
     if suffix == ".pdf":
         try:
-            from pypdf import PdfReader
+            import fitz  # PyMuPDF
         except Exception as exc:  # pragma: no cover - optional dependency
             raise RuntimeError(
-                "PDF upload support needs the optional 'pypdf' package installed"
+                "PDF upload support needs the optional 'pymupdf' package installed"
             ) from exc
 
-        reader = PdfReader(str(path))
-        return "\n".join(page.extract_text() or "" for page in reader.pages)
+        try:
+            doc = fitz.open(str(path))
+        except Exception as exc:
+            raise ValueError("Selected PDF file is not a valid PDF document") from exc
+
+        try:
+            return "\n".join(page.get_text("text") for page in doc)
+        finally:
+            doc.close()
     raise ValueError(f"Unsupported report format: {path.suffix or '<none>'}")
 
 

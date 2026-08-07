@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft, Check, ChevronDown, Copy, FileUp, ListChecks, MonitorPlay, Play, X,
+  ArrowLeft, Check, ChevronDown, Copy, Download, FileUp, ListChecks, MonitorPlay, Play, X,
 } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { Faq, ReportResult, StepRow, TutorialDetailData } from "@/types/api";
@@ -102,11 +102,28 @@ function LaunchGuideCard({ tutorialId }: { tutorialId: string }) {
           Close
         </a>
       </div>
-      <p className="mt-1.5 text-[13px] leading-snug text-ink-faint">
-        Your browser will ask permission the first time. Nothing happening? The lab
-        setup script (<code className="font-mono">register_guide_protocol.py</code>)
-        hasn't been run on this PC — start it manually instead:
-      </p>
+      <div className="mt-2 rounded-(--radius-control) border border-hairline bg-paper px-3 py-2 text-[13px] leading-snug text-ink-soft">
+        <div>
+          Your browser will ask permission the first time. If this PC does not already have
+          the guide files, download the bundle below and unzip it locally first.
+        </div>
+        <div className="mt-1">
+          The bundle includes the guide scripts, the tutorial JSON, and any tutorial images
+          that are stored in the repo.
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <a
+          href={`/api/tutorials/${tutorialId}/desktop-guide-bundle`}
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-(--radius-control) border border-hairline bg-surface px-4 text-[15px] font-medium text-ink-soft transition-colors hover:border-violet hover:text-ink"
+        >
+          <Download className="size-4" />
+          Download guide bundle
+        </a>
+        <span className="inline-flex h-10 items-center rounded-(--radius-control) border border-hairline bg-paper px-3 text-sm text-ink-faint">
+          <code className="font-mono">register_guide_protocol.py</code> still needs to be run once per PC.
+        </span>
+      </div>
       <button
         onClick={() => copy(command, "cmd")}
         className="mt-2 flex w-full items-center justify-between gap-2 rounded-(--radius-control) border border-hairline bg-paper px-3 py-2 text-left font-mono text-[13px] text-ink hover:border-ink-faint"

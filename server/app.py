@@ -24,28 +24,34 @@ from .routers import quizzes as quizzes_router
 from .routers import reports as reports_router
 from .routers import student as student_router
 from .routers import tutorials as tutorials_router
-from .security import hash_password
+from .security import hash_password, new_class_code
 from .services import quiz_store, tutorial_store
 
 WEBAPP_DIST = REPO_ROOT / "webapp" / "dist"
 
 
-def seed_instructor(settings: Settings) -> None:
-    if not (settings.instructor_username and settings.instructor_password):
-        return
+def bootstrap_demo_state(settings: Settings) -> None:
     conn = dbmod.connect(settings.db_path)
     try:
-        if conn.execute("SELECT 1 FROM users WHERE role = 'instructor'").fetchone():
-            return
-        conn.execute(
-            "INSERT INTO users (username, password_hash, role, created_at) VALUES (?,?,?,?)",
-            (
-                settings.instructor_username,
-                hash_password(settings.instructor_password),
-                "instructor",
-                time.time(),
-            ),
-        )
+        if not conn.execute("SELECT 1 FROM users WHERE role = 'instructor'").fetchone():
+            username = settings.instructor_username or "prof"
+            password = settings.instructor_password or "prof-pass-123"
+            conn.execute(
+                "INSERT INTO users (username, password_hash, role, created_at) VALUES (?,?,?,?)",
+                (
+                    username,
+                    hash_password(password),
+                    "instructor",
+                    time.time(),
+                ),
+            )
+
+        if not conn.execute("SELECT 1 FROM sections").fetchone():
+            conn.execute(
+                "INSERT INTO sections (name, class_code, created_at) VALUES (?,?,?)",
+                ("Section A", new_class_code(), time.time()),
+            )
+
         conn.commit()
     finally:
         conn.close()
@@ -55,7 +61,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings()
     settings.ensure_dirs()
     dbmod.init_db(settings.db_path)
-    seed_instructor(settings)
+    bootstrap_demo_state(settings)
     conn = dbmod.connect(settings.db_path)
     try:
         tutorial_store.seed_if_empty(conn, settings)
