@@ -17,6 +17,24 @@ CHATBOT_DIR = REPO_ROOT / "chatbot_spike"
 if CHATBOT_DIR.exists() and str(CHATBOT_DIR) not in sys.path:
     sys.path.insert(0, str(CHATBOT_DIR))
 
+def _load_dotenv(path: Path) -> None:
+    """Minimal .env loader (KEY=VALUE lines, # comments; real environment
+    variables always win). Secrets like CHATBOT_API_KEY live in the
+    gitignored repo-root .env so they never enter git; deployments set real
+    env vars instead. Must run before Settings is defined — its field
+    defaults read os.environ at class-creation time."""
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        os.environ.setdefault(key.strip(), value.strip().strip("'\""))
+
+
+_load_dotenv(REPO_ROOT / ".env")
+
 SESSION_COOKIE = "session"
 
 
@@ -40,6 +58,14 @@ class Settings:
     instructor_password: str | None = os.environ.get("INSTRUCTOR_PASSWORD")
     # Test seam: routers pull the chatbot engine from app.state; tests inject a fake.
     chatbot_engine: object | None = None
+    # Cloud chatbot: when CHATBOT_API_KEY is set, Compass answers through an
+    # OpenAI-compatible chat-completions API (Groq, OpenRouter, ...) instead
+    # of local Ollama + the chatbot_spike retrieval index. Team-testing/demo
+    # deployments only — the NYU pilot keeps the FERPA invariant (no cloud
+    # LLM touches student data) by leaving this unset.
+    chatbot_api_key: str | None = os.environ.get("CHATBOT_API_KEY") or None
+    chatbot_api_base: str = os.environ.get("CHATBOT_API_BASE", "https://api.groq.com/openai/v1")
+    chatbot_model: str = os.environ.get("CHATBOT_MODEL", "llama-3.1-8b-instant")
     # Derived paths
     db_path: Path = field(init=False)
 

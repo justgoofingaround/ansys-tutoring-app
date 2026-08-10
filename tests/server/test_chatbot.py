@@ -133,3 +133,71 @@ def test_instructor_cannot_query(client, seeded):
     login(client, "prof", "prof-pass-123")
     r = client.post("/api/chatbot/query", json={"question": "hi"})
     assert r.status_code == 403
+
+
+# ── CloudApiEngine (cloud deployments: CHATBOT_API_KEY set, no Ollama) ──
+
+def test_get_engine_prefers_cloud_when_api_key_set(tmp_path):
+    from server.services import chatbot_service
+
+    s = Settings(
+        data_dir=tmp_path / "server_data",
+        chatbot_api_key="test-key",
+        chatbot_api_base="https://api.example/v1",
+        chatbot_model="test-model",
+    )
+    chatbot_service._default_engine = None
+    try:
+        eng = chatbot_service.get_engine(s)
+        assert isinstance(eng, chatbot_service.CloudApiEngine)
+        assert eng.model == "test-model"
+        assert eng.api_base == "https://api.example/v1"
+    finally:
+        chatbot_service._default_engine = None
+
+
+def test_cloud_engine_streams_openai_sse():
+    import httpx
+
+    from server.services.chatbot_service import CloudApiEngine
+
+    sse = (
+        'data: {"choices":[{"delta":{"role":"assistant"}}]}\n\n'
+        'data: {"choices":[{"delta":{"content":"Hello "}}]}\n\n'
+        'data: {"choices":[{"delta":{"content":"world"}}]}\n\n'
+        ": keep-alive\n\n"
+        "data: [DONE]\n\n"
+    )
+
+    def handler(request):
+        assert request.url == "https://api.example/v1/chat/completions"
+        assert request.headers["authorization"] == "Bearer test-key"
+        body = json.loads(request.content)
+        assert body["model"] == "test-model" and body["stream"] is True
+        assert "Tutorial context: Tutorial 1" in body["messages"][1]["content"]
+        return httpx.Response(200, text=sse, headers={"content-type": "text/event-stream"})
+
+    engine = CloudApiEngine(
+        "https://api.example/v1", "test-key", "test-model",
+        transport=httpx.MockTransport(handler),
+    )
+    tokens = []
+    answer, sources = engine.generate("hi", "Tutorial 1", tokens.append)
+    assert answer == "Hello world"
+    assert tokens == ["Hello ", "world"]
+    assert sources == []  # no retrieval index in cloud mode
+
+
+def test_cloud_engine_raises_on_api_error():
+    import httpx
+
+    from server.services.chatbot_service import CloudApiEngine
+
+    engine = CloudApiEngine(
+        "https://api.example/v1", "bad-key", "test-model",
+        transport=httpx.MockTransport(
+            lambda req: httpx.Response(401, json={"error": "invalid key"})
+        ),
+    )
+    with pytest.raises(RuntimeError, match="401"):
+        engine.generate("hi", None, lambda _t: None)

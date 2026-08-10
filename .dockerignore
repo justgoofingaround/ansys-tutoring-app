@@ -1,5 +1,6 @@
 .git
 .venv
+.env
 .gstack
 server_data
 webapp/node_modules

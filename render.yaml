@@ -14,3 +14,12 @@ services:
         sync: false
       - key: ENABLE_LLM
         value: "0"
+      # Compass chatbot in the cloud: paste a free API key (e.g. Groq —
+      # console.groq.com) when prompted, or leave blank to keep the chatbot
+      # disabled. Any OpenAI-compatible endpoint works via CHATBOT_API_BASE.
+      - key: CHATBOT_API_KEY
+        sync: false
+      - key: CHATBOT_API_BASE
+        value: "https://api.groq.com/openai/v1"
+      - key: CHATBOT_MODEL
+        value: "llama-3.1-8b-instant"

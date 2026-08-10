@@ -52,10 +52,18 @@ Tests (no Ansys or Ollama needed): `.venv\Scripts\python -m pytest tests\server`
 The repo ships a `Dockerfile` + `render.yaml` for a free [Render](https://render.com)
 deployment. **This is for team testing and demos only** — the pilot's FERPA
 invariant means real student data stays on NYU infrastructure, never a
-third-party cloud. In the cloud the AI features (Compass chat, AI report
+third-party cloud. In the cloud the Ollama-backed AI features (AI report
 review, FAQ drafting, PDF→tutorial conversion) are disabled (`ENABLE_LLM=0`)
 and degrade gracefully; everything else works, and the full 9-tutorial
 catalog + quizzes seed automatically on every boot (`SEED_ALL_TUTORIALS=1`).
+
+**Compass chat is the exception** — it can run in the cloud through any
+OpenAI-compatible API. Set `CHATBOT_API_KEY` (render.yaml defaults
+`CHATBOT_API_BASE`/`CHATBOT_MODEL` to Groq's free tier — grab a key at
+console.groq.com; leave the key blank to keep the chatbot off). Cloud mode
+has **no retrieval index**: answers come from the model's general Ansys
+knowledge with no source citations, so treat it as a UI/flow demo, not the
+real Compass. The real deployment keeps local Ollama + the doc index.
 
 1. Push the repo to GitHub, sign up at render.com (free), then **New + →
    Blueprint** → connect the repo. Render reads `render.yaml`.

@@ -16,9 +16,13 @@ COPY server/ server/
 COPY tools/validate_tutorial.py tools/validate_tutorial.py
 COPY mock_server/data/ mock_server/data/
 COPY --from=webapp /build/dist webapp/dist
-# LLM features off by default in the cloud (no Ollama); every LLM path
-# degrades gracefully. Instructor account comes from INSTRUCTOR_USERNAME /
-# INSTRUCTOR_PASSWORD env vars at deploy time.
+# Ollama-backed LLM features off in the cloud (no Ollama); every LLM path
+# degrades gracefully. The Compass chatbot CAN run in the cloud: set
+# CHATBOT_API_KEY (+ optional CHATBOT_API_BASE / CHATBOT_MODEL, defaulting
+# to Groq's free tier) to route it through an OpenAI-compatible API —
+# no retrieval index, general-knowledge answers, demo-grade only.
+# Instructor account comes from INSTRUCTOR_USERNAME / INSTRUCTOR_PASSWORD
+# env vars at deploy time.
 ENV ENABLE_LLM=0 \
     SEED_ALL_TUTORIALS=1 \
     DATA_DIR=/app/server_data \
