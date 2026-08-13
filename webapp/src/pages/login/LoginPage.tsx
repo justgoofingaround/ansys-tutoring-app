@@ -36,7 +36,7 @@ export function LoginPage() {
           <div className="font-serif text-2xl font-semibold text-white">ME-UY 4214</div>
           <div className="mt-1 text-[15px] text-white/70">Finite Element Analysis</div>
           <div className="mt-4 text-xs text-white/40">
-            NYU Tandon · runs entirely on NYU infrastructure
+            NYU Tandon
           </div>
         </div>
       </div>

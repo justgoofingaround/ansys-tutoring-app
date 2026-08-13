@@ -33,7 +33,9 @@ def _start_session(
         SESSION_COOKIE, token,
         max_age=int(settings.session_ttl_days * 86400),
         httponly=True, samesite="lax",
-        # Secure flag off: plain-HTTP NYU LAN pilot (documented limitation).
+        # Secure only when the deployment terminates TLS (COOKIE_SECURE=1);
+        # plain-HTTP LAN/dev runs keep it off so the cookie still sticks.
+        secure=settings.cookie_secure,
     )
 
 

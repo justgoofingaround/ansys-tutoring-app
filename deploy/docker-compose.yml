@@ -1,0 +1,32 @@
+# Tutoring Hub — NYU pilot deployment (meuy4214.poly.edu).
+# App container only; nginx runs on the host and terminates TLS
+# (see nginx-tutoring-hub.conf). Data persists in ../server_data on the host.
+#
+#   docker compose --env-file .env up -d --build
+#
+services:
+  hub:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: tutoring-hub
+    restart: unless-stopped
+    # Bind to loopback only — the outside world comes in through nginx:443.
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      INSTRUCTOR_USERNAME: ${INSTRUCTOR_USERNAME:?set in deploy/.env}
+      INSTRUCTOR_PASSWORD: ${INSTRUCTOR_PASSWORD:?set in deploy/.env}
+      SEED_ALL_TUTORIALS: "1"
+      COOKIE_SECURE: "1"           # nginx serves HTTPS
+      DATA_DIR: /app/server_data
+      # Ollama-backed AI (report review, FAQ drafting, PDF->tutorial) is off
+      # until Ollama is installed on this machine. To enable later:
+      #   1. install Ollama on the host, `ollama pull <model>`
+      #   2. flip ENABLE_LLM to "1" and uncomment OLLAMA_HOST + extra_hosts
+      ENABLE_LLM: "0"
+      # OLLAMA_HOST: http://host.docker.internal:11434
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"
+    volumes:
+      - ../server_data:/app/server_data

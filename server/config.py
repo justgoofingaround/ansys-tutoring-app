@@ -56,6 +56,9 @@ class Settings:
     max_report_bytes: int = 20 * 1024 * 1024
     instructor_username: str | None = os.environ.get("INSTRUCTOR_USERNAME")
     instructor_password: str | None = os.environ.get("INSTRUCTOR_PASSWORD")
+    # COOKIE_SECURE=1 for HTTPS deployments (nginx + TLS); off by default so
+    # the plain-HTTP LAN/dev flow keeps working.
+    cookie_secure: bool = os.environ.get("COOKIE_SECURE", "0") == "1"
     # Test seam: routers pull the chatbot engine from app.state; tests inject a fake.
     chatbot_engine: object | None = None
     # Cloud chatbot: when CHATBOT_API_KEY is set, Compass answers through an
