@@ -75,6 +75,30 @@ def import_tutorial(
     tutorial_id = data["tutorial_id"]
     title = data.get("title", tutorial_id)
 
+    # Identical re-upload guard: an upload whose content matches the latest
+    # stored version (double-click, re-submitting the same file) keeps that
+    # version instead of minting a duplicate. Publishing intent still applies.
+    latest = conn.execute(
+        """SELECT version, content FROM tutorial_versions
+           WHERE tutorial_id = ? ORDER BY version DESC LIMIT 1""",
+        (tutorial_id,),
+    ).fetchone()
+    if latest is not None and json.loads(latest["content"]) == data:
+        if publish:
+            conn.execute(
+                "UPDATE tutorials SET latest_published_version = ? WHERE tutorial_id = ?",
+                (latest["version"], tutorial_id),
+            )
+            conn.commit()
+        if isinstance(source, bytes):
+            tmp_path.unlink(missing_ok=True)
+        return {
+            "tutorial_id": tutorial_id,
+            "version": latest["version"],
+            "warnings": _findings_as_dicts(findings),
+            "unchanged": True,
+        }
+
     row = conn.execute(
         "SELECT COALESCE(MAX(version), 0) AS v FROM tutorial_versions WHERE tutorial_id = ?",
         (tutorial_id,),
@@ -110,7 +134,8 @@ def import_tutorial(
     conn.commit()
     if isinstance(source, bytes):
         tmp_path.unlink(missing_ok=True)
-    return {"tutorial_id": tutorial_id, "version": version, "warnings": warnings}
+    return {"tutorial_id": tutorial_id, "version": version, "warnings": warnings,
+            "unchanged": False}
 
 
 def get_published(

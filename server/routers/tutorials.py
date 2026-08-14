@@ -4,12 +4,18 @@ Paths after /api match the sibling repo's api_client.py contract."""
 import sqlite3
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import Response
 
 from ..deps import current_user, get_db
-from ..services import guide_bundle, tutorial_store
+from ..services import tutorial_store
 
 router = APIRouter(prefix="/api", tags=["tutorials"], dependencies=[Depends(current_user)])
+
+# Launcher-facing content, NO auth: the desktop-guide launcher is spawned by
+# the ansysguide:// protocol handler outside the browser session, so it has
+# no session cookie. Published tutorial JSON is course material (never
+# student data), and this mirrors the unauthenticated /tutorial-images
+# static mount the web runner already uses.
+guide_router = APIRouter(prefix="/api/guide", tags=["guide"])
 
 
 @router.get("/tutorials")
@@ -72,20 +78,12 @@ def step_faqs(
     ).fetchall()
     return _faq_rows(rows)
 
-@router.get("/tutorials/{tutorial_id}/desktop-guide-bundle")
-def desktop_guide_bundle(tutorial_id: str, conn: sqlite3.Connection = Depends(get_db)) -> Response:
-    try:
-        payload, filename, missing = guide_bundle.build_desktop_guide_bundle(conn, tutorial_id)
-    except ValueError as exc:
-        if str(exc) == "tutorial_not_found":
-            raise HTTPException(status_code=404, detail="tutorial_not_found") from exc
-        raise
-
-    return Response(
-        content=payload,
-        media_type="application/zip",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
-            "X-Guide-Missing-Assets": ",".join(missing),
-        },
-    )
+@guide_router.get("/tutorials/{tutorial_id}")
+def guide_tutorial(
+    tutorial_id: str,
+    version: int | None = None,
+    conn: sqlite3.Connection = Depends(get_db),
+) -> dict:
+    """Published tutorial JSON for the desktop-guide launcher (see
+    guide_router note above for why this is unauthenticated)."""
+    return get_tutorial(tutorial_id, version, conn)

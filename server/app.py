@@ -75,6 +75,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(auth_router.router)
     application.include_router(instructor_router.router)
     application.include_router(tutorials_router.router)
+    application.include_router(tutorials_router.guide_router)
     application.include_router(quizzes_router.router)
     application.include_router(events_router.router)
     application.include_router(student_router.router)

@@ -143,6 +143,39 @@ def test_library_upload_validate_publish(client, seeded, settings):
     assert "tut_test_upload" in ids
 
 
+def test_identical_reupload_keeps_version(client, seeded):
+    """Re-uploading byte-identical content (double-click, same file twice)
+    must not mint a duplicate version."""
+    login(client, "prof", "prof-pass-123")
+    data = json.loads(
+        (REPO_ROOT / "mock_server" / "data" / "tut1.json").read_text(encoding="utf-8")
+    )
+    data["tutorial_id"] = "tut_dup_upload"
+
+    def upload():
+        return client.post(
+            "/api/instructor/tutorials",
+            files={"file": ("dup.json", io.BytesIO(json.dumps(data).encode()), "application/json")},
+            headers={"X-Requested-With": "fetch"},
+        )
+
+    r1, r2 = upload(), upload()
+    assert r1.status_code == 201 and r2.status_code == 201
+    assert r1.json()["unchanged"] is False
+    assert r2.json()["unchanged"] is True
+    assert r2.json()["version"] == r1.json()["version"]
+
+    lib = {t["tutorial_id"]: t for t in client.get("/api/instructor/tutorials").json()}
+    assert len(lib["tut_dup_upload"]["versions"]) == 1
+
+    # actually-changed content still creates a new version
+    data["title"] = "changed title"
+    r3 = upload()
+    assert r3.status_code == 201
+    assert r3.json()["unchanged"] is False
+    assert r3.json()["version"] == r1.json()["version"] + 1
+
+
 def test_publish_unknown_version_404(client, seeded):
     login(client, "prof", "prof-pass-123")
     r = client.post("/api/instructor/tutorials/tut1_3d_bar/publish", json={"version": 99})

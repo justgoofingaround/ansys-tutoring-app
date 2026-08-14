@@ -1,7 +1,6 @@
 """Tutorial store, content endpoints, events ingestion, progress, reports."""
 
 import io
-import zipfile
 import time
 
 import fitz
@@ -203,17 +202,18 @@ def test_step_reference_images_served(client, seeded):
     assert r.headers["content-type"] == "image/png"
 
 
-def test_desktop_guide_bundle_download(client, seeded):
-    register_student(client, seeded)
-    r = client.get("/api/tutorials/tut1_3d_bar/desktop-guide-bundle")
+def test_guide_tutorial_endpoint_no_auth_required(client, seeded):
+    """The desktop-guide launcher has no session cookie — published tutorial
+    JSON is served unauthenticated (course material, not student data)."""
+    r = client.get("/api/guide/tutorials/tut1_3d_bar")
     assert r.status_code == 200, r.text
-    assert r.headers["content-type"] == "application/zip"
-    bundle = zipfile.ZipFile(io.BytesIO(r.content))
-    names = set(bundle.namelist())
-    assert "README.txt" in names
-    assert "mock_server/data/tut1_3d_bar.json" in names
-    assert "spikes/guide_tut1.py" in names
-    assert "tools/register_guide_protocol.py" in names
+    body = r.json()
+    assert body["tutorial_id"] == "tut1_3d_bar"
+    assert body["sections"]
+
+    assert client.get("/api/guide/tutorials/no_such_tut").status_code == 404
+    # the authed sibling endpoint still requires a session
+    assert client.get("/api/tutorials/tut1_3d_bar").status_code == 401
 
 
 def test_web_marked_step_shows_as_completed(client, seeded):

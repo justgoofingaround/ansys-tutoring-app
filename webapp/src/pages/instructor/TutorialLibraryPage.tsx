@@ -45,7 +45,7 @@ function UploadCard() {
   const [product, setProduct] = useState("mechanical");
   const [mandatory, setMandatory] = useState(false);
   const [findings, setFindings] = useState<ValidationFinding[] | null>(null);
-  const [uploaded, setUploaded] = useState<{ tutorial_id: string; version: number } | null>(null);
+  const [uploaded, setUploaded] = useState<{ tutorial_id: string; version: number; unchanged: boolean } | null>(null);
 
   const upload = useMutation({
     mutationFn: async () => {
@@ -68,11 +68,13 @@ function UploadCard() {
         throw new ApiError(422, "validation_failed");
       }
       if (!res.ok) throw new ApiError(res.status, `http_${res.status}`);
-      return (await res.json()) as { tutorial_id: string; version: number; warnings: ValidationFinding[] };
+      return (await res.json()) as {
+        tutorial_id: string; version: number; warnings: ValidationFinding[]; unchanged?: boolean;
+      };
     },
     onSuccess: (r) => {
       setFindings(r.warnings.length > 0 ? r.warnings : null);
-      setUploaded({ tutorial_id: r.tutorial_id, version: r.version });
+      setUploaded({ tutorial_id: r.tutorial_id, version: r.version, unchanged: r.unchanged ?? false });
       setFileName(null);
       if (fileRef.current) fileRef.current.value = "";
       qc.invalidateQueries({ queryKey: ["instructor", "library"] });
@@ -156,7 +158,16 @@ function UploadCard() {
       {uploaded && (
         <div className="mt-3 flex items-center gap-2 rounded-(--radius-control) border border-success/40 bg-success-tint px-4 py-3 text-sm text-ink">
           <CheckCircle2 className="size-4 text-success" />
-          Stored <code className="font-mono">{uploaded.tutorial_id}</code> as draft v{uploaded.version} — publish it below when ready.
+          {uploaded.unchanged ? (
+            <>
+              Identical to the existing v{uploaded.version} of{" "}
+              <code className="font-mono">{uploaded.tutorial_id}</code> — no new version stored.
+            </>
+          ) : (
+            <>
+              Stored <code className="font-mono">{uploaded.tutorial_id}</code> as draft v{uploaded.version} — publish it below when ready.
+            </>
+          )}
         </div>
       )}
     </Card>
@@ -205,7 +216,9 @@ function ConvertPdfCard() {
           setFindings((detail as { findings: ValidationFinding[] }).findings);
           setError(null);
         } else if (res.status === 503) {
-          setError("The local AI model is not available. Make sure Ollama is running on this machine, then try again.");
+          setError(
+            "No AI model is available. Start Ollama on this machine, or set CHATBOT_API_KEY on the server to use a cloud model as fallback, then try again.",
+          );
         } else if (res.status === 502) {
           setError("The model could not produce a usable tutorial from this PDF. Try a text-based (not scanned) PDF with clear numbered steps.");
         } else if (res.status === 413) {
@@ -235,7 +248,8 @@ function ConvertPdfCard() {
         <CardTitle>Convert a PDF with AI</CardTitle>
       </div>
       <p className="mt-2 text-sm text-ink-soft">
-        Upload a tutorial PDF and the local AI model drafts a tutorial from it:
+        Upload a tutorial PDF and the AI model (local Ollama, or a cloud model
+        as fallback) drafts a tutorial from it:
         title, problem statement, and step-by-step instructions. The draft uses
         manual step confirmation (no live highlighting) — review it, refine the
         JSON if needed, then publish.
@@ -359,7 +373,8 @@ function TutorialRow({ t }: { t: LibraryTutorial }) {
     onSuccess: invalidate,
   });
   const guidelinesDirty = draft.trim() !== (t.report_guidelines ?? "");
-  const hasDraft = t.versions.some((v) => v.version !== t.published_version);
+  const latestVersion = t.versions.length > 0 ? Math.max(...t.versions.map((v) => v.version)) : null;
+  const hasPendingDraft = latestVersion != null && latestVersion !== t.published_version;
 
   return (
     <div className="border-b border-hairline py-3 last:border-b-0">
@@ -371,6 +386,9 @@ function TutorialRow({ t }: { t: LibraryTutorial }) {
               <Badge tone="violet" className="font-mono">v{t.published_version} live</Badge>
             ) : (
               <Badge>draft</Badge>
+            )}
+            {hasPendingDraft && t.published_version != null && (
+              <Badge tone="warning" className="font-mono">draft v{latestVersion} pending</Badge>
             )}
             {t.is_mandatory && <Badge tone="violet">Mandatory</Badge>}
             {t.quiz_id && (
@@ -460,9 +478,11 @@ function TutorialRow({ t }: { t: LibraryTutorial }) {
           ))}
         </ul>
       )}
-      {!open && hasDraft && t.published_version == null && (
+      {!open && hasPendingDraft && (
         <div className="mt-1.5 text-[13px] text-warning">
-          Not visible to students until a version is published.
+          {t.published_version == null
+            ? "Not visible to students until a version is published."
+            : `v${latestVersion} is uploaded but unpublished — students still see v${t.published_version}. Open Versions to publish it.`}
         </div>
       )}
     </div>

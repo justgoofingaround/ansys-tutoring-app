@@ -9,3 +9,4 @@ webapp/node_modules/
 webapp/dist/
 .gstack/
 webapp/*.tsbuildinfo
+deploy/DEPLOY-NYU.md

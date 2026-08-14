@@ -1,4 +1,10 @@
-"""PDF -> tutorial JSON conversion (instructor upload, local Ollama only).
+"""PDF -> tutorial JSON conversion (instructor upload).
+
+Backend: local Ollama when enabled and reachable, else the OpenAI-compatible
+cloud API (CHATBOT_API_KEY, same Groq-by-default config the cloud chatbot
+uses). The PDF is instructor-authored course material — never student data —
+so the cloud fallback does not touch the FERPA invariant (which is about
+student data specifically).
 
 The LLM's job is deliberately small: it extracts prose (title, problem,
 per-chunk step titles/descriptions/hints). Everything the tutorial
@@ -37,7 +43,7 @@ class PdfExtractionError(PdfConversionError):
 
 
 class LlmUnavailableError(PdfConversionError):
-    """enable_llm off or Ollama unreachable (-> 503)."""
+    """No usable backend: Ollama off/unreachable and no cloud key (-> 503)."""
 
 
 class GenerationFailedError(PdfConversionError):
@@ -101,7 +107,7 @@ def _resolve_model() -> str:
         return "gemma3:4b"
 
 
-def _chat_json(model: str, prompt: str) -> dict:
+def _ollama_chat_json(model: str, prompt: str) -> dict:
     """One format="json" chat call. Connection-level failures raise
     LlmUnavailableError; a bad payload raises ValueError (caller retries)."""
     try:
@@ -123,11 +129,79 @@ def _chat_json(model: str, prompt: str) -> dict:
     return data
 
 
-def _call_with_retry(model: str, prompt: str) -> dict | None:
+_cloud_transport = None  # test seam: httpx.MockTransport, mirrors CloudApiEngine
+
+
+def _cloud_chat_json(settings, prompt: str) -> dict:
+    """One JSON-mode call against the OpenAI-compatible chat-completions API
+    (Groq by default — same CHATBOT_* config the cloud chatbot uses).
+    Connection/API failures raise LlmUnavailableError; a bad payload raises
+    ValueError (caller retries)."""
+    import httpx  # lazy, mirrors chatbot_service
+
+    try:
+        with httpx.Client(
+            transport=_cloud_transport, timeout=httpx.Timeout(120.0, connect=10.0)
+        ) as client:
+            resp = client.post(
+                f"{settings.chatbot_api_base.rstrip('/')}/chat/completions",
+                headers={"Authorization": f"Bearer {settings.chatbot_api_key}"},
+                json={
+                    "model": settings.chatbot_model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "response_format": {"type": "json_object"},
+                    "temperature": 0,
+                    "max_tokens": 2048,
+                },
+            )
+    except httpx.HTTPError as exc:
+        raise LlmUnavailableError(f"cloud LLM API not reachable: {exc}")
+    if resp.status_code != 200:
+        raise LlmUnavailableError(
+            f"cloud LLM API returned {resp.status_code}: {resp.text[:300]}"
+        )
+    choices = resp.json().get("choices") or [{}]
+    content = (choices[0].get("message") or {}).get("content") or ""
+    data = json.loads(content)  # ValueError on garbage/empty
+    if not isinstance(data, dict):
+        raise ValueError("LLM did not return a JSON object")
+    return data
+
+
+def _pick_backend(settings):
+    """Choose the JSON-chat backend: (chat callable, model name, backend tag).
+
+    Local Ollama wins when enabled and reachable (the pilot path). Otherwise
+    fall back to the cloud API when CHATBOT_API_KEY is set — this also makes
+    PDF conversion work on cloud/demo deployments where ENABLE_LLM=0."""
+    if settings.enable_llm:
+        try:
+            import ollama
+
+            ollama.list()  # cheap reachability probe
+        except Exception:
+            pass  # fall through to the cloud backend (or the error below)
+        else:
+            model = _resolve_model()
+            return (lambda p: _ollama_chat_json(model, p)), model, "ollama"
+    if settings.chatbot_api_key:
+        return (
+            (lambda p: _cloud_chat_json(settings, p)),
+            settings.chatbot_model,
+            "cloud",
+        )
+    raise LlmUnavailableError(
+        "no LLM backend: Ollama is "
+        + ("not reachable" if settings.enable_llm else "disabled (ENABLE_LLM=0)")
+        + " and CHATBOT_API_KEY is not set for the cloud fallback"
+    )
+
+
+def _call_with_retry(chat, prompt: str) -> dict | None:
     """Retry-once on unparseable output; None after the second failure."""
     for _ in range(2):
         try:
-            return _chat_json(model, prompt)
+            return chat(prompt)
         except (ValueError, KeyError, TypeError):
             continue
     return None
@@ -218,13 +292,11 @@ def assemble_tutorial(metadata: dict, chunks: list[dict], existing_ids: set,
 
 def convert_pdf(raw: bytes, filename: str, settings, existing_ids: set) -> tuple[dict, dict]:
     """PDF bytes -> (tutorial dict, generation info)."""
-    if not settings.enable_llm:
-        raise LlmUnavailableError("LLM disabled (ENABLE_LLM=0)")
+    chat, model, backend = _pick_backend(settings)
     pages = _extract_pages(raw)
-    model = _resolve_model()
 
     metadata = _call_with_retry(
-        model, METADATA_PROMPT.format(text="\n".join(pages[:PAGES_PER_CHUNK])[:CHUNK_CHAR_CAP])
+        chat, METADATA_PROMPT.format(text="\n".join(pages[:PAGES_PER_CHUNK])[:CHUNK_CHAR_CAP])
     )
     if metadata is None:
         # survivable: name the tutorial after the file, leave problem blank
@@ -242,7 +314,7 @@ def convert_pdf(raw: bytes, filename: str, settings, existing_ids: set) -> tuple
         if not text.strip():
             continue
         result = _call_with_retry(
-            model,
+            chat,
             STEPS_PROMPT.format(max_steps=MAX_STEPS_PER_CHUNK, a=a + 1, b=b, text=text),
         )
         if result is None:
@@ -258,6 +330,7 @@ def convert_pdf(raw: bytes, filename: str, settings, existing_ids: set) -> tuple
         )
     gen_info = {
         "model": model,
+        "backend": backend,
         "pages": len(pages),
         "chunks": len(chunk_ranges),
         "skipped_chunks": skipped,
