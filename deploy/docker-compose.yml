@@ -1,6 +1,7 @@
 # Tutoring Hub — NYU pilot deployment (meuy4214.poly.edu).
-# App container only; nginx runs on the host and terminates TLS
-# (see nginx-tutoring-hub.conf). Data persists in ../server_data on the host.
+# Two services: the app (hub) and nginx terminating TLS in a container
+# (nginx-docker.conf; certs mounted read-only from the host's letsencrypt).
+# Data persists in ../server_data on the host.
 #
 #   docker compose --env-file .env up -d --build
 #
@@ -30,3 +31,20 @@ services:
     #   - "host.docker.internal:host-gateway"
     volumes:
       - ../server_data:/app/server_data
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: tutoring-hub-nginx
+    restart: unless-stopped
+    depends_on:
+      - hub
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx-docker.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - certbot-webroot:/var/www/certbot
+
+volumes:
+  certbot-webroot:
