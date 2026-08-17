@@ -249,6 +249,35 @@ def test_all_garbage_502(llm_client, seeded, monkeypatch):
     assert r.status_code == 502
 
 
+def test_cloud_429_waited_out_and_retried(monkeypatch):
+    """Free-tier rate limits: a 429 with a cooldown hint is slept through and
+    the call retried, instead of surfacing as 'no AI model available'."""
+    import httpx
+
+    from server.config import Settings
+
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        if len(calls) == 1:
+            return httpx.Response(
+                429, json={"error": {"message": "Rate limit reached. Please try again in 0.01s."}}
+            )
+        return httpx.Response(
+            200, json={"choices": [{"message": {"content": json.dumps({"ok": True})}}]}
+        )
+
+    monkeypatch.setattr(pdf_tutorial, "_cloud_transport", httpx.MockTransport(handler))
+    naps = []
+    monkeypatch.setattr(pdf_tutorial.time, "sleep", naps.append)
+
+    s = Settings(chatbot_api_key="k")
+    assert pdf_tutorial._cloud_chat_json(s, "prompt") == {"ok": True}
+    assert len(calls) == 2          # 429 then success
+    assert naps and naps[0] < 31    # slept the hinted cooldown, capped
+
+
 def test_student_cannot_convert(llm_client, seeded):
     register_student(llm_client, seeded)
     r = _convert(llm_client, _tiny_pdf(["x"]))

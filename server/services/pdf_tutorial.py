@@ -132,28 +132,50 @@ def _ollama_chat_json(model: str, prompt: str) -> dict:
 _cloud_transport = None  # test seam: httpx.MockTransport, mirrors CloudApiEngine
 
 
+_RETRY_AFTER_RE = re.compile(r"try again in ([0-9.]+)s", re.IGNORECASE)
+_MAX_429_RETRIES = 6
+
+
+def _retry_delay_s(resp) -> float:
+    """Cooldown from a 429: Retry-After header, or Groq's 'try again in Xs'
+    message text; conservative default otherwise."""
+    header = resp.headers.get("retry-after", "")
+    if header.replace(".", "", 1).isdigit():
+        return float(header)
+    m = _RETRY_AFTER_RE.search(resp.text)
+    return float(m.group(1)) if m else 10.0
+
+
 def _cloud_chat_json(settings, prompt: str) -> dict:
     """One JSON-mode call against the OpenAI-compatible chat-completions API
     (Groq by default — same CHATBOT_* config the cloud chatbot uses).
-    Connection/API failures raise LlmUnavailableError; a bad payload raises
-    ValueError (caller retries)."""
+    Free-tier rate limits (429) are waited out and retried, so a chunked
+    conversion completes slowly instead of failing. Connection/API failures
+    raise LlmUnavailableError; a bad payload raises ValueError (caller
+    retries)."""
     import httpx  # lazy, mirrors chatbot_service
 
     try:
         with httpx.Client(
             transport=_cloud_transport, timeout=httpx.Timeout(120.0, connect=10.0)
         ) as client:
-            resp = client.post(
-                f"{settings.chatbot_api_base.rstrip('/')}/chat/completions",
-                headers={"Authorization": f"Bearer {settings.chatbot_api_key}"},
-                json={
-                    "model": settings.chatbot_model,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "response_format": {"type": "json_object"},
-                    "temperature": 0,
-                    "max_tokens": 2048,
-                },
-            )
+            for _ in range(_MAX_429_RETRIES):
+                resp = client.post(
+                    f"{settings.chatbot_api_base.rstrip('/')}/chat/completions",
+                    headers={"Authorization": f"Bearer {settings.chatbot_api_key}"},
+                    json={
+                        "model": settings.chatbot_model,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "response_format": {"type": "json_object"},
+                        "temperature": 0,
+                        # generous: reasoning models (gpt-oss-*) spend
+                        # completion tokens on reasoning before the JSON
+                        "max_tokens": 4096,
+                    },
+                )
+                if resp.status_code != 429:
+                    break
+                time.sleep(min(_retry_delay_s(resp) + 0.5, 30.0))
     except httpx.HTTPError as exc:
         raise LlmUnavailableError(f"cloud LLM API not reachable: {exc}")
     if resp.status_code != 200:

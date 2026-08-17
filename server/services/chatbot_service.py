@@ -82,9 +82,11 @@ for a full walkthrough or a comparison of multiple methods.
 a fully generic answer — don't re-explain things the student has clearly already done.
 4. If you aren't sure, say so plainly instead of guessing."""
 
-# Same brevity rationale as chatbot_spike's MAX_RESPONSE_TOKENS: a student
-# mid-tutorial wants the next concrete step, not an essay.
-CLOUD_MAX_RESPONSE_TOKENS = 300
+# Brevity is enforced by the prompt; the token cap is a backstop. It is
+# deliberately larger than the visible answer needs to be: reasoning models
+# (e.g. Groq's gpt-oss-*) spend completion tokens on internal reasoning
+# first, and a tight cap yields empty answers.
+CLOUD_MAX_RESPONSE_TOKENS = 1024
 
 
 class CloudApiEngine:

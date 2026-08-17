@@ -68,7 +68,7 @@ class Settings:
     # LLM touches student data) by leaving this unset.
     chatbot_api_key: str | None = os.environ.get("CHATBOT_API_KEY") or None
     chatbot_api_base: str = os.environ.get("CHATBOT_API_BASE", "https://api.groq.com/openai/v1")
-    chatbot_model: str = os.environ.get("CHATBOT_MODEL", "llama-3.1-8b-instant")
+    chatbot_model: str = os.environ.get("CHATBOT_MODEL", "openai/gpt-oss-20b")
     # Derived paths
     db_path: Path = field(init=False)
 
