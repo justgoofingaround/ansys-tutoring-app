@@ -48,6 +48,35 @@ interface ChatMessage {
   streaming?: boolean;
 }
 
+/** Shown until the first token arrives. On a CPU-only server the model reads
+ * the retrieved doc passages for a minute or more before writing a word, and
+ * a bare cursor looked frozen; the elapsed counter shows it is still working. */
+function ThinkingIndicator() {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    const started = Date.now();
+    const id = window.setInterval(
+      () => setSeconds(Math.floor((Date.now() - started) / 1000)),
+      1000,
+    );
+    return () => window.clearInterval(id);
+  }, []);
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-2 text-[15px] text-ink-soft">
+        <Spinner className="size-4" />
+        <span aria-live="polite">Searching the Ansys docs and thinking…</span>
+        <span className="font-mono text-[12px] text-ink-faint" aria-hidden="true">
+          {seconds}s
+        </span>
+      </div>
+      {seconds >= 15 && (
+        <p className="text-[12px] text-ink-faint">Answers can take a minute or two.</p>
+      )}
+    </div>
+  );
+}
+
 function Bubble({ msg }: { msg: ChatMessage }) {
   const mine = msg.role === "me";
   return (
@@ -67,6 +96,8 @@ function Bubble({ msg }: { msg: ChatMessage }) {
         </div>
         {msg.error ? (
           <p className="text-sm text-error">{msg.error}</p>
+        ) : msg.streaming && !msg.text ? (
+          <ThinkingIndicator />
         ) : (
           <div className="chat-answer text-[15px] leading-relaxed text-ink">
             <span dangerouslySetInnerHTML={{ __html: renderAnswer(msg.text) }} />

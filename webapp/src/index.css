@@ -49,9 +49,6 @@ body {
 .chat-code {
   @apply rounded bg-paper px-1 py-0.5 font-mono text-[13px] text-ink border border-hairline;
 }
-.chat-cite {
-  @apply ml-0.5 inline-flex size-4 items-center justify-center rounded-full bg-violet-tint font-mono text-[10px] font-semibold text-violet;
-}
 
 @media (prefers-reduced-motion: reduce) {
   *,
