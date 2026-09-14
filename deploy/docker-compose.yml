@@ -1,6 +1,7 @@
 # Tutoring Hub — NYU pilot deployment (meuy4214.poly.edu).
-# Two services: the app (hub) and nginx terminating TLS in a container
-# (nginx-docker.conf; certs mounted read-only from the host's letsencrypt).
+# Three services: the app (hub), nginx terminating TLS in a container
+# (nginx-docker.conf; certs mounted read-only from the host's letsencrypt),
+# and a local Ollama LLM server reachable only from the hub.
 # Data persists in ../server_data on the host.
 #
 #   docker compose --env-file .env up -d --build
@@ -46,5 +47,19 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - certbot-webroot:/var/www/certbot
 
+  # Local LLM for AI report review, FAQ drafting, and PDF->tutorial. Runs as a
+  # container rather than a host install: no root needed, and the hub reaches
+  # it over the compose network, so the host's SELinux policy is never
+  # involved (the same reason nginx is dockerized). No ports: it is not
+  # reachable from the network. After first start, pull the model:
+  #   docker exec tutoring-hub-ollama ollama pull gemma3:4b
+  ollama:
+    image: ollama/ollama
+    container_name: tutoring-hub-ollama
+    restart: unless-stopped
+    volumes:
+      - ollama-models:/root/.ollama
+
 volumes:
   certbot-webroot:
+  ollama-models:
