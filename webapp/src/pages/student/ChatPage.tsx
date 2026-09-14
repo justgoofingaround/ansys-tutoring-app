@@ -17,16 +17,22 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-/** Bold, inline code, [n] citation chips, line breaks. Input is escaped
- * first, so the produced HTML contains only our own tags. */
+/** Bold, inline code, line breaks. Input is escaped first, so the produced
+ * HTML contains only our own tags. The model's [n] citation markers are
+ * stripped: students see the answer only. Sources are still streamed and
+ * logged server-side (chatbot_queries.sources) for instructor review. */
 function renderAnswer(text: string): string {
   let html = escapeHtml(text);
+  // Strip citation markers ([1], [2][3], [1, 4]) outside `code` spans only,
+  // and never [0] (citations start at 1), so code like Analyses[0] survives.
+  html = html
+    .split(/(`[^`]+`)/g)
+    .map((part) =>
+      part.startsWith("`") ? part : part.replace(/\s*\[[1-9]\d*(?:\s*,\s*[1-9]\d*)*\]/g, ""),
+    )
+    .join("");
   html = html.replace(/`([^`]+)`/g, "<code class='chat-code'>$1</code>");
   html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-  html = html.replace(
-    /\[(\d+)\]/g,
-    "<sup class='chat-cite'>$1</sup>",
-  );
   html = html.replace(/\n/g, "<br/>");
   return html;
 }
@@ -68,16 +74,6 @@ function Bubble({ msg }: { msg: ChatMessage }) {
               <span className="ml-0.5 inline-block h-4 w-[2px] animate-pulse bg-violet align-text-bottom" />
             )}
           </div>
-        )}
-        {msg.sources && msg.sources.length > 0 && (
-          <ol className="mt-3 space-y-1 border-t border-hairline pt-2">
-            {msg.sources.map((s, i) => (
-              <li key={i} className="flex gap-1.5 text-[12px] text-ink-soft">
-                <span className="font-mono text-ink-faint">[{i + 1}]</span>
-                {s}
-              </li>
-            ))}
-          </ol>
         )}
       </div>
     </div>
@@ -249,7 +245,7 @@ export function ChatPage() {
           <div className="mx-auto mt-10 max-w-md text-center">
             <p className="text-[15px] text-ink-soft">
               Ask anything about Ansys — answers come from locally indexed
-              documentation and always cite their sources.
+              documentation.
             </p>
             <div className="mt-4 space-y-2">
               {SUGGESTIONS.map((s) => (
