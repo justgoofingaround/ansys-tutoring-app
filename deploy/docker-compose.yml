@@ -11,6 +11,8 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
+      args:
+        WITH_COMPASS: "1"   # bake in Compass doc search (CPU torch + retrieval libs)
     container_name: tutoring-hub
     restart: unless-stopped
     # Bind to loopback only — the outside world comes in through nginx:443.
@@ -30,6 +32,11 @@ services:
       - ollama
     volumes:
       - ../server_data:/app/server_data
+      # Compass search index (~230 MB, not in git). Copy chatbot_spike/data/
+      # here from the machine that built it BEFORE the first build: if the
+      # folder is missing, Docker creates it empty and root-owned, and
+      # Compass reports a missing index.
+      - ../chatbot_spike/data:/app/chatbot_spike/data
 
   nginx:
     image: nginx:1.27-alpine

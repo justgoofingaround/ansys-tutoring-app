@@ -54,13 +54,21 @@ class OllamaEngine:
             try:
                 from retrieve import retrieve
                 from generate import stream_answer
+                from config import CHROMA_DIR
             except ModuleNotFoundError as exc:
-                if exc.name == "retrieve":
-                    raise RuntimeError(
-                        "Chatbot retrieval assets are not available in this environment. "
-                        "Install the chatbot_spike dependency set or run the app from the repo root with the bundled chatbot_spike package on PYTHONPATH."
-                    ) from exc
-                raise
+                raise RuntimeError(
+                    "Compass document search is not installed in this environment "
+                    f"(missing module: {exc.name}). Build the image with WITH_COMPASS=1, "
+                    "or install chatbot_spike/requirements.txt for a local run."
+                ) from exc
+            # Check before retrieve(): chromadb would otherwise create an empty
+            # index in the (mounted) folder, and every question would get
+            # "couldn't find anything" instead of a clear error.
+            if not (CHROMA_DIR / "chroma.sqlite3").exists():
+                raise RuntimeError(
+                    f"Compass document index is not installed: {CHROMA_DIR} has no "
+                    "chroma.sqlite3. Copy chatbot_spike/data/ from the machine that built it."
+                )
 
             chunks = retrieve(question)
             return stream_answer(

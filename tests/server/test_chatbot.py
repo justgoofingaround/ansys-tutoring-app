@@ -2,6 +2,8 @@
 FERPA-safe query logging. All through FakeChatbotEngine — no Ollama."""
 
 import json
+import sys
+import types
 
 import pytest
 
@@ -201,3 +203,57 @@ def test_cloud_engine_raises_on_api_error():
     )
     with pytest.raises(RuntimeError, match="401"):
         engine.generate("hi", None, lambda _t: None)
+
+
+# -- OllamaEngine (local Compass): fail loudly when search is not installed --
+
+def _fake_compass_modules(monkeypatch, chroma_dir, calls):
+    """Stand-ins for chatbot_spike's retrieve/generate/config, so the engine's
+    wiring is tested without chromadb, torch, or Ollama."""
+    retrieve_mod = types.ModuleType("retrieve")
+    retrieve_mod.retrieve = lambda q: calls.append("retrieve") or [{"id": "c1"}]
+    generate_mod = types.ModuleType("generate")
+
+    def stream_answer(question, chunks, tutorial_context=None, on_token=None):
+        calls.append("generate")
+        on_token("ok")
+        return "ok", ["Doc, p. 1"]
+
+    generate_mod.stream_answer = stream_answer
+    config_mod = types.ModuleType("config")
+    config_mod.CHROMA_DIR = chroma_dir
+    config_mod.OLLAMA_MODEL = "test-model"
+    monkeypatch.setitem(sys.modules, "retrieve", retrieve_mod)
+    monkeypatch.setitem(sys.modules, "generate", generate_mod)
+    monkeypatch.setitem(sys.modules, "config", config_mod)
+
+
+def test_ollama_engine_errors_clearly_when_index_missing(tmp_path, monkeypatch):
+    from server.services.chatbot_service import OllamaEngine
+
+    calls = []
+    _fake_compass_modules(monkeypatch, tmp_path / "chroma_db", calls)
+    with pytest.raises(RuntimeError, match="index is not installed"):
+        OllamaEngine().generate("how do I mesh?", None, lambda t: None)
+    assert calls == []  # never reached retrieve(), so no empty index was created
+
+
+def test_ollama_engine_answers_when_index_present(tmp_path, monkeypatch):
+    from server.services.chatbot_service import OllamaEngine
+
+    chroma = tmp_path / "chroma_db"
+    chroma.mkdir()
+    (chroma / "chroma.sqlite3").write_bytes(b"")
+    calls, tokens = [], []
+    _fake_compass_modules(monkeypatch, chroma, calls)
+    answer, sources = OllamaEngine().generate("how do I mesh?", None, tokens.append)
+    assert (answer, sources, tokens) == ("ok", ["Doc, p. 1"], ["ok"])
+    assert calls == ["retrieve", "generate"]
+
+
+def test_ollama_engine_reports_missing_search_libraries(monkeypatch):
+    from server.services.chatbot_service import OllamaEngine
+
+    monkeypatch.setitem(sys.modules, "retrieve", None)  # import raises ModuleNotFoundError
+    with pytest.raises(RuntimeError, match="missing module: retrieve"):
+        OllamaEngine().generate("how do I mesh?", None, lambda t: None)

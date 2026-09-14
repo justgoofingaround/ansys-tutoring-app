@@ -5,7 +5,7 @@
 server_data
 webapp/node_modules
 webapp/dist
-chatbot_spike
+chatbot_spike/data
 spikes
 tests
 __pycache__

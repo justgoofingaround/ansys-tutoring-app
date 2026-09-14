@@ -1,0 +1,8 @@
+# Compass document search: NYU deployment only (Dockerfile WITH_COMPASS=1).
+# torch is installed first from PyTorch's CPU-only index in the Dockerfile, so
+# pip does not pull the multi-GB CUDA build. chromadb is pinned to the version
+# the index in chatbot_spike/data was built with: its on-disk format is
+# version-coupled, so rebuild the index if you change this pin.
+sentence-transformers==5.6.0
+chromadb==1.5.9
+rank-bm25==0.2.2
