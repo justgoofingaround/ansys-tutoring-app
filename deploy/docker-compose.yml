@@ -22,14 +22,12 @@ services:
       SEED_ALL_TUTORIALS: "1"
       COOKIE_SECURE: "1"           # nginx serves HTTPS
       DATA_DIR: /app/server_data
-      # Ollama-backed AI (report review, FAQ drafting, PDF->tutorial) is off
-      # until Ollama is installed on this machine. To enable later:
-      #   1. install Ollama on the host, `ollama pull <model>`
-      #   2. flip ENABLE_LLM to "1" and uncomment OLLAMA_HOST + extra_hosts
-      ENABLE_LLM: "0"
-      # OLLAMA_HOST: http://host.docker.internal:11434
-    # extra_hosts:
-    #   - "host.docker.internal:host-gateway"
+      # Local AI (report review, FAQ drafting, PDF->tutorial) through the
+      # ollama service below, over the compose network.
+      ENABLE_LLM: "1"
+      OLLAMA_HOST: http://ollama:11434
+    depends_on:
+      - ollama
     volumes:
       - ../server_data:/app/server_data
 
