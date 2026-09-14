@@ -62,6 +62,11 @@ services:
     image: ollama/ollama
     container_name: tutoring-hub-ollama
     restart: unless-stopped
+    environment:
+      # Keep models in memory instead of unloading after 5 idle minutes:
+      # on this 2-vCPU VM a reload adds tens of seconds to the next
+      # request. Costs ~3-4 GB RAM per loaded model (the VM has 15 GB).
+      OLLAMA_KEEP_ALIVE: "-1"
     volumes:
       - ollama-models:/root/.ollama
 
