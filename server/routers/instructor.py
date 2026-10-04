@@ -461,6 +461,53 @@ def publish_tutorial(
     return {"tutorial_id": tutorial_id, "published_version": version}
 
 
+@router.get("/tutorials/{tutorial_id}/versions/{version}/content")
+def tutorial_version_content(
+    tutorial_id: str, version: int, conn: sqlite3.Connection = Depends(get_db)
+) -> dict:
+    """The stored JSON for one version, for the web editor to load. Any version
+    can be opened, published or draft, so an older one can be re-saved to roll
+    an edit back."""
+    row = conn.execute(
+        "SELECT content FROM tutorial_versions WHERE tutorial_id = ? AND version = ?",
+        (tutorial_id, version),
+    ).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="version_not_found")
+    return {"tutorial_id": tutorial_id, "version": version, "content": json.loads(row["content"])}
+
+
+@router.post("/tutorials/{tutorial_id}/content", dependencies=[Depends(csrf_check)])
+def save_tutorial_content(
+    tutorial_id: str,
+    body: dict,
+    request: Request,
+    conn: sqlite3.Connection = Depends(get_db),
+    user: sqlite3.Row = Depends(require_instructor),
+) -> dict:
+    """Store edited content as a NEW, unpublished version — students keep
+    seeing the published one until the instructor publishes this.
+
+    The body is the whole tutorial document, not a patch: the editor round-trips
+    every key it does not model (apps, report_checks, ...) so nothing is lost.
+    """
+    if body.get("tutorial_id") != tutorial_id:
+        # Saving one tutorial's content under another's id would silently fork it.
+        raise HTTPException(status_code=400, detail="tutorial_id_mismatch")
+    if conn.execute(
+        "SELECT 1 FROM tutorials WHERE tutorial_id = ?", (tutorial_id,)
+    ).fetchone() is None:
+        raise HTTPException(status_code=404, detail="tutorial_not_found")
+    try:
+        return tutorial_store.import_tutorial(
+            conn, get_settings(request),
+            json.dumps(body).encode("utf-8"),
+            uploaded_by=user["id"], publish=False,
+        )
+    except TutorialValidationError as exc:
+        raise HTTPException(status_code=422, detail={"findings": exc.findings})
+
+
 @router.post("/tutorials/{tutorial_id}/settings", dependencies=[Depends(csrf_check)])
 def tutorial_settings(
     tutorial_id: str, body: dict, conn: sqlite3.Connection = Depends(get_db)
@@ -523,6 +570,41 @@ def upload_quiz(
         "tutorial_id": data["tutorial_id"],
         "questions": len(data["questions"]),
         "replaced": replaced,
+        "warnings": [f for f in findings if f["severity"] == "warning"],
+    }
+
+
+@router.get("/quizzes/{quiz_id}/content")
+def quiz_content(quiz_id: str, conn: sqlite3.Connection = Depends(get_db)) -> dict:
+    """The quiz as the editor loads it: answers and explanations included, and
+    unpublished quizzes visible (the student-facing getter hides both)."""
+    quiz = quiz_store.get_quiz(conn, quiz_id, include_answers=True, include_unpublished=True)
+    if quiz is None:
+        raise HTTPException(status_code=404, detail="quiz_not_found")
+    return quiz
+
+
+@router.post("/quizzes/{quiz_id}/content", dependencies=[Depends(csrf_check)])
+def save_quiz_content(
+    quiz_id: str, body: dict, conn: sqlite3.Connection = Depends(get_db)
+) -> dict:
+    """Replace an existing quiz's questions from the editor.
+
+    Quizzes are unversioned, so this overwrites in place — unlike tutorials,
+    there is no draft step. Saving marks the quiz as owned by the editor so
+    boot-time seeding from the JSON files stops overwriting it.
+    """
+    if conn.execute("SELECT 1 FROM quizzes WHERE quiz_id = ?", (quiz_id,)).fetchone() is None:
+        raise HTTPException(status_code=404, detail="quiz_not_found")
+    if body.get("quiz_id") != quiz_id:
+        raise HTTPException(status_code=400, detail="quiz_id_mismatch")
+    findings = quiz_store.validate_quiz(conn, body)
+    if any(f["severity"] == "error" for f in findings):
+        raise HTTPException(status_code=422, detail={"findings": findings})
+    quiz_store.import_quiz(conn, body, edited_in_app=True)
+    return {
+        "quiz_id": quiz_id,
+        "questions": len(body.get("questions", [])),
         "warnings": [f for f in findings if f["severity"] == "warning"],
     }
 

@@ -88,20 +88,28 @@ def validate_quiz(conn: sqlite3.Connection, data: dict) -> list[dict]:
     return f
 
 
-def import_quiz(conn: sqlite3.Connection, data: dict, publish: bool = True) -> str:
-    """Insert or replace a quiz and its questions from an authored dict."""
+def import_quiz(
+    conn: sqlite3.Connection, data: dict, publish: bool = True, edited_in_app: bool = False
+) -> str:
+    """Insert or replace a quiz and its questions from an authored dict.
+
+    edited_in_app marks the quiz as owned by the web editor, so boot-time
+    seeding from mock_server/data/quizzes/ stops overwriting it."""
     quiz_id = data["quiz_id"]
     tutorial_id = data["tutorial_id"]
     now = time.time()
     conn.execute(
-        """INSERT INTO quizzes (quiz_id, tutorial_id, title, is_published, updated_at)
-           VALUES (?,?,?,?,?)
+        """INSERT INTO quizzes
+           (quiz_id, tutorial_id, title, is_published, updated_at, edited_in_app)
+           VALUES (?,?,?,?,?,?)
            ON CONFLICT(quiz_id) DO UPDATE SET
              tutorial_id = excluded.tutorial_id,
              title = excluded.title,
              is_published = excluded.is_published,
-             updated_at = excluded.updated_at""",
-        (quiz_id, tutorial_id, data.get("title", quiz_id), int(publish), now),
+             updated_at = excluded.updated_at,
+             -- sticky: once edited in the app it stays that way
+             edited_in_app = MAX(quizzes.edited_in_app, excluded.edited_in_app)""",
+        (quiz_id, tutorial_id, data.get("title", quiz_id), int(publish), now, int(edited_in_app)),
     )
     conn.execute("DELETE FROM quiz_questions WHERE quiz_id = ?", (quiz_id,))
     for pos, q in enumerate(data.get("questions", []), start=1):
@@ -128,13 +136,16 @@ def import_quiz(conn: sqlite3.Connection, data: dict, publish: bool = True) -> s
 
 
 def get_quiz(
-    conn: sqlite3.Connection, quiz_id: str, include_answers: bool = False
+    conn: sqlite3.Connection, quiz_id: str, include_answers: bool = False,
+    include_unpublished: bool = False,
 ) -> dict | None:
     """Quiz + ordered questions. Students must NEVER receive correct_index /
     explanation here — those only travel through the check/submit endpoints,
     after an answer is committed."""
     meta = conn.execute(
-        "SELECT * FROM quizzes WHERE quiz_id = ? AND is_published = 1", (quiz_id,)
+        "SELECT * FROM quizzes WHERE quiz_id = ?"
+        + ("" if include_unpublished else " AND is_published = 1"),
+        (quiz_id,),
     ).fetchone()
     if meta is None:
         return None
@@ -157,6 +168,7 @@ def get_quiz(
         "quiz_id": meta["quiz_id"],
         "tutorial_id": meta["tutorial_id"],
         "title": meta["title"],
+        "is_published": bool(meta["is_published"]),
         "questions": questions,
     }
 
@@ -218,5 +230,12 @@ def seed_quizzes(conn: sqlite3.Connection) -> None:
             data = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
-        if data.get("tutorial_id") in have and data.get("quiz_id"):
-            import_quiz(conn, data)
+        quiz_id = data.get("quiz_id")
+        if data.get("tutorial_id") not in have or not quiz_id:
+            continue
+        owned_by_editor = conn.execute(
+            "SELECT edited_in_app FROM quizzes WHERE quiz_id = ?", (quiz_id,)
+        ).fetchone()
+        if owned_by_editor and owned_by_editor["edited_in_app"]:
+            continue  # the web editor owns this quiz now; don't clobber it
+        import_quiz(conn, data)

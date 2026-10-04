@@ -115,7 +115,11 @@ CREATE TABLE IF NOT EXISTS quizzes (
     tutorial_id  TEXT NOT NULL REFERENCES tutorials(tutorial_id),
     title        TEXT NOT NULL,
     is_published INTEGER NOT NULL DEFAULT 0,
-    updated_at   REAL NOT NULL
+    updated_at   REAL NOT NULL,
+    -- Set once a quiz has been edited in the web app. Quizzes are unversioned
+    -- and re-imported from mock_server/data/quizzes/ on every boot; without
+    -- this flag a restart would silently discard the instructor's edits.
+    edited_in_app INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS quiz_questions (

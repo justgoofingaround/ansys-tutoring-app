@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, CheckCircle2, FileUp, GraduationCap } from "lucide-react";
+import { Check, CheckCircle2, FileUp, GraduationCap, Pencil } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { QuizAnalytics, QuizStats, ValidationFinding } from "@/types/api";
 import { PageHeader } from "@/components/PageHeader";
@@ -228,6 +229,7 @@ function QuizUploadCard() {
 }
 
 export function QuizzesPage() {
+  const navigate = useNavigate();
   const { data: quizzes, isPending } = useQuery({
     queryKey: ["instructor", "quiz-stats"],
     queryFn: () => apiFetch<QuizStats[]>("/api/instructor/quiz-stats"),
@@ -240,6 +242,13 @@ export function QuizzesPage() {
       <PageHeader
         title="Quizzes"
         subtitle="Upload JSON-authored quizzes; review question difficulty and concept mastery."
+        actions={
+          active && (
+            <Button variant="secondary" onClick={() => navigate(`/instructor/quizzes/${active}/edit`)}>
+              <Pencil className="size-4" /> Edit this quiz
+            </Button>
+          )
+        }
       />
       <QuizUploadCard />
       {isPending ? (

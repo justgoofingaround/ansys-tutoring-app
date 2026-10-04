@@ -39,6 +39,11 @@ def init_db(db_path: Path) -> None:
             conn.execute("ALTER TABLE users ADD COLUMN email_verified_at REAL")
         if "email_verified_by" not in user_cols:
             conn.execute("ALTER TABLE users ADD COLUMN email_verified_by INTEGER")
+        quiz_cols = {row[1] for row in conn.execute("PRAGMA table_info(quizzes)")}
+        if "edited_in_app" not in quiz_cols:
+            conn.execute(
+                "ALTER TABLE quizzes ADD COLUMN edited_in_app INTEGER NOT NULL DEFAULT 0"
+            )
         conn.execute(
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email"
             " ON users (email COLLATE NOCASE) WHERE email IS NOT NULL"

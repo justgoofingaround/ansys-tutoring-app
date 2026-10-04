@@ -1,8 +1,9 @@
 import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle, BookOpen, CheckCircle2, ClipboardList, FileUp, ListChecks,
-  Sparkles, XCircle,
+  Pencil, Sparkles, XCircle,
 } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { LibraryTutorial, ValidationFinding } from "@/types/api";
@@ -347,6 +348,7 @@ function ConvertPdfCard() {
 
 function TutorialRow({ t }: { t: LibraryTutorial }) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["instructor", "library"] });
     qc.invalidateQueries({ queryKey: ["instructor", "progress"] });
@@ -403,6 +405,13 @@ function TutorialRow({ t }: { t: LibraryTutorial }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            className="h-8 px-3 text-[13px]"
+            onClick={() => navigate(`/instructor/tutorials/${t.tutorial_id}/edit`)}
+          >
+            <Pencil className="size-3.5" /> Edit
+          </Button>
           <Button variant="ghost" className="h-8 px-2 text-[13px]" onClick={() => toggleMandatory.mutate()}>
             {t.is_mandatory ? "Make optional" : "Make mandatory"}
           </Button>

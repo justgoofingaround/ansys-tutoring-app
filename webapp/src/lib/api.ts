@@ -22,7 +22,10 @@ export async function apiFetch<T>(
     init.headers = { "Content-Type": "application/json", ...init.headers };
     init.method = init.method ?? "POST";
   }
-  const res = await fetch(path, { credentials: "same-origin", ...init });
+  // no-store: API responses must never come from the HTTP cache. A stale
+  // cached answer (e.g. an index.html fallback captured before a route
+  // existed) would otherwise be replayed indefinitely.
+  const res = await fetch(path, { credentials: "same-origin", cache: "no-store", ...init });
   if (res.status === 401 && path !== "/api/auth/me") {
     window.dispatchEvent(new CustomEvent("session-expired"));
   }

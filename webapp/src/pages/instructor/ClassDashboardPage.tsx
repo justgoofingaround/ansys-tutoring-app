@@ -275,6 +275,7 @@ function RosterPanel({ sectionId }: { sectionId: number }) {
       method: "POST",
       body: form,
       credentials: "same-origin",
+      cache: "no-store",
       headers: { "X-Requested-With": "fetch" },
     });
     const body = await res.json().catch(() => null);

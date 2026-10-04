@@ -21,7 +21,9 @@ import { QuizPage } from "@/pages/student/QuizPage";
 import { ChatPage } from "@/pages/student/ChatPage";
 import { ClassDashboardPage } from "@/pages/instructor/ClassDashboardPage";
 import { TutorialLibraryPage } from "@/pages/instructor/TutorialLibraryPage";
+import { TutorialEditorPage } from "@/pages/instructor/TutorialEditorPage";
 import { QuizzesPage } from "@/pages/instructor/QuizzesPage";
+import { QuizEditorPage } from "@/pages/instructor/QuizEditorPage";
 import { FaqQueuePage } from "@/pages/instructor/FaqQueuePage";
 
 function SessionExpiryListener({ children }: { children: React.ReactNode }) {
@@ -82,7 +84,12 @@ const router = createBrowserRouter([
           { path: "/instructor", element: <Navigate to="/instructor/class" replace /> },
           { path: "/instructor/class", element: <ClassDashboardPage /> },
           { path: "/instructor/tutorials", element: <TutorialLibraryPage /> },
+          {
+            path: "/instructor/tutorials/:tutorialId/edit",
+            element: <TutorialEditorPage />,
+          },
           { path: "/instructor/quizzes", element: <QuizzesPage /> },
+          { path: "/instructor/quizzes/:quizId/edit", element: <QuizEditorPage /> },
           { path: "/instructor/faqs", element: <FaqQueuePage /> },
         ],
       },

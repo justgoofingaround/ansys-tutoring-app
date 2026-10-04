@@ -109,3 +109,16 @@ def test_ai_can_be_switched_back_on(tmp_path):
     with TestClient(create_app(s)) as c:
         # 401 (not authenticated), not 404 — the route exists again.
         assert c.get("/api/chatbot/consent").status_code == 401
+
+
+def test_unknown_api_paths_return_json_not_the_spa(client, seeded):
+    """An unmatched /api path must 404 as JSON. Falling through to index.html
+    gives JavaScript a 200 text/html answer it cannot parse — and because that
+    is cacheable, the browser replays it long after the route exists."""
+    r = client.get("/api/instructor/does-not-exist")
+    assert r.status_code == 404
+    assert r.headers["content-type"].startswith("application/json")
+
+    # ...while real SPA routes still serve the app shell
+    spa = client.get("/instructor/quizzes")
+    assert spa.status_code == 200 and spa.headers["content-type"].startswith("text/html")

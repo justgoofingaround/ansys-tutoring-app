@@ -10,7 +10,7 @@ dev uses the Vite proxy instead).
 
 import time
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -102,6 +102,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         @application.get("/{full_path:path}", include_in_schema=False)
         def spa(full_path: str, request: Request):
             # SPA catch-all: anything that isn't /api or /docs gets index.html.
+            #
+            # An unmatched /api path must NOT fall through to index.html: the
+            # caller is JavaScript expecting JSON, and a 200 text/html answer
+            # both breaks it confusingly ("Unexpected token '<'") and is
+            # cacheable, so the browser can keep replaying it long after the
+            # route exists.
+            if full_path.startswith("api/"):
+                raise HTTPException(status_code=404, detail="not_found")
             candidate = WEBAPP_DIST / full_path
             if full_path and candidate.is_file():
                 return FileResponse(candidate)

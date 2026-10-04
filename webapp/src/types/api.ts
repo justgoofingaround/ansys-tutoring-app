@@ -302,6 +302,39 @@ export interface LibraryTutorial {
   versions: { version: number; uploaded_at: number; warnings: ValidationFinding[] }[];
 }
 
+/** The stored tutorial document, as the editor loads and saves it.
+ *
+ * The index signatures matter: the editor round-trips the WHOLE document, so
+ * keys it does not model (report_checks, apps, launches, future additions)
+ * must survive being read into these types and sent back. */
+export interface TutorialStep {
+  step_id: string;
+  app?: string;
+  title?: string;
+  description?: string;
+  hints?: string[];
+  highlight?: string;
+  verify?: unknown;
+  [key: string]: unknown;
+}
+
+export interface TutorialSection {
+  section?: string;
+  app?: string;
+  steps?: TutorialStep[];
+  [key: string]: unknown;
+}
+
+export interface TutorialDoc {
+  tutorial_id: string;
+  title?: string;
+  problem?: string;
+  sections?: TutorialSection[];
+  /** When present, selects AND orders the steps the desktop guide runs. */
+  runtime_steps?: string[];
+  [key: string]: unknown;
+}
+
 /** Raw tutorial JSON as served by GET /api/tutorials/{id} (authored fields). */
 export interface TutorialContentStep {
   step_id: string;
