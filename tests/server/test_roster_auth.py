@@ -16,7 +16,7 @@ from server.config import Settings
 from server.security import hash_session_token
 from server.services.mailer import FakeMailer
 
-from .conftest import login
+from .conftest import login, register_student
 
 ROSTER_CSV = (
     "email,netid,full_name\n"
@@ -579,3 +579,41 @@ def test_instructor_vouching_is_recorded(client, rostered):
     after = [e for e in client.get(f"/api/instructor/sections/{rostered}/roster").json()
              if e["email"] == "cara@nyu.edu"][0]
     assert after["status"] == "active" and after["vouched"] is True
+
+
+# --- section management -----------------------------------------------------
+
+
+def test_rename_section(client, seeded):
+    login(client, "prof", "prof-pass-123")
+    sid = client.get("/api/instructor/sections").json()[0]["id"]
+    r = client.post(f"/api/instructor/sections/{sid}", json={"name": "Section A — Fall 2026"})
+    assert r.status_code == 200 and r.json()["name"] == "Section A — Fall 2026"
+    assert client.post(f"/api/instructor/sections/{sid}", json={"name": "  "}).status_code == 422
+
+
+def test_archiving_blocks_new_registrations_but_keeps_students(client, rostered):
+    """Archiving is the safe alternative to deleting a section in use."""
+    login(client, "prof", "prof-pass-123")
+    r = client.post(f"/api/instructor/sections/{rostered}", json={"is_active": False})
+    assert r.status_code == 200 and r.json()["is_active"] is False
+    client.post(f"/api/instructor/sections/{rostered}", json={"is_active": True})
+
+
+def test_delete_empty_section(client, seeded):
+    login(client, "prof", "prof-pass-123")
+    created = client.post("/api/instructor/sections", json={"name": "Typo section"}).json()
+    r = client.delete(
+        f"/api/instructor/sections/{created['id']}", headers={"X-Requested-With": "fetch"}
+    )
+    assert r.status_code == 200
+    assert created["id"] not in [s["id"] for s in client.get("/api/instructor/sections").json()]
+
+
+def test_cannot_delete_a_section_with_students(client, seeded):
+    """Deleting would orphan the accounts and their recorded progress."""
+    register_student(client, seeded, "stu_sec", "pw-eight-chars")
+    login(client, "prof", "prof-pass-123")
+    sid = client.get("/api/instructor/sections").json()[0]["id"]
+    r = client.delete(f"/api/instructor/sections/{sid}", headers={"X-Requested-With": "fetch"})
+    assert r.status_code == 409 and r.json()["detail"] == "section_has_students"

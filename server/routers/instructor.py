@@ -60,6 +60,50 @@ def create_section(
     return _section_response(conn, row)
 
 
+@router.post("/sections/{section_id}", dependencies=[Depends(csrf_check)])
+def update_section(
+    section_id: int, body: dict, conn: sqlite3.Connection = Depends(get_db)
+) -> SectionResponse:
+    """Rename, or archive/reactivate. Archiving leaves existing students alone
+    but stops the section accepting anyone new."""
+    row = conn.execute("SELECT * FROM sections WHERE id = ?", (section_id,)).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="section_not_found")
+    if "name" in body:
+        name = (body["name"] or "").strip()
+        if not name or len(name) > 80:
+            raise HTTPException(status_code=422, detail="name_required")
+        conn.execute("UPDATE sections SET name = ? WHERE id = ?", (name, section_id))
+    if "is_active" in body:
+        conn.execute(
+            "UPDATE sections SET is_active = ? WHERE id = ?",
+            (int(bool(body["is_active"])), section_id),
+        )
+    conn.commit()
+    row = conn.execute("SELECT * FROM sections WHERE id = ?", (section_id,)).fetchone()
+    return _section_response(conn, row)
+
+
+@router.delete("/sections/{section_id}", dependencies=[Depends(csrf_check)])
+def delete_section(
+    section_id: int, conn: sqlite3.Connection = Depends(get_db)
+) -> dict:
+    """Only while empty: deleting a section with students would orphan their
+    accounts and the progress recorded against them. Archive those instead."""
+    row = conn.execute("SELECT * FROM sections WHERE id = ?", (section_id,)).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="section_not_found")
+    students = conn.execute(
+        "SELECT COUNT(*) AS n FROM users WHERE section_id = ?", (section_id,)
+    ).fetchone()["n"]
+    if students:
+        raise HTTPException(status_code=409, detail="section_has_students")
+    conn.execute("DELETE FROM roster_entries WHERE section_id = ?", (section_id,))
+    conn.execute("DELETE FROM sections WHERE id = ?", (section_id,))
+    conn.commit()
+    return {"ok": True}
+
+
 @router.post("/sections/{section_id}/regenerate-code", dependencies=[Depends(csrf_check)])
 def regenerate_code(
     section_id: int, conn: sqlite3.Connection = Depends(get_db)

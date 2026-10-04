@@ -1,9 +1,9 @@
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Activity, BarChart3, CheckCircle2, ChevronDown, ChevronRight, Download,
-  FileCheck, FileUp, GraduationCap, ListChecks, MailCheck, MonitorPlay,
-  ShieldAlert, Trash2, Users,
+  Activity, Archive, ArchiveRestore, BarChart3, CheckCircle2, ChevronDown,
+  ChevronRight, Download, FileCheck, FileUp, GraduationCap, ListChecks,
+  MailCheck, MonitorPlay, Pencil, ShieldAlert, Trash2, Users,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import type {
@@ -301,8 +301,7 @@ function RosterPanel({ sectionId }: { sectionId: number }) {
     <div className="mt-3 border-t border-hairline pt-3">
       <div className="flex items-center justify-between gap-3">
         <p className="text-[13px] text-ink-faint">
-          Only these addresses can register, and each student confirms their own address by
-          email. Upload the Albert class list as CSV — or any CSV with an email column.
+          Only listed addresses can register. Upload the Albert class list as CSV.
         </p>
         <Button
           variant="secondary"
@@ -390,31 +389,112 @@ function RosterPanel({ sectionId }: { sectionId: number }) {
           ))}
         </ul>
       ) : (
-        <p className="py-3 text-[15px] text-ink-faint">
-          No one on the class list yet — upload a CSV to let students register.
-        </p>
+        <p className="py-3 text-[15px] text-ink-faint">No one listed yet.</p>
       )}
     </div>
   );
 }
 
 function SectionRow({ section }: { section: Section }) {
+  const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [name, setName] = useState(section.name);
+  const [error, setError] = useState<string | null>(null);
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["instructor", "sections"] });
+
+  const update = useMutation({
+    mutationFn: (body: { name?: string; is_active?: boolean }) =>
+      apiFetch<Section>(`/api/instructor/sections/${section.id}`, { json: body }),
+    onSuccess: () => {
+      setRenaming(false);
+      invalidate();
+    },
+  });
+
+  const remove = useMutation({
+    mutationFn: () =>
+      apiFetch(`/api/instructor/sections/${section.id}`, {
+        method: "DELETE",
+        headers: { "X-Requested-With": "fetch" },
+      }),
+    onSuccess: invalidate,
+    onError: () => setError("Sections with students can't be deleted — archive it instead."),
+  });
 
   return (
     <div className="border-b border-hairline py-3 last:border-b-0">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <div className="font-medium text-ink">{section.name}</div>
-          <div className="text-sm text-ink-soft">
-            {section.student_count} student{section.student_count === 1 ? "" : "s"} registered
-          </div>
-        </div>
-        <Button variant="secondary" onClick={() => setOpen((v) => !v)}>
-          {open ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-          Class list
-        </Button>
+      <div className="flex items-center justify-between gap-3">
+        {renaming ? (
+          <form
+            className="flex flex-1 items-center gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (name.trim()) update.mutate({ name: name.trim() });
+            }}
+          >
+            <Input value={name} onChange={(e) => setName(e.target.value)} autoFocus maxLength={80} />
+            <Button type="submit" className="h-8 px-3 text-[13px]" loading={update.isPending}>
+              Save
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-8 px-2 text-[13px]"
+              onClick={() => {
+                setName(section.name);
+                setRenaming(false);
+              }}
+            >
+              Cancel
+            </Button>
+          </form>
+        ) : (
+          <>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="truncate font-medium text-ink">{section.name}</span>
+                {!section.is_active && <Badge>archived</Badge>}
+              </div>
+              <div className="text-sm text-ink-soft">
+                {section.student_count} student{section.student_count === 1 ? "" : "s"}
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                onClick={() => setRenaming(true)}
+                title="Rename"
+                className="inline-flex size-8 items-center justify-center rounded-(--radius-control) text-ink-faint hover:bg-paper hover:text-ink"
+              >
+                <Pencil className="size-4" />
+              </button>
+              <button
+                onClick={() => update.mutate({ is_active: !section.is_active })}
+                title={section.is_active ? "Archive — stops new registrations" : "Reactivate"}
+                className="inline-flex size-8 items-center justify-center rounded-(--radius-control) text-ink-faint hover:bg-paper hover:text-ink"
+              >
+                {section.is_active ? <Archive className="size-4" /> : <ArchiveRestore className="size-4" />}
+              </button>
+              {section.student_count === 0 && (
+                <button
+                  onClick={() => {
+                    if (window.confirm(`Delete "${section.name}" and its class list?`)) remove.mutate();
+                  }}
+                  title="Delete"
+                  className="inline-flex size-8 items-center justify-center rounded-(--radius-control) text-ink-faint hover:bg-paper hover:text-error"
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              )}
+              <Button variant="secondary" className="ml-1" onClick={() => setOpen((v) => !v)}>
+                {open ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                Class list
+              </Button>
+            </div>
+          </>
+        )}
       </div>
+      {error && <p className="mt-1.5 text-[13px] text-error">{error}</p>}
       {open && <RosterPanel sectionId={section.id} />}
     </div>
   );
