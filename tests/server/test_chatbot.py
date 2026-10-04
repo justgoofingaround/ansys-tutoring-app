@@ -23,7 +23,10 @@ def engine():
 
 @pytest.fixture()
 def settings(tmp_path, engine):
-    return Settings(data_dir=tmp_path / "server_data", enable_llm=False, chatbot_engine=engine)
+    return Settings(
+        data_dir=tmp_path / "server_data", enable_ai=True, enable_llm=False,
+        chatbot_engine=engine,
+    )
 
 
 @pytest.fixture()
@@ -144,6 +147,7 @@ def test_get_engine_prefers_cloud_when_api_key_set(tmp_path):
 
     s = Settings(
         data_dir=tmp_path / "server_data",
+        enable_ai=True,  # with AI off the key is dropped and no cloud engine exists
         chatbot_api_key="test-key",
         chatbot_api_base="https://api.example/v1",
         chatbot_model="test-model",

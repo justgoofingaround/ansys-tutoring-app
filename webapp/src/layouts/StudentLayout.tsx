@@ -35,7 +35,9 @@ export function StudentLayout() {
           </span>
           <nav className="flex items-center gap-1">
             <TopNavLink to="/dashboard" icon={<LayoutDashboard className="size-4" />} label="Dashboard" />
-            <TopNavLink to="/chat" icon={<MessageCircle className="size-4" />} label="Compass" />
+            {me?.ai_enabled && (
+              <TopNavLink to="/chat" icon={<MessageCircle className="size-4" />} label="Compass" />
+            )}
           </nav>
           <div className="ml-auto flex items-center gap-3">
             <span className="text-sm text-ink-soft">{me?.username}</span>

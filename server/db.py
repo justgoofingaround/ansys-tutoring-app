@@ -28,6 +28,21 @@ def init_db(db_path: Path) -> None:
         cols = {row[1] for row in conn.execute("PRAGMA table_info(tutorials)")}
         if "report_guidelines" not in cols:
             conn.execute("ALTER TABLE tutorials ADD COLUMN report_guidelines TEXT")
+        # Roster-based registration: existing deployments get the columns on the
+        # next boot. SQLite cannot add a UNIQUE column via ALTER, so uniqueness
+        # for migrated databases comes from the index below (the CREATE TABLE
+        # above already carries it for fresh ones).
+        user_cols = {row[1] for row in conn.execute("PRAGMA table_info(users)")}
+        if "email" not in user_cols:
+            conn.execute("ALTER TABLE users ADD COLUMN email TEXT")
+        if "email_verified_at" not in user_cols:
+            conn.execute("ALTER TABLE users ADD COLUMN email_verified_at REAL")
+        if "email_verified_by" not in user_cols:
+            conn.execute("ALTER TABLE users ADD COLUMN email_verified_by INTEGER")
+        conn.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email"
+            " ON users (email COLLATE NOCASE) WHERE email IS NOT NULL"
+        )
         conn.commit()
     finally:
         conn.close()

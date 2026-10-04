@@ -20,7 +20,7 @@ def test_register_login_me_flow(client, seeded):
     assert r.status_code == 200
     assert client.get("/api/auth/me").status_code == 401
 
-    me2 = login(client, "anna", "hunter2-long")
+    me2 = login(client, "anna@nyu.edu", "hunter2-long")
     assert me2["opaque_token"] == me["opaque_token"]
 
 
@@ -39,27 +39,31 @@ def test_first_boot_creates_default_instructor_and_section(tmp_path):
         assert body and body[0]["name"] == "Section A"
 
 
-def test_register_rejects_bad_class_code(client, seeded):
+def test_register_rejects_address_not_on_any_roster(client, seeded):
+    """The class code is gone: enrolment, not a shared secret, grants access."""
     r = client.post(
         "/api/auth/register",
-        json={"class_code": "SEC-NOPE99", "username": "bob", "password": "long-enough-pw"},
+        json={"email": "stranger@nyu.edu", "password": "long-enough-pw"},
     )
     assert r.status_code == 400
-    assert r.json()["detail"] == "invalid_class_code"
+    assert r.json()["detail"] == "not_on_roster"
 
 
-def test_register_rejects_duplicate_username_case_insensitive(client, seeded):
+def test_roster_row_cannot_be_claimed_twice(client, seeded):
     register_student(client, seeded, username="Casey")
     r = client.post(
         "/api/auth/register",
-        json={"class_code": seeded["class_code"], "username": "casey", "password": "long-enough-pw"},
+        json={"email": "casey@nyu.edu", "password": "long-enough-pw"},
     )
     assert r.status_code == 409
+    assert r.json()["detail"] == "already_claimed"
 
 
 def test_login_rejects_bad_password(client, seeded):
     register_student(client, seeded)
-    r = client.post("/api/auth/login", json={"username": "anna", "password": "wrong-password"})
+    r = client.post(
+        "/api/auth/login", json={"username": "anna@nyu.edu", "password": "wrong-password"}
+    )
     assert r.status_code == 401
 
 

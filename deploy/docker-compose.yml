@@ -1,8 +1,11 @@
 # Tutoring Hub — NYU pilot deployment (meuy4214.poly.edu).
-# Three services: the app (hub), nginx terminating TLS in a container
-# (nginx-docker.conf; certs mounted read-only from the host's letsencrypt),
-# and a local Ollama LLM server reachable only from the hub.
+# Two services: the app (hub) and nginx terminating TLS in a container
+# (nginx-docker.conf; certs mounted read-only from the host's letsencrypt).
 # Data persists in ../server_data on the host.
+#
+# AI IS DISABLED for the pilot (NYU security review): no Ollama service, no
+# model, no retrieval index, and ENABLE_AI=0 so the app mounts no AI routes.
+# To re-enable after clearance see deploy/DEPLOY-NYU.md §6.
 #
 #   docker compose --env-file .env up -d --build
 #
@@ -12,7 +15,7 @@ services:
       context: ..
       dockerfile: Dockerfile
       args:
-        WITH_COMPASS: "1"   # bake in Compass doc search (CPU torch + retrieval libs)
+        WITH_COMPASS: "0"   # no Compass doc search: skips torch/chromadb and drops chatbot_spike/
     container_name: tutoring-hub
     restart: unless-stopped
     # Bind to loopback only — the outside world comes in through nginx:443.
@@ -24,19 +27,28 @@ services:
       SEED_ALL_TUTORIALS: "1"
       COOKIE_SECURE: "1"           # nginx serves HTTPS
       DATA_DIR: /app/server_data
-      # Local AI (report review, FAQ drafting, PDF->tutorial) through the
-      # ollama service below, over the compose network.
-      ENABLE_LLM: "1"
-      OLLAMA_HOST: http://ollama:11434
-    depends_on:
-      - ollama
+      # Master AI switch — off for the pilot. With this unset/0 the app forces
+      # ENABLE_LLM off and ignores CHATBOT_API_KEY, so no generation path can
+      # run even if another variable is set by mistake.
+      ENABLE_AI: "0"
+      ENABLE_LLM: "0"
+      # Registration confirmation mail. Unset SMTP_HOST -> the app logs the link
+      # instead of sending, and the instructor admits students from the class
+      # list; set it and real email starts working with no code change.
+      # host.docker.internal reaches a mail server running on the HOST (e.g. the
+      # box's own Postfix on :25) from inside the container; a campus relay
+      # hostname works too. Most on-network relays need no username/password.
+      APP_BASE_URL: ${APP_BASE_URL:-https://meuy4214.poly.edu}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-no-reply@meuy4214.poly.edu}
+    extra_hosts:
+      # Lets SMTP_HOST=host.docker.internal find the host's own mail server.
+      - "host.docker.internal:host-gateway"
     volumes:
       - ../server_data:/app/server_data
-      # Compass search index (~230 MB, not in git). Copy chatbot_spike/data/
-      # here from the machine that built it BEFORE the first build: if the
-      # folder is missing, Docker creates it empty and root-owned, and
-      # Compass reports a missing index.
-      - ../chatbot_spike/data:/app/chatbot_spike/data
 
   nginx:
     image: nginx:1.27-alpine
@@ -52,24 +64,5 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - certbot-webroot:/var/www/certbot
 
-  # Local LLM for AI report review, FAQ drafting, and PDF->tutorial. Runs as a
-  # container rather than a host install: no root needed, and the hub reaches
-  # it over the compose network, so the host's SELinux policy is never
-  # involved (the same reason nginx is dockerized). No ports: it is not
-  # reachable from the network. After first start, pull the model:
-  #   docker exec tutoring-hub-ollama ollama pull gemma3:4b
-  ollama:
-    image: ollama/ollama
-    container_name: tutoring-hub-ollama
-    restart: unless-stopped
-    environment:
-      # Keep models in memory instead of unloading after 5 idle minutes:
-      # on this 2-vCPU VM a reload adds tens of seconds to the next
-      # request. Costs ~3-4 GB RAM per loaded model (the VM has 15 GB).
-      OLLAMA_KEEP_ALIVE: "-1"
-    volumes:
-      - ollama-models:/root/.ollama
-
 volumes:
   certbot-webroot:
-  ollama-models:

@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Activity, BarChart3, CheckCircle2, Download, FileCheck, GraduationCap,
-  ListChecks, MonitorPlay, RefreshCw, Users,
+  Activity, BarChart3, CheckCircle2, ChevronDown, ChevronRight, Download,
+  FileCheck, FileUp, GraduationCap, ListChecks, MailCheck, MonitorPlay,
+  ShieldAlert, Trash2, Users,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-import type { ActivityItem, ProgressMatrix, QuizStats, Section } from "@/types/api";
+import type {
+  ActivityItem, ProgressMatrix, QuizStats, RosterEntry, Section,
+} from "@/types/api";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardTitle } from "@/components/Card";
 import { Badge } from "@/components/Badge";
@@ -217,36 +220,201 @@ function ActivityCard({ feed }: { feed: ActivityItem[] }) {
   );
 }
 
-/* ── sections (class codes) ─────────────────────────────────────────── */
+/* ── sections + rosters ─────────────────────────────────────────────── */
 
-function SectionRow({ section }: { section: Section }) {
+const STATUS_LABEL: Record<RosterEntry["status"], string> = {
+  unclaimed: "not registered",
+  pending: "awaiting email confirmation",
+  active: "active",
+};
+
+const STATUS_TONE: Record<RosterEntry["status"], "neutral" | "warning" | "success"> = {
+  unclaimed: "neutral",
+  pending: "warning",
+  active: "success",
+};
+
+/** The class list for one section: who is allowed to register, and where each
+ * student has got to. Uploading a CSV is the only way to admit a student. */
+function RosterPanel({ sectionId }: { sectionId: number }) {
   const qc = useQueryClient();
-  const regen = useMutation({
-    mutationFn: () =>
-      apiFetch<Section>(`/api/instructor/sections/${section.id}/regenerate-code`, { json: {} }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["instructor", "sections"] }),
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<string | null>(null);
+
+  const key = ["instructor", "roster", sectionId];
+  const { data: entries, isPending } = useQuery({
+    queryKey: key,
+    queryFn: () => apiFetch<RosterEntry[]>(`/api/instructor/sections/${sectionId}/roster`),
+  });
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: key });
+    qc.invalidateQueries({ queryKey: ["instructor", "sections"] });
+  };
+
+  const confirmEntry = useMutation({
+    mutationFn: (id: number) =>
+      apiFetch(`/api/instructor/roster/${id}/verify`, { json: {} }),
+    onSuccess: invalidate,
+  });
+  const removeEntry = useMutation({
+    mutationFn: (id: number) =>
+      apiFetch(`/api/instructor/roster/${id}`, {
+        method: "DELETE",
+        headers: { "X-Requested-With": "fetch" },
+      }),
+    onSuccess: invalidate,
   });
 
+  async function upload(file: File) {
+    setError(null);
+    setResult(null);
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(`/api/instructor/sections/${sectionId}/roster`, {
+      method: "POST",
+      body: form,
+      credentials: "same-origin",
+      headers: { "X-Requested-With": "fetch" },
+    });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) {
+      const findings = body?.detail?.findings as
+        | { where: string; message: string; severity: string }[]
+        | undefined;
+      setError(
+        findings
+          ? findings
+              .filter((f) => f.severity === "error")
+              .map((f) => `${f.where}: ${f.message}`)
+              .join("\n")
+          : `Upload failed (${res.status}).`,
+      );
+      return;
+    }
+    setResult(`${body.added} added, ${body.updated} updated.`);
+    invalidate();
+  }
+
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-hairline py-3 last:border-b-0">
-      <div>
-        <div className="font-medium text-ink">{section.name}</div>
-        <div className="text-sm text-ink-soft">
-          {section.student_count} student{section.student_count === 1 ? "" : "s"} registered
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <code className="rounded-(--radius-control) border border-hairline bg-paper px-3 py-1 font-mono text-[15px] tracking-wider text-ink">
-          {section.class_code}
-        </code>
-        <button
-          onClick={() => regen.mutate()}
-          title="Regenerate class code"
-          className="inline-flex size-8 items-center justify-center rounded-(--radius-control) text-ink-faint transition-colors hover:bg-paper hover:text-ink"
+    <div className="mt-3 border-t border-hairline pt-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[13px] text-ink-faint">
+          Only these addresses can register, and each student confirms their own address by
+          email. Upload the Albert class list as CSV — or any CSV with an email column.
+        </p>
+        <Button
+          variant="secondary"
+          onClick={() => fileRef.current?.click()}
+          className="shrink-0"
         >
-          {regen.isPending ? <Spinner className="size-4" /> : <RefreshCw className="size-4" />}
-        </button>
+          <FileUp className="size-4" /> Upload class list
+        </Button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".csv,text/csv"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) upload(f);
+            e.target.value = "";
+          }}
+        />
       </div>
+
+      {error && (
+        <pre className="mt-2 whitespace-pre-wrap rounded-(--radius-control) border border-error/30 bg-error/5 px-3 py-2 text-[13px] text-error">
+          {error}
+        </pre>
+      )}
+      {result && <p className="mt-2 text-[13px] text-ink-soft">{result}</p>}
+
+      {isPending ? (
+        <div className="flex justify-center py-4">
+          <Spinner />
+        </div>
+      ) : entries && entries.length > 0 ? (
+        <ul className="mt-3 space-y-1">
+          {entries.map((e) => (
+            <li
+              key={e.id}
+              className="flex items-center justify-between gap-3 rounded-(--radius-control) px-2 py-1.5 hover:bg-paper"
+            >
+              <div className="min-w-0">
+                <div className="truncate text-[15px] text-ink">{e.full_name || e.email}</div>
+                <div className="truncate text-[13px] text-ink-faint">{e.email}</div>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <Badge tone={STATUS_TONE[e.status]}>{STATUS_LABEL[e.status]}</Badge>
+                {e.status === "active" && e.vouched && (
+                  <span title="Confirmed by an instructor, not by the student opening the emailed link">
+                    <ShieldAlert className="size-4 text-warning" />
+                  </span>
+                )}
+                {e.status === "pending" && (
+                  <button
+                    title="Confirm without email — only if you know this student registered"
+                    onClick={() => {
+                      // Confirming replaces proof that the registrant can read
+                      // that mailbox. Done carelessly it lets one student take
+                      // over another's account, so make the instructor say so.
+                      const ok = window.confirm(
+                        [
+                          `Confirm ${e.full_name || e.email} without email?`,
+                          "",
+                          "Normally the student proves the address is theirs by opening the link we email them. Confirming here replaces that step.",
+                          "",
+                          "Only do this if you know THIS student registered the account — otherwise someone else could take over their account.",
+                        ].join("\n"),
+                      );
+                      if (ok) confirmEntry.mutate(e.id);
+                    }}
+                    className="inline-flex size-8 items-center justify-center rounded-(--radius-control) text-ink-faint transition-colors hover:bg-surface hover:text-ink"
+                  >
+                    <MailCheck className="size-4" />
+                  </button>
+                )}
+                {e.status === "unclaimed" && (
+                  <button
+                    title="Remove from the class list"
+                    onClick={() => removeEntry.mutate(e.id)}
+                    className="inline-flex size-8 items-center justify-center rounded-(--radius-control) text-ink-faint transition-colors hover:bg-surface hover:text-error"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="py-3 text-[15px] text-ink-faint">
+          No one on the class list yet — upload a CSV to let students register.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function SectionRow({ section }: { section: Section }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="border-b border-hairline py-3 last:border-b-0">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <div className="font-medium text-ink">{section.name}</div>
+          <div className="text-sm text-ink-soft">
+            {section.student_count} student{section.student_count === 1 ? "" : "s"} registered
+          </div>
+        </div>
+        <Button variant="secondary" onClick={() => setOpen((v) => !v)}>
+          {open ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+          Class list
+        </Button>
+      </div>
+      {open && <RosterPanel sectionId={section.id} />}
     </div>
   );
 }
@@ -270,7 +438,7 @@ function SectionsCard() {
     <Card>
       <div className="flex items-center justify-between">
         <CardTitle>Sections</CardTitle>
-        <Badge tone="violet">class codes</Badge>
+        <Badge tone="violet">class lists</Badge>
       </div>
       <div className="mt-1">
         {isPending ? (

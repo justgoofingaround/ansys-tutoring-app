@@ -15,15 +15,61 @@ CREATE TABLE IF NOT EXISTS sections (
 );
 
 CREATE TABLE IF NOT EXISTS users (
-    id            INTEGER PRIMARY KEY,
-    username      TEXT NOT NULL UNIQUE COLLATE NOCASE,
-    password_hash TEXT NOT NULL,
-    role          TEXT NOT NULL CHECK (role IN ('instructor', 'student')),
-    section_id    INTEGER REFERENCES sections(id),
-    opaque_token  TEXT UNIQUE,              -- 'student_a4f9c2'; NULL for instructors
-    is_active     INTEGER NOT NULL DEFAULT 1,
-    created_at    REAL NOT NULL
+    id                INTEGER PRIMARY KEY,
+    username          TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    password_hash     TEXT NOT NULL,
+    role              TEXT NOT NULL CHECK (role IN ('instructor', 'student')),
+    section_id        INTEGER REFERENCES sections(id),
+    opaque_token      TEXT UNIQUE,          -- 'student_a4f9c2'; NULL for instructors
+    is_active         INTEGER NOT NULL DEFAULT 1,
+    created_at        REAL NOT NULL,
+    -- Students sign in with their NYU address; `username` stays the DISPLAY
+    -- name (seeded from the roster's full_name) so instructor dashboards keep
+    -- showing a human name. NULL for instructors and for accounts created
+    -- under the retired class-code flow, which still sign in by username.
+    email             TEXT UNIQUE COLLATE NOCASE,
+    email_verified_at REAL,
+    -- NULL when the student opened the emailed link themselves; set to the
+    -- instructor's id when they vouched for the account instead, so a
+    -- disputed account shows who admitted it.
+    email_verified_by INTEGER REFERENCES users(id)
 );
+
+-- Enrolment is the thing that grants access: a student can only register if
+-- their address is on a section's roster, and each row can be claimed once.
+CREATE TABLE IF NOT EXISTS roster_entries (
+    id                INTEGER PRIMARY KEY,
+    section_id        INTEGER NOT NULL REFERENCES sections(id),
+    email             TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    netid             TEXT NOT NULL DEFAULT '',
+    full_name         TEXT NOT NULL DEFAULT '',
+    claimed_by_user_id INTEGER REFERENCES users(id),
+    added_by          INTEGER REFERENCES users(id),
+    added_at          REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_roster_section ON roster_entries (section_id);
+
+-- One-time registration confirmation links. Same shape as `sessions`: only the
+-- sha256 of the token is stored, so the database never holds a usable link.
+CREATE TABLE IF NOT EXISTS email_verifications (
+    token_hash  TEXT PRIMARY KEY,
+    user_id     INTEGER NOT NULL REFERENCES users(id),
+    created_at  REAL NOT NULL,
+    expires_at  REAL NOT NULL,
+    used        INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_email_verifications_user ON email_verifications (user_id);
+
+-- Password reset links. Same single-use, hash-only discipline as above; kept in
+-- its own table so a reset link can never be replayed as a confirmation link.
+CREATE TABLE IF NOT EXISTS password_resets (
+    token_hash  TEXT PRIMARY KEY,
+    user_id     INTEGER NOT NULL REFERENCES users(id),
+    created_at  REAL NOT NULL,
+    expires_at  REAL NOT NULL,
+    used        INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets (user_id);
 
 CREATE TABLE IF NOT EXISTS sessions (
     token_hash  TEXT PRIMARY KEY,           -- sha256 of the cookie value

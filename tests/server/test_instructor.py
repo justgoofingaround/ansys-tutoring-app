@@ -138,7 +138,7 @@ def test_library_upload_validate_publish(client, seeded, settings):
     )
     assert r.status_code == 200
     client.post("/api/auth/logout", json={})
-    login(client, "anna", "hunter2-long")
+    login(client, "anna@nyu.edu", "hunter2-long")
     ids = {t["tutorial_id"] for t in client.get("/api/tutorials").json()}
     assert "tut_test_upload" in ids
 

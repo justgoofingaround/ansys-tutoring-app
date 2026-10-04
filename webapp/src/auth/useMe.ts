@@ -24,11 +24,42 @@ export function useLogin() {
   });
 }
 
+/** Registration no longer signs the student in — the server returns 202 and
+ * mails a confirmation link, so there is no Me to cache here. */
 export function useRegister() {
+  return useMutation({
+    mutationFn: (body: { email: string; password: string }) =>
+      apiFetch<{ status: string; email: string }>("/api/auth/register", { json: body }),
+  });
+}
+
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: (body: { email: string }) =>
+      apiFetch<{ status: string }>("/api/auth/forgot", { json: body }),
+  });
+}
+
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: (body: { token: string; password: string }) =>
+      apiFetch<{ status: string }>("/api/auth/reset", { json: body }),
+  });
+}
+
+export function useResendVerification() {
+  return useMutation({
+    mutationFn: (body: { email: string }) =>
+      apiFetch<{ status: string }>("/api/auth/resend", { json: body }),
+  });
+}
+
+/** Opening the emailed link both confirms the address and starts the session. */
+export function useVerifyEmail() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { class_code: string; username: string; password: string }) =>
-      apiFetch<Me>("/api/auth/register", { json: body }),
+    mutationFn: (token: string) =>
+      apiFetch<Me>(`/api/auth/verify?token=${encodeURIComponent(token)}`, { method: "GET" }),
     onSuccess: (me) => qc.setQueryData(["me"], me),
   });
 }

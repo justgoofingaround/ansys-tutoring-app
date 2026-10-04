@@ -80,7 +80,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(events_router.router)
     application.include_router(student_router.router)
     application.include_router(reports_router.router)
-    application.include_router(chatbot_router.router)
+    # Compass is mounted only when AI is enabled: with ENABLE_AI unset the
+    # /api/chatbot/* routes do not exist at all (404), rather than existing and
+    # failing at call time.
+    if settings.enable_ai:
+        application.include_router(chatbot_router.router)
 
     # Reference screenshots for tutorial steps (authored under
     # mock_server/data/images/<tutorial>/, served read-only to the web runner).

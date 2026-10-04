@@ -62,16 +62,52 @@ def seeded(settings, app):
         conn.commit()
     finally:
         conn.close()
-    return {"class_code": code}
+    conn = dbmod.connect(settings.db_path)
+    try:
+        section_id = conn.execute(
+            "SELECT id FROM sections WHERE name = 'Section A'"
+        ).fetchone()["id"]
+    finally:
+        conn.close()
+    return {"class_code": code, "section_id": section_id}
 
 
 def register_student(client, seeded, username="anna", password="hunter2-long"):
+    """Full roster flow, API-only, as a student would experience it:
+    the instructor adds the address to the section roster, the student
+    registers, and the account is activated. Leaves the client signed in as
+    that student, as the old class-code helper did.
+
+    Activation goes through the instructor's manual-verify action rather than
+    the emailed link so this helper does not need access to the mailer; the
+    link itself is covered in test_roster_auth.py.
+    """
+    email = f"{username.lower().replace(' ', '.')}@nyu.edu"
+    section_id = seeded["section_id"]
+    csv = f"email,netid,full_name\n{email},{username.lower()},{username}\n".encode("utf-8")
+
+    login(client, "prof", "prof-pass-123")
     r = client.post(
-        "/api/auth/register",
-        json={"class_code": seeded["class_code"], "username": username, "password": password},
+        f"/api/instructor/sections/{section_id}/roster",
+        files={"file": ("roster.csv", csv, "text/csv")},
+        headers={"X-Requested-With": "fetch"},
     )
-    assert r.status_code == 201, r.text
-    return r.json()
+    assert r.status_code == 200, r.text
+    client.post("/api/auth/logout", json={})
+
+    r = client.post("/api/auth/register", json={"email": email, "password": password})
+    assert r.status_code == 202, r.text
+
+    login(client, "prof", "prof-pass-123")
+    entry = [
+        e for e in client.get(f"/api/instructor/sections/{section_id}/roster").json()
+        if e["email"] == email
+    ][0]
+    r = client.post(f"/api/instructor/roster/{entry['id']}/verify", json={})
+    assert r.status_code == 200, r.text
+    client.post("/api/auth/logout", json={})
+
+    return login(client, email, password)
 
 
 def login(client, username, password):

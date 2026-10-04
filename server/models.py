@@ -14,8 +14,26 @@ EVENT_HINT_SHOWN = "hint_shown"
 
 # --- Auth ---
 class RegisterRequest(BaseModel):
-    class_code: str = Field(min_length=1, max_length=32)
-    username: str = Field(min_length=2, max_length=40, pattern=r"^[A-Za-z0-9 ._'-]+$")
+    """Roster-based registration: the address must already be on a section's
+    roster, which is what assigns the student to that section. The display name
+    comes from the roster, so students no longer choose a username."""
+
+    email: str = Field(min_length=3, max_length=254)
+    password: str = Field(min_length=8, max_length=72)
+
+
+class ResendRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=254)
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=254)
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(min_length=10, max_length=256)
+    # Same floor as registration. bcrypt caps at 72 bytes, so reject above that
+    # rather than silently truncating.
     password: str = Field(min_length=8, max_length=72)
 
 
@@ -30,6 +48,9 @@ class MeResponse(BaseModel):
     section: str | None = None
     opaque_token: str | None = None
     chatbot_consent: bool = False
+    # Mirrors Settings.enable_ai so the SPA can hide every AI entry point
+    # (Compass, PDF->tutorial import, FAQ drafting) from one source of truth.
+    ai_enabled: bool = False
 
 
 # --- Sections (instructor) ---

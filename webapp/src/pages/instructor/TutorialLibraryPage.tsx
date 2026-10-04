@@ -13,6 +13,7 @@ import { Button } from "@/components/Button";
 import { Spinner } from "@/components/Spinner";
 import { cn } from "@/components/cn";
 import { timeAgo } from "./ClassDashboardPage";
+import { useMe } from "@/auth/useMe";
 
 /* ── validation findings list ───────────────────────────────────────── */
 
@@ -490,6 +491,7 @@ function TutorialRow({ t }: { t: LibraryTutorial }) {
 }
 
 export function TutorialLibraryPage() {
+  const { data: me } = useMe();
   const { data: library, isPending } = useQuery({
     queryKey: ["instructor", "library"],
     queryFn: () => apiFetch<LibraryTutorial[]>("/api/instructor/tutorials"),
@@ -521,7 +523,7 @@ export function TutorialLibraryPage() {
         </Card>
         <div className="space-y-4">
           <UploadCard />
-          <ConvertPdfCard />
+          {me?.ai_enabled && <ConvertPdfCard />}
         </div>
       </div>
     </>

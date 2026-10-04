@@ -6,6 +6,9 @@ export interface Me {
   section: string | null;
   opaque_token: string | null;
   chatbot_consent: boolean;
+  /** Server-side master AI switch (ENABLE_AI). Every AI entry point in the UI
+   * hides when this is false — Compass, PDF->tutorial import, FAQ drafting. */
+  ai_enabled: boolean;
 }
 
 export interface Section {
@@ -14,6 +17,21 @@ export interface Section {
   class_code: string;
   is_active: boolean;
   student_count: number;
+}
+
+/** Who may register for a section. "pending" = registered but the emailed
+ * confirmation link hasn't been opened yet. */
+export interface RosterEntry {
+  id: number;
+  email: string;
+  netid: string;
+  full_name: string;
+  status: "unclaimed" | "pending" | "active";
+  /** True when an instructor vouched for the account instead of the student
+   * opening the emailed link — weaker proof of who registered. */
+  vouched: boolean;
+  user_id: number | null;
+  added_at: number;
 }
 
 export type TutorialStatus = "not_started" | "in_progress" | "completed";

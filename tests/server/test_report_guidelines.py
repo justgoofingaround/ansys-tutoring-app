@@ -50,7 +50,7 @@ def test_student_sees_guidelines(client, seeded):
     login(client, "prof", "prof-pass-123")
     _set_guidelines(client, "")
     client.post("/api/auth/logout", json={})
-    login(client, "anna", "hunter2-long")
+    login(client, "anna@nyu.edu", "hunter2-long")
     assert client.get("/api/student/tutorials/tut1_3d_bar").json()["report_guidelines"] is None
 
 

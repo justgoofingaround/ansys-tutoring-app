@@ -12,6 +12,7 @@ import { Button } from "@/components/Button";
 import { Spinner } from "@/components/Spinner";
 import { cn } from "@/components/cn";
 import { timeAgo } from "./ClassDashboardPage";
+import { useMe } from "@/auth/useMe";
 
 const STATUS_TONE: Record<FaqCandidate["status"], string> = {
   candidate: "text-warning",
@@ -22,6 +23,7 @@ const STATUS_TONE: Record<FaqCandidate["status"], string> = {
 
 function CandidateCard({ cand }: { cand: FaqCandidate }) {
   const qc = useQueryClient();
+  const { data: me } = useMe();
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["instructor", "faq-candidates"] });
     qc.invalidateQueries({ queryKey: ["instructor", "faqs"] });
@@ -108,14 +110,16 @@ function CandidateCard({ cand }: { cand: FaqCandidate }) {
             </p>
           )}
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button
-              variant="secondary"
-              loading={draft.isPending}
-              onClick={() => draft.mutate()}
-            >
-              <Sparkles className="size-4" />
-              {cand.status === "drafted" ? "Redraft with AI" : "Draft with AI"}
-            </Button>
+            {me?.ai_enabled && (
+              <Button
+                variant="secondary"
+                loading={draft.isPending}
+                onClick={() => draft.mutate()}
+              >
+                <Sparkles className="size-4" />
+                {cand.status === "drafted" ? "Redraft with AI" : "Draft with AI"}
+              </Button>
+            )}
             <Button
               className="ml-auto"
               disabled={!question.trim() || !answer.trim()}

@@ -39,13 +39,58 @@ Then open **http://localhost:8000**:
 
 1. Sign in as the instructor → **Class** → create a section → share its class code.
 2. Students register with that code, open Tutorial 1 from their dashboard, and either run it in the browser or click **Launch desktop guide**.
-3. Compass (the chat assistant) additionally needs [Ollama](https://ollama.com) running locally and the `chatbot_spike/` index built — see [`chatbot_spike/README.md`](chatbot_spike/README.md). Without it, chat degrades gracefully; everything else works.
+3. Compass (the chat assistant) and the other AI features are **off unless `ENABLE_AI=1`** is set (see "AI kill switch" below). With AI on they additionally need [Ollama](https://ollama.com) running locally and the `chatbot_spike/` index built — see [`chatbot_spike/README.md`](chatbot_spike/README.md). Without it, chat degrades gracefully; everything else works.
 4. The **Launch desktop guide** button needs a one-time, per-PC registration (no admin rights):
    `.venv\Scripts\python tools\register_guide_protocol.py` (`--unregister` reverses it).
 
 Quizzes are JSON-authored like tutorials: drop a file in `mock_server/data/quizzes/` (see [`tut1_3d_bar.json`](mock_server/data/quizzes/tut1_3d_bar.json)) and restart — no code changes.
 
 Tests (no Ansys or Ollama needed): `.venv\Scripts\python -m pytest tests\server`
+
+### Student registration (roster-based)
+
+Students cannot self-register with a shared code. The instructor uploads a class
+list per section on the **Class** page — Albert's class-list export works as-is (saved as CSV:
+its title rows, `Email Address` column and split First/Last names are all
+handled), as does any CSV with an email column — and only
+those addresses can create an account — which is also what assigns the student to
+that section. Registering does not sign them in: the account stays inactive until
+the one-time link mailed to that address is opened, so knowing a classmate's
+address is not enough to claim their place.
+
+Mail settings (all optional): `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
+`SMTP_PASSWORD`, `SMTP_FROM`, and `APP_BASE_URL` (the base the link points at).
+**With `SMTP_HOST` unset the confirmation link is written to the server log
+instead of being sent** — fine for local development, and on a deployment where
+mail is blocked the instructor can admit a student with the "confirm" action on
+the class list instead.
+
+Signing up asks for the password twice, and the sign-in box has a **Forgot your
+password?** link: that mails a reset link (valid 2 hours, single use) which also
+revokes every existing session for the account, so a reset ends anyone else's
+access. As with confirmation mail, with `SMTP_HOST` unset the link is written to
+the server log instead.
+
+Instructors, and any student account created before this change, still sign in by
+username; new students sign in with their email.
+
+### AI kill switch (`ENABLE_AI`)
+
+Every AI feature — Compass chat, AI report commentary, FAQ drafting and
+PDF→tutorial conversion — sits behind one setting, **off by default**. The NYU
+pilot runs with AI disabled pending the security review
+([`deploy/docker-compose.yml`](deploy/docker-compose.yml) sets `ENABLE_AI=0`).
+
+With `ENABLE_AI` unset or `0`:
+
+- `/api/chatbot/*` is **not mounted** — the routes do not exist.
+- `enable_llm` is forced off and `CHATBOT_API_KEY` is ignored, so no local *or*
+  cloud generation path can run even if those variables are set by mistake.
+- The SPA hides every AI entry point (`ai_enabled` on `/api/auth/me`).
+- Tutorials, quizzes, rubric-based report checking, FAQs and all dashboards are
+  unaffected — only AI-generated content disappears.
+
+Set `ENABLE_AI=1` to restore all four features; nothing else changes.
 
 ### Host it for free (team testing / demo)
 
@@ -57,8 +102,8 @@ review, FAQ drafting, PDF→tutorial conversion) are disabled (`ENABLE_LLM=0`)
 and degrade gracefully; everything else works, and the full 9-tutorial
 catalog + quizzes seed automatically on every boot (`SEED_ALL_TUTORIALS=1`).
 
-**Compass chat is the exception** — it can run in the cloud through any
-OpenAI-compatible API. Set `CHATBOT_API_KEY` (render.yaml defaults
+**Compass chat is the exception** (when `ENABLE_AI=1`) — it can run in the
+cloud through any OpenAI-compatible API. Set `CHATBOT_API_KEY` (render.yaml defaults
 `CHATBOT_API_BASE`/`CHATBOT_MODEL` to Groq's free tier — grab a key at
 console.groq.com; leave the key blank to keep the chatbot off). Cloud mode
 has **no retrieval index**: answers come from the model's general Ansys

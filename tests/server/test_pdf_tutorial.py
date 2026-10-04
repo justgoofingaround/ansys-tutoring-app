@@ -133,7 +133,7 @@ class FakeOllama(types.SimpleNamespace):
 # LLM-enabled instance (the conversion gate checks enable_llm first).
 @pytest.fixture()
 def settings(tmp_path):
-    return Settings(data_dir=tmp_path / "server_data", enable_llm=True)
+    return Settings(data_dir=tmp_path / "server_data", enable_ai=True, enable_llm=True)
 
 
 @pytest.fixture()
@@ -171,7 +171,7 @@ def test_endpoint_happy_path(llm_client, seeded, monkeypatch):
 
 def test_llm_disabled_503(tmp_path):
     off = Settings(
-        data_dir=tmp_path / "off_data", enable_llm=False,
+        data_dir=tmp_path / "off_data", enable_ai=True, enable_llm=False,
         instructor_username="prof2", instructor_password="prof2-pass-123",
         chatbot_api_key=None,  # hermetic: ignore any CHATBOT_API_KEY in the env
     )
@@ -206,7 +206,7 @@ def test_cloud_fallback_when_ollama_down(tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, "ollama", types.SimpleNamespace(list=_down))
 
     s = Settings(
-        data_dir=tmp_path / "cf_data", enable_llm=True,
+        data_dir=tmp_path / "cf_data", enable_ai=True, enable_llm=True,
         instructor_username="prof3", instructor_password="prof3-pass-123",
         chatbot_api_key="test-key",
     )

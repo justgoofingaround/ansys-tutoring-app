@@ -1,5 +1,6 @@
 """M6: FAQ mining -> draft -> approve/reject pipeline, quiz analytics,
-token-only CSV exports. LLM off -> drafting returns an empty draft."""
+token-only CSV exports. AI off (the default) -> drafting is refused with 503
+and the instructor writes the FAQ by hand."""
 
 import time
 
@@ -73,9 +74,10 @@ def test_draft_approve_publish_flow(client, seeded):
     client.post("/api/instructor/faqs/refresh", json={})
     cand = client.get("/api/instructor/faqs/candidates").json()[0]
 
-    # LLM off in tests -> empty draft, but status moves to drafted
-    d = client.post(f"/api/instructor/faqs/candidates/{cand['id']}/draft", json={}).json()
-    assert d["status"] == "drafted"
+    # AI off in tests -> the drafting endpoint refuses rather than storing a
+    # blank draft; approving by hand below is the non-AI path.
+    d = client.post(f"/api/instructor/faqs/candidates/{cand['id']}/draft", json={})
+    assert d.status_code == 503 and d.json()["detail"] == "ai_disabled"
 
     r = client.post(
         f"/api/instructor/faqs/candidates/{cand['id']}/approve",
@@ -96,7 +98,7 @@ def test_draft_approve_publish_flow(client, seeded):
 
     # students see it on the step
     client.post("/api/auth/logout", json={})
-    login(client, "stu0", "pw-eight-chars")
+    login(client, "stu0@nyu.edu", "pw-eight-chars")
     faqs = client.get(
         "/api/tutorials/tut1_3d_bar/steps/wb_03_add_static_structural/faqs"
     ).json()

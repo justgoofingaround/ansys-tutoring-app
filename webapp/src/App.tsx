@@ -8,9 +8,12 @@ import {
 } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { RequireRole } from "@/auth/RequireRole";
+import { RequireAi } from "@/auth/RequireAi";
 import { StudentLayout } from "@/layouts/StudentLayout";
 import { InstructorLayout } from "@/layouts/InstructorLayout";
 import { LoginPage } from "@/pages/login/LoginPage";
+import { VerifyPage } from "@/pages/login/VerifyPage";
+import { ResetPasswordPage } from "@/pages/login/ResetPasswordPage";
 import { DashboardPage } from "@/pages/student/DashboardPage";
 import { TutorialDetailPage } from "@/pages/student/TutorialDetailPage";
 import { RunPage } from "@/pages/student/RunPage";
@@ -44,6 +47,9 @@ const router = createBrowserRouter([
     ),
     children: [
       { path: "/login", element: <LoginPage /> },
+      // Public: the emailed confirmation link lands here and signs the student in.
+      { path: "/verify", element: <VerifyPage /> },
+      { path: "/reset", element: <ResetPasswordPage /> },
       {
         element: (
           <RequireRole role="student">
@@ -56,7 +62,14 @@ const router = createBrowserRouter([
           { path: "/tutorials/:tutorialId", element: <TutorialDetailPage /> },
           { path: "/tutorials/:tutorialId/run", element: <RunPage /> },
           { path: "/tutorials/:tutorialId/quiz", element: <QuizPage /> },
-          { path: "/chat", element: <ChatPage /> },
+          {
+            path: "/chat",
+            element: (
+              <RequireAi>
+                <ChatPage />
+              </RequireAi>
+            ),
+          },
         ],
       },
       {

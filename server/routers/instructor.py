@@ -20,7 +20,7 @@ from fastapi.responses import PlainTextResponse
 from ..deps import csrf_check, get_db, get_settings, require_instructor
 from ..models import SectionCreate, SectionResponse
 from ..security import new_class_code
-from ..services import faq_service, pdf_tutorial, progress, quiz_store, tutorial_store
+from ..services import faq_service, pdf_tutorial, progress, quiz_store, roster, tutorial_store
 from ..services.tutorial_store import TutorialValidationError
 
 router = APIRouter(
@@ -76,6 +76,87 @@ def regenerate_code(
 
 
 # ── cohort progress ──────────────────────────────────────────────────────
+
+
+# ── section rosters (who is allowed to register) ─────────────────────────
+
+
+@router.post("/sections/{section_id}/roster", dependencies=[Depends(csrf_check)])
+def upload_roster(
+    section_id: int,
+    file: UploadFile,
+    conn: sqlite3.Connection = Depends(get_db),
+    user: sqlite3.Row = Depends(require_instructor),
+) -> dict:
+    """CSV upload (`email,netid,full_name`). Validated first: any error
+    finding rejects the whole file with 422, same contract as tutorial and
+    quiz uploads, so the UI can show findings before anything is written."""
+    if conn.execute("SELECT 1 FROM sections WHERE id = ?", (section_id,)).fetchone() is None:
+        raise HTTPException(status_code=404, detail="section_not_found")
+    try:
+        rows = roster.parse_csv(file.file.read())
+    except ValueError as exc:
+        # Wrong file type, or no recognisable email column — report it the same
+        # way as row-level problems so the UI can show one message.
+        raise HTTPException(
+            status_code=422,
+            detail={"findings": [{"severity": "error", "where": "file", "message": str(exc)}]},
+        )
+    findings = roster.validate(conn, section_id, rows)
+    if any(f["severity"] == "error" for f in findings):
+        raise HTTPException(status_code=422, detail={"findings": findings})
+    result = roster.import_rows(conn, section_id, rows, added_by=user["id"])
+    return {**result, "warnings": [f for f in findings if f["severity"] == "warning"]}
+
+
+@router.get("/sections/{section_id}/roster")
+def section_roster(
+    section_id: int, conn: sqlite3.Connection = Depends(get_db)
+) -> list[dict]:
+    return roster.list_entries(conn, section_id)
+
+
+@router.delete("/roster/{entry_id}", dependencies=[Depends(csrf_check)])
+def delete_roster_entry(
+    entry_id: int, conn: sqlite3.Connection = Depends(get_db)
+) -> dict:
+    """Unclaimed rows only — removing a claimed one would orphan a student
+    account that is already carrying progress."""
+    row = conn.execute("SELECT * FROM roster_entries WHERE id = ?", (entry_id,)).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="entry_not_found")
+    if row["claimed_by_user_id"] is not None:
+        raise HTTPException(status_code=409, detail="entry_claimed")
+    conn.execute("DELETE FROM roster_entries WHERE id = ?", (entry_id,))
+    conn.commit()
+    return {"ok": True}
+
+
+@router.post("/roster/{entry_id}/verify", dependencies=[Depends(csrf_check)])
+def manually_verify_entry(
+    entry_id: int,
+    conn: sqlite3.Connection = Depends(get_db),
+    user: sqlite3.Row = Depends(require_instructor),
+) -> dict:
+    """Fallback for when confirmation mail cannot be delivered: the instructor
+    vouches for the student instead, so a mail outage does not block the lab.
+
+    This REPLACES proof that the registrant can read that mailbox, so it is
+    recorded against the account (email_verified_by). Confirming without
+    checking who actually registered would let one student take over another's
+    account — the UI says so before the instructor confirms."""
+    row = conn.execute("SELECT * FROM roster_entries WHERE id = ?", (entry_id,)).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="entry_not_found")
+    if row["claimed_by_user_id"] is None:
+        raise HTTPException(status_code=409, detail="entry_not_claimed")
+    conn.execute(
+        """UPDATE users SET email_verified_at = ?, email_verified_by = ?
+           WHERE id = ? AND email_verified_at IS NULL""",
+        (time.time(), user["id"], row["claimed_by_user_id"]),
+    )
+    conn.commit()
+    return {"ok": True}
 
 
 @router.get("/progress")
@@ -330,6 +411,8 @@ def convert_pdf_tutorial(
     single-instructor pilot. The generated JSON flows through the same
     import/validate pipeline as a hand-authored upload."""
     settings = get_settings(request)
+    if not settings.enable_ai:
+        raise HTTPException(status_code=503, detail="ai_disabled")
     raw = file.file.read()
     if len(raw) > settings.max_report_bytes:
         raise HTTPException(status_code=413, detail="pdf_too_large")
@@ -534,8 +617,13 @@ def faq_candidates(conn: sqlite3.Connection = Depends(get_db)) -> list[dict]:
 def draft_faq(
     candidate_id: int, request: Request, conn: sqlite3.Connection = Depends(get_db)
 ) -> dict:
+    settings = get_settings(request)
+    # Explicit gate: draft_candidate() would otherwise fall through to empty
+    # strings with enable_llm=False and store a blank draft.
+    if not settings.enable_ai:
+        raise HTTPException(status_code=503, detail="ai_disabled")
     try:
-        return faq_service.draft_candidate(conn, get_settings(request), candidate_id)
+        return faq_service.draft_candidate(conn, settings, candidate_id)
     except KeyError:
         raise HTTPException(status_code=404, detail="candidate_not_found")
     except Exception as exc:
