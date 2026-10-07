@@ -140,7 +140,7 @@ use the POST above when checking that the chatbot is gone.)
 ```bash
 docker rm -f tutoring-hub-ollama            # stop + remove the model server
 docker volume rm deploy_ollama-models       # deletes the gemma3:4b weights
-mv ~/codebase/ansys-tutoring-app/chatbot_spike/data ~/compass-index-backup
+mv ~/codebase/ansys-tutoring-app/compass/data ~/compass-index-backup
 ```
 
 The index is not in git, so keep that backup (or the machine that built it) if
@@ -149,11 +149,11 @@ Compass may be re-enabled later.
 ### Re-enabling after security clearance
 
 1. Restore the `ollama` service, `OLLAMA_HOST`, the `ollama-models` volume and
-   the `../chatbot_spike/data` bind mount in `docker-compose.yml` (see git
+   the `../compass/data` bind mount in `docker-compose.yml` (see git
    history for the removed block).
 2. Set `ENABLE_AI: "1"` and `ENABLE_LLM: "1"`, and build with
    `WITH_COMPASS: "1"`.
-3. Restore `chatbot_spike/data` to the repo on the host *before* building.
+3. Restore `compass/data` to the repo on the host *before* building.
 4. `docker compose --env-file .env up -d --build`
 5. `docker exec tutoring-hub-ollama ollama pull gemma3:4b`
 

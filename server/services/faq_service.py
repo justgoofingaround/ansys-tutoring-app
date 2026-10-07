@@ -124,7 +124,7 @@ def draft_candidate(conn: sqlite3.Connection, settings, candidate_id: int) -> di
         import ollama
 
         try:
-            from config import OLLAMA_MODEL  # chatbot_spike config (sys.path bridge)
+            from config import OLLAMA_MODEL  # compass config (sys.path bridge)
         except Exception:
             OLLAMA_MODEL = "gemma3:4b"
         model = OLLAMA_MODEL

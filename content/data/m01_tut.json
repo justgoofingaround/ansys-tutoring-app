@@ -275,7 +275,7 @@
           "hints": [
             "Use the Face selection filter in the toolbar if clicks select edges instead."
           ],
-          "source_image": "mock_server/data/images/m01_intro_valve_body/me_03_fixed_support_1.png"
+          "source_image": "content/data/images/m01_intro_valve_body/me_03_fixed_support_1.png"
         },
         {
           "step_id": "me_04_fixed_support_2",
@@ -296,7 +296,7 @@
           "hints": [
             "This is the flange at the opposite end from step me_03."
           ],
-          "source_image": "mock_server/data/images/m01_intro_valve_body/me_04_fixed_support_2.png"
+          "source_image": "content/data/images/m01_intro_valve_body/me_04_fixed_support_2.png"
         },
         {
           "step_id": "me_05_select_internal_surfaces",
@@ -318,7 +318,7 @@
             "Use Ctrl-click to add faces to the selection.",
             "The last small cylindrical face is easy to miss near the branch intersection -- rotate the model to find it."
           ],
-          "source_image": "mock_server/data/images/m01_intro_valve_body/me_05_select_internal_surfaces.png"
+          "source_image": "content/data/images/m01_intro_valve_body/me_05_select_internal_surfaces.png"
         },
         {
           "step_id": "me_06_apply_pressure",
@@ -364,7 +364,7 @@
           "hints": [
             "This is the branch on the top of the tee, distinct from the two flanged ends."
           ],
-          "source_image": "mock_server/data/images/m01_intro_valve_body/me_07_select_top_flange.png"
+          "source_image": "content/data/images/m01_intro_valve_body/me_07_select_top_flange.png"
         },
         {
           "step_id": "me_08_apply_force",

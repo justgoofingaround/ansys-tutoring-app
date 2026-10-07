@@ -212,7 +212,7 @@ def test_cloud_engine_raises_on_api_error():
 # -- OllamaEngine (local Compass): fail loudly when search is not installed --
 
 def _fake_compass_modules(monkeypatch, chroma_dir, calls):
-    """Stand-ins for chatbot_spike's retrieve/generate/config, so the engine's
+    """Stand-ins for compass's retrieve/generate/config, so the engine's
     wiring is tested without chromadb, torch, or Ollama."""
     retrieve_mod = types.ModuleType("retrieve")
     retrieve_mod.retrieve = lambda q: calls.append("retrieve") or [{"id": "c1"}]

@@ -1,174 +1,55 @@
 # Ansys Tutoring System — ME-UY 4214
 
-An AI-assisted overlay that guides students step-by-step through Ansys tutorials, live, on top of the real application.
+Guides students step by step through Ansys tutorials, live, on top of the real
+application.
 
 ![Guided overlay running on top of Ansys Workbench](app.png)
 
-Built for NYU's ME-UY 4214 (Finite Element Analysis lab) as part of an AI in Education Seed Grant, with a pilot planned for Fall 2026. A transparent, click-through panel sits on top of Ansys Workbench and Mechanical, highlighting exactly which element to interact with next and walking the student through the tutorial step by step — including the multi-app handoff every tutorial requires: Workbench → Discovery/SpaceClaim (geometry) → back to Workbench → Mechanical (FEA/solve). Each step is confirmed by the student via a "Mark step complete" button rather than automatic detection — see [`spikes/guide_tut1.py`](spikes/guide_tut1.py)'s module docstring for why.
+Built for NYU's ME-UY 4214 (Finite Element Analysis lab). Two parts:
 
-The system is local-first by design: no student interaction data leaves NYU infrastructure, and no cloud LLM ever touches student data.
+- **Tutoring Hub** — a web app (FastAPI + SQLite, React SPA) the instructor runs for the
+  class: tutorials and quizzes, per-step progress, lab-report feedback, and dashboards.
+- **Desktop guide** — a transparent panel over Ansys Workbench, Discovery and Mechanical
+  that highlights what to click next and tracks the handoff between those apps.
 
-See [`Student-Track-App-Build-Plan.md`](Student-Track-App-Build-Plan.md) for the build plan and [`CLAUDE.md`](CLAUDE.md) for project conventions and architecture pointers.
+Local-first by design: student data stays on NYU infrastructure, and no cloud service is
+involved in normal operation.
 
-## The Tutoring Hub (web app)
+![Login page](login_page.png)
 
-![Login page — Student/Instructor sign-in beside a drafted schematic of Tut-1's bar problem](login_page.png)
-
-Alongside the desktop overlay, the repo now ships a full-stack **hub** — FastAPI + SQLite backend (`server/`) and a React SPA (`webapp/`) — that runs on the instructor desktop and serves the whole class over the NYU LAN. Everything is local: bundled fonts, no CDN, no cloud LLM, and every analytics row carries an opaque `student_xxxxxx` token instead of a name or NetID.
-
-What works today:
-
-- **Auth** — instructors are seeded accounts; students self-register with a per-section **class code** (`SEC-XXXXXX`) plus a display name and password.
-- **Student side** — tutorial dashboard with per-step progress, an in-browser tutorial runner with live tick marks, one-click **Launch/Close desktop guide** buttons (via the `ansysguide://` URL protocol), report upload with instant rubric feedback, post-tutorial **quizzes** (per-question explanations, by-concept results), and **Compass** — a streaming chat assistant over locally indexed Ansys docs with cited sources and an explicit consent gate.
-- **Instructor side** — section management with regenerable class codes (progress dashboards, tutorial library, quiz analytics, and the FAQ review queue are in progress).
-
-### Run the hub
+## Run it locally
 
 ```powershell
-# one-time: install server deps + build the web UI (Node 20+)
-.venv\Scripts\pip install fastapi uvicorn bcrypt python-multipart
+pip install -r requirements.txt
 cd webapp; npm install; npm run build; cd ..
 
-# start (the first boot seeds the instructor account and imports tut1 + its quiz)
 $env:INSTRUCTOR_USERNAME = 'prof'
 $env:INSTRUCTOR_PASSWORD = '<pick-a-password>'
 .venv\Scripts\python -m uvicorn server.app:app --port 8000
 ```
 
-Then open **http://localhost:8000**:
+Open <http://localhost:8000> and sign in as the instructor. Then **Class → Class list**,
+upload a CSV of student emails (Albert's class-list export works as-is), and students can
+register with those addresses.
 
-1. Sign in as the instructor → **Class** → create a section → share its class code.
-2. Students register with that code, open Tutorial 1 from their dashboard, and either run it in the browser or click **Launch desktop guide**.
-3. Compass (the chat assistant) and the other AI features are **off unless `ENABLE_AI=1`** is set (see "AI kill switch" below). With AI on they additionally need [Ollama](https://ollama.com) running locally and the `chatbot_spike/` index built — see [`chatbot_spike/README.md`](chatbot_spike/README.md). Without it, chat degrades gracefully; everything else works.
-4. The **Launch desktop guide** button needs a one-time, per-PC registration (no admin rights):
-   `.venv\Scripts\python tools\register_guide_protocol.py` (`--unregister` reverses it).
+Tests, which need neither Ansys nor a model: `.venv\Scripts\python -m pytest tests`
 
-Quizzes are JSON-authored like tutorials: drop a file in `mock_server/data/quizzes/` (see [`tut1_3d_bar.json`](mock_server/data/quizzes/tut1_3d_bar.json)) and restart — no code changes.
+## Deploy
 
-Tests (no Ansys or Ollama needed): `.venv\Scripts\python -m pytest tests\server`
+See [`deploy/DEPLOY-NYU.md`](deploy/DEPLOY-NYU.md) — Docker Compose, nginx and TLS on the
+pilot host, including how registration email and the AI features are configured.
 
-### Student registration (roster-based)
+## Configuration
 
-Students cannot self-register with a shared code. The instructor uploads a class
-list per section on the **Class** page — Albert's class-list export works as-is (saved as CSV:
-its title rows, `Email Address` column and split First/Last names are all
-handled), as does any CSV with an email column — and only
-those addresses can create an account — which is also what assigns the student to
-that section. Registering does not sign them in: the account stays inactive until
-the one-time link mailed to that address is opened, so knowing a classmate's
-address is not enough to claim their place.
+| Variable | Default | Effect |
+|---|---|---|
+| `DATA_DIR` | `server_data/` | Database, uploaded reports and step images |
+| `ENABLE_AI` | `0` (off) | Master switch for every AI feature; off means no AI routes exist |
+| `SMTP_HOST` | unset | Registration email; unset logs the confirmation link instead |
+| `APP_BASE_URL` | `http://127.0.0.1:8000` | Base for emailed links |
 
-Mail settings (all optional): `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
-`SMTP_PASSWORD`, `SMTP_FROM`, and `APP_BASE_URL` (the base the link points at).
-**With `SMTP_HOST` unset the confirmation link is written to the server log
-instead of being sent** — fine for local development, and on a deployment where
-mail is blocked the instructor can admit a student with the "confirm" action on
-the class list instead.
+## More
 
-Signing up asks for the password twice, and the sign-in box has a **Forgot your
-password?** link: that mails a reset link (valid 2 hours, single use) which also
-revokes every existing session for the account, so a reset ends anyone else's
-access. As with confirmation mail, with `SMTP_HOST` unset the link is written to
-the server log instead.
-
-Instructors, and any student account created before this change, still sign in by
-username; new students sign in with their email.
-
-### AI kill switch (`ENABLE_AI`)
-
-Every AI feature — Compass chat, AI report commentary, FAQ drafting and
-PDF→tutorial conversion — sits behind one setting, **off by default**. The NYU
-pilot runs with AI disabled pending the security review
-([`deploy/docker-compose.yml`](deploy/docker-compose.yml) sets `ENABLE_AI=0`).
-
-With `ENABLE_AI` unset or `0`:
-
-- `/api/chatbot/*` is **not mounted** — the routes do not exist.
-- `enable_llm` is forced off and `CHATBOT_API_KEY` is ignored, so no local *or*
-  cloud generation path can run even if those variables are set by mistake.
-- The SPA hides every AI entry point (`ai_enabled` on `/api/auth/me`).
-- Tutorials, quizzes, rubric-based report checking, FAQs and all dashboards are
-  unaffected — only AI-generated content disappears.
-
-Set `ENABLE_AI=1` to restore all four features; nothing else changes.
-
-### Host it for free (team testing / demo)
-
-The repo ships a `Dockerfile` + `render.yaml` for a free [Render](https://render.com)
-deployment. **This is for team testing and demos only** — the pilot's FERPA
-invariant means real student data stays on NYU infrastructure, never a
-third-party cloud. In the cloud the Ollama-backed AI features (AI report
-review, FAQ drafting, PDF→tutorial conversion) are disabled (`ENABLE_LLM=0`)
-and degrade gracefully; everything else works, and the full 9-tutorial
-catalog + quizzes seed automatically on every boot (`SEED_ALL_TUTORIALS=1`).
-
-**Compass chat is the exception** (when `ENABLE_AI=1`) — it can run in the
-cloud through any OpenAI-compatible API. Set `CHATBOT_API_KEY` (render.yaml defaults
-`CHATBOT_API_BASE`/`CHATBOT_MODEL` to Groq's free tier — grab a key at
-console.groq.com; leave the key blank to keep the chatbot off). Cloud mode
-has **no retrieval index**: answers come from the model's general Ansys
-knowledge with no source citations, so treat it as a UI/flow demo, not the
-real Compass. The real deployment keeps local Ollama + the doc index.
-
-1. Push the repo to GitHub, sign up at render.com (free), then **New + →
-   Blueprint** → connect the repo. Render reads `render.yaml`.
-2. When prompted, set `INSTRUCTOR_PASSWORD` (the instructor signs in as
-   `prof` / that password; create a section and share its class code).
-3. First deploy takes a few minutes; your app lives at
-   `https://<name>.onrender.com`.
-4. **Keep it awake**: free Render instances sleep after 15 idle minutes and
-   wake with an empty database. Create a free [UptimeRobot](https://uptimerobot.com)
-   HTTP(s) monitor pointed at your URL with a 5-minute interval — then data
-   persists until the next `git push` deploy or a rare platform restart.
-5. Caveat: the free tier's disk is **ephemeral** — any redeploy/restart wipes
-   registrations and progress (content re-seeds automatically). Download the
-   CSV exports from the Class page if you want to keep testing data.
-
-Local Docker run (same image): `docker build -t tutoring-hub . && docker run
--p 8000:8000 -e INSTRUCTOR_USERNAME=prof -e INSTRUCTOR_PASSWORD=pick-one tutoring-hub`
-
-## Status
-
-**Desktop overlay** — the Phase 0 spike (`spikes/guide_tut1.py`): a working, manually-driven walkthrough of Tut-1, used to de-risk the real architecture's assumptions before it gets built for real under `student_app/`. It covers Workbench setup through Mechanical's results steps and then a final generated-report upload/validation checkpoint.
-
-**Tutoring Hub** — milestones 1–4 of 6 complete: auth + login, the full student content slice (dashboard, runner, reports), quizzes, and Compass chat. In progress: instructor dashboards/library (M5), then quiz analytics + the FAQ mining pipeline (M6).
-
-Tutorials are **JSON-only**: the guide runs any tutorial file in `mock_server/data/` with no code changes. Which steps run, and in what order, comes from the tutorial JSON itself (its optional `runtime_steps` list), and the report-upload checkpoint appears whenever the tutorial declares a `report_checks` rubric.
-
-## How to use the desktop guide
-
-1. **Install dependencies** (Python 3.11+, Windows):
-   ```
-   pip install pywinauto pyqt6 opencv-python-headless numpy pillow pytesseract
-   ```
-   You'll also need the [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) binary installed system-wide (used to read on-screen text Ansys doesn't expose via UI Automation), plus an English language file at `spikes/tessdata/eng.traineddata` — see that folder if it's missing.
-
-2. **Open Ansys Workbench** (2025 R2) — either have it already open, or be ready to open it as soon as the guide starts, since step 1 walks you through launching it.
-
-3. **Run the guide**:
-   ```
-   .venv\Scripts\python spikes\guide_tut1.py            # runs Tut-1 (the default)
-   .venv\Scripts\python spikes\guide_tut1.py <tutorial>  # any other tutorial, by id or path
-   ```
-   A dark panel appears in the top-right corner of your screen, on top of Ansys.
-
-4. **Follow each step:**
-   - Read the instruction and hint text in the panel.
-   - If a red box appears on screen, that's the live-highlighted element for this step — wherever the box is, that's what to click/interact with next.
-   - Some steps (e.g. picking a 3D face in the geometry viewport) show a reference screenshot instead of a live box, since there's nothing to highlight via automation there.
-   - Perform the action in the real Ansys window.
-   - Click **"✓ Mark step complete"** once you've done it, then **"Next →"** to advance. Use **"← Prev"** to go back.
-
-5. The guide walks you all the way from opening Workbench through generating and saving the final FEA result in Mechanical.
-
-**Note:** the guide is the only thing you run directly — `mock_server/` (a FastAPI stand-in for the real Tutorials & Quizzes server) isn't needed for this spike; `guide_tut1.py` reads the tutorial JSON straight off disk.
-
-## Authoring a new tutorial
-
-No code changes needed — a tutorial is one JSON file:
-
-1. Copy [`mock_server/data/_template.json`](mock_server/data/_template.json) to `mock_server/data/<tutorial_id>.json` and fill it in (the template's inline `_comment` keys explain each step pattern; [`tut1.json`](mock_server/data/tut1.json) is a full real example).
-2. Check it: `.venv\Scripts\python tools\validate_tutorial.py mock_server\data\<file>.json` — must report 0 errors.
-3. Run it: `.venv\Scripts\python spikes\guide_tut1.py <tutorial_id>`
-
-Full guidance (selector/highlight decision table, verify types, report rubric, conventions): [`mock_server/data/README.md`](mock_server/data/README.md).
+- [`content/data/README.md`](content/data/README.md) — authoring tutorials and quizzes
+- [`student_app/README.md`](student_app/README.md) — running the desktop guide
+- [`CLAUDE.md`](CLAUDE.md) — conventions and architecture pointers

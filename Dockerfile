@@ -16,8 +16,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Compass document search: NYU pilot only (WITH_COMPASS=1 from
 # deploy/docker-compose.yml); cloud images skip it. CPU-only torch, the
 # retrieval libraries, and the embedding model (matches EMBEDDING_MODEL in
-# chatbot_spike/config.py) are baked in so nothing downloads at runtime. The
-# index itself is mounted from the host (chatbot_spike/data, not in git).
+# compass/config.py) are baked in so nothing downloads at runtime. The
+# index itself is mounted from the host (compass/data, not in git).
 ARG WITH_COMPASS=0
 COPY requirements-compass.txt ./
 RUN if [ "$WITH_COMPASS" = "1" ]; then \
@@ -27,10 +27,10 @@ RUN if [ "$WITH_COMPASS" = "1" ]; then \
     fi
 
 COPY server/ server/
-COPY chatbot_spike/ chatbot_spike/
-RUN if [ "$WITH_COMPASS" != "1" ]; then rm -rf chatbot_spike; fi
+COPY compass/ compass/
+RUN if [ "$WITH_COMPASS" != "1" ]; then rm -rf compass; fi
 COPY tools/validate_tutorial.py tools/validate_tutorial.py
-COPY mock_server/data/ mock_server/data/
+COPY content/data/ content/data/
 COPY --from=webapp /build/dist webapp/dist
 # Ollama-backed LLM features off in the cloud (no Ollama); every LLM path
 # degrades gracefully. The Compass chatbot AND PDF->tutorial conversion CAN

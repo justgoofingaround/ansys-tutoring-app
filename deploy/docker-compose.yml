@@ -15,7 +15,7 @@ services:
       context: ..
       dockerfile: Dockerfile
       args:
-        WITH_COMPASS: "0"   # no Compass doc search: skips torch/chromadb and drops chatbot_spike/
+        WITH_COMPASS: "0"   # no Compass doc search: skips torch/chromadb and drops compass/
     container_name: tutoring-hub
     restart: unless-stopped
     # Bind to loopback only — the outside world comes in through nginx:443.

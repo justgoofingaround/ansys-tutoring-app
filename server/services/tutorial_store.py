@@ -1,6 +1,6 @@
 """Versioned tutorial storage.
 
-Tutorials are authored in mock_server/data/ (the cross-module contract dir);
+Tutorials are authored in content/data/ (the cross-module contract dir);
 the server IMPORTS them here into immutable versioned copies under
 server_data/tutorials/{id}/v{n}.json. New versions never overwrite old ones,
 so students mid-session keep the version they started with.
@@ -19,7 +19,7 @@ from tools.validate_tutorial import validate  # repo root is on sys.path (config
 
 from ..config import REPO_ROOT, Settings
 
-DEFAULT_SEED = REPO_ROOT / "mock_server" / "data" / "tut1.json"
+DEFAULT_SEED = REPO_ROOT / "content" / "data" / "tut1.json"
 
 
 class TutorialValidationError(Exception):

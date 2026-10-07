@@ -175,7 +175,7 @@ function QuizUploadCard() {
       </div>
       <p className="mt-2 text-sm text-ink-soft">
         A quiz is one JSON file attached to an existing tutorial — start from{" "}
-        <code className="font-mono text-[13px]">mock_server/data/quizzes/_template.json</code>{" "}
+        <code className="font-mono text-[13px]">content/data/quizzes/_template.json</code>{" "}
         (a full real example is <code className="font-mono text-[13px]">tut1_3d_bar.json</code>).
         Re-uploading the same <code className="font-mono text-[13px]">quiz_id</code> replaces its
         questions; uploads publish immediately.
@@ -259,7 +259,7 @@ export function QuizzesPage() {
         <Card>
           <p className="py-4 text-[15px] text-ink-faint">
             No published quizzes. Add a JSON file under{" "}
-            <code className="font-mono">mock_server/data/quizzes/</code> and restart the server.
+            <code className="font-mono">content/data/quizzes/</code> and restart the server.
           </p>
         </Card>
       ) : (

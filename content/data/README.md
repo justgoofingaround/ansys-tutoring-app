@@ -6,11 +6,11 @@ adding a new tutorial requires **no code changes**.
 ## Quick start
 
 ```
-1. Copy _template.json  →  mock_server/data/<tutorial_id>.json   (e.g. tut2_plate_with_hole.json)
+1. Copy _template.json  →  content/data/<tutorial_id>.json   (e.g. tut2_plate_with_hole.json)
 2. Fill it in (the _comment keys in the template explain every pattern; tut1.json is a full real example)
-3. Put reference screenshots in mock_server/data/images/<tutorial_id>/
-4. Check it:   .venv\Scripts\python tools\validate_tutorial.py mock_server\data\<file>.json
-5. Run it:     .venv\Scripts\python spikes\guide_tut1.py <tutorial_id>
+3. Put reference screenshots in content/data/images/<tutorial_id>/
+4. Check it:   .venv\Scripts\python tools\validate_tutorial.py content\data\<file>.json
+5. Run it:     .venv\Scripts\python student_app\guide_tut1.py <tutorial_id>
 ```
 
 The validator must report `0 error(s)` before you test live. Warnings are
@@ -72,7 +72,7 @@ only when `report_checks` exists):
 - **step_id**: `{app}_{NN}_{slug}` — `wb_03_add_static_structural`. Prefixes: wb/sc/ed/me/re.
 - **One action per step.** "Expand Geometry, select Solid, set the material" is three steps.
 - **hints**: the panel shows the **first** hint under the description; order most-helpful-first.
-- **Images**: `mock_server/data/images/<tutorial>/<step_id>.png` — folder named after
+- **Images**: `content/data/images/<tutorial>/<step_id>.png` — folder named after
   the tutorial file (`tut1.json` → `images/tut1/`). Cropped and annotated.
 - **`_notes`**: when live testing forces a strategy change (selector, verify),
   record why with a dated key (`something_2026-07`) so the next author doesn't

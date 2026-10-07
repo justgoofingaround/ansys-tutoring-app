@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle, BookOpen, CheckCircle2, ClipboardList, FileUp, ListChecks,
-  Pencil, Sparkles, XCircle,
+  Pencil, Plus, Sparkles, XCircle,
 } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { LibraryTutorial, ValidationFinding } from "@/types/api";
@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card, CardTitle } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
+import { Input, Label, FieldError } from "@/components/Input";
 import { Spinner } from "@/components/Spinner";
 import { cn } from "@/components/cn";
 import { timeAgo } from "./ClassDashboardPage";
@@ -91,7 +92,7 @@ function UploadCard() {
       </div>
       <p className="mt-2 text-sm text-ink-soft">
         A tutorial is one JSON file (start from{" "}
-        <code className="font-mono text-[13px]">mock_server/data/_template.json</code>).
+        <code className="font-mono text-[13px]">content/data/_template.json</code>).
         Uploads are validated, stored as a new immutable version, and stay
         drafts until you publish them.
       </p>
@@ -172,6 +173,105 @@ function UploadCard() {
           )}
         </div>
       )}
+    </Card>
+  );
+}
+
+/* ── new (blank) tutorial card ──────────────────────────────────────── */
+
+/** The id is an internal slug (file names, URLs, step-id prefixes), so it is
+ * derived from the title rather than asked for. It stays editable because it
+ * is permanent once created — progress and events are recorded against it. */
+function slugify(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 64);
+}
+
+function NewTutorialCard() {
+  const qc = useQueryClient();
+  const navigate = useNavigate();
+  const [title, setTitle] = useState("");
+  const [id, setId] = useState("");
+  const [idTouched, setIdTouched] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const effectiveId = idTouched ? id : slugify(title);
+
+  const create = useMutation({
+    mutationFn: () =>
+      apiFetch<{ tutorial_id: string }>("/api/instructor/tutorials/blank", {
+        json: { tutorial_id: effectiveId, title: title.trim() },
+      }),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ["instructor", "library"] });
+      navigate(`/instructor/tutorials/${res.tutorial_id}/edit`);
+    },
+    onError: (e) => {
+      const code = e instanceof ApiError ? e.code : "";
+      setError(
+        {
+          tutorial_exists: `A tutorial with the id "${effectiveId}" already exists — change the id below.`,
+          title_required: "Give the tutorial a title.",
+          tutorial_id_must_be_lowercase_words:
+            "The id needs at least 3 characters: lowercase letters, numbers or underscores.",
+        }[code] ?? "Could not create the tutorial.",
+      );
+    },
+  });
+
+  return (
+    <Card>
+      <CardTitle>New tutorial</CardTitle>
+      <p className="mt-1 text-[13px] text-ink-faint">
+        Starts an empty draft you fill in with the editor.
+      </p>
+      <form
+        className="mt-3 space-y-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          setError(null);
+          create.mutate();
+        }}
+      >
+        <div>
+          <Label htmlFor="new-tut-title">Title</Label>
+          <Input
+            id="new-tut-title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Tutorial 9 — Heat transfer"
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="new-tut-id">Id</Label>
+          <Input
+            id="new-tut-id"
+            value={effectiveId}
+            onChange={(e) => {
+              setIdTouched(true);
+              setId(e.target.value);
+            }}
+            placeholder="from the title"
+            className="font-mono"
+          />
+          <p className="mt-1.5 text-[13px] text-ink-faint">
+            Used internally and can't be changed later.
+          </p>
+        </div>
+        <FieldError>{error}</FieldError>
+        <Button
+          type="submit"
+          className="w-full"
+          loading={create.isPending}
+          disabled={!title.trim() || effectiveId.length < 3}
+        >
+          <Plus className="size-4" /> Create draft
+        </Button>
+      </form>
     </Card>
   );
 }
@@ -531,6 +631,7 @@ export function TutorialLibraryPage() {
           </div>
         </Card>
         <div className="space-y-4">
+          <NewTutorialCard />
           <UploadCard />
           {me?.ai_enabled && <ConvertPdfCard />}
         </div>

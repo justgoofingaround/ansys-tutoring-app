@@ -3,7 +3,7 @@ for testing the PDF -> tutorial conversion round-trip.
 
     .venv\\Scripts\\python tools\\make_sample_pdf.py [tutorial.json] [out.pdf]
 
-Defaults: mock_server/data/m07_tut.json -> server_data/samples/sample_tutorial.pdf
+Defaults: content/data/m07_tut.json -> server_data/samples/sample_tutorial.pdf
 """
 
 import json
@@ -18,7 +18,7 @@ WIDTH, HEIGHT = 595, 842  # A4 points
 
 
 def main(argv: list[str]) -> None:
-    src = Path(argv[0]) if argv else REPO_ROOT / "mock_server" / "data" / "m07_tut.json"
+    src = Path(argv[0]) if argv else REPO_ROOT / "content" / "data" / "m07_tut.json"
     out = Path(argv[1]) if len(argv) > 1 else REPO_ROOT / "server_data" / "samples" / "sample_tutorial.pdf"
     data = json.loads(src.read_text(encoding="utf-8-sig"))
 

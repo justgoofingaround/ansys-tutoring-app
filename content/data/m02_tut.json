@@ -151,7 +151,7 @@
           "hints": [
             "Ctrl-click adds to the selection; Shift-click selects a contiguous range."
           ],
-          "source_image": "mock_server/data/images/mod02_problem_statement/me_03_multiselect_bodies.png"
+          "source_image": "content/data/images/mod02_problem_statement/me_03_multiselect_bodies.png"
         },
         {
           "step_id": "me_04_click_geometry_branch",
@@ -201,7 +201,7 @@
           "hints": [
             "Use the Body selection filter first if clicks are picking faces/edges you don't want."
           ],
-          "source_image": "mock_server/data/images/mod02_problem_statement/me_05_select_valve_and_flange.png"
+          "source_image": "content/data/images/mod02_problem_statement/me_05_select_valve_and_flange.png"
         },
         {
           "step_id": "me_06_hide_body",
@@ -271,7 +271,7 @@
           "hints": [
             "Make sure a face on the Valve body is selected before pressing F9."
           ],
-          "source_image": "mock_server/data/images/mod02_problem_statement/me_08_hide_via_f9.png"
+          "source_image": "content/data/images/mod02_problem_statement/me_08_hide_via_f9.png"
         },
         {
           "step_id": "me_09_show_via_shift_f9",
@@ -397,7 +397,7 @@
           "hints": [
             "With the Body filter on, a single click selects the entire body, not just a face."
           ],
-          "source_image": "mock_server/data/images/mod02_problem_statement/me_13_select_bodies_viewport.png"
+          "source_image": "content/data/images/mod02_problem_statement/me_13_select_bodies_viewport.png"
         }
       ]
     },
@@ -425,7 +425,7 @@
           "hints": [
             "The triad is a small 3-axis widget in the bottom-right of the 3D view."
           ],
-          "source_image": "mock_server/data/images/mod02_problem_statement/me_14_orient_y_axis.png"
+          "source_image": "content/data/images/mod02_problem_statement/me_14_orient_y_axis.png"
         },
         {
           "step_id": "me_15_new_section_plane",
@@ -470,7 +470,7 @@
           "hints": [
             "Drag the plane roughly through the centerline of the vertical valve rod."
           ],
-          "source_image": "mock_server/data/images/mod02_problem_statement/me_16_drag_section_plane.png"
+          "source_image": "content/data/images/mod02_problem_statement/me_16_drag_section_plane.png"
         }
       ]
     },
@@ -519,7 +519,7 @@
           "hints": [
             "Drag slowly across each internal surface; painting works only on faces currently visible."
           ],
-          "source_image": "mock_server/data/images/mod02_problem_statement/me_18_paint_select_internal_faces.png"
+          "source_image": "content/data/images/mod02_problem_statement/me_18_paint_select_internal_faces.png"
         }
       ]
     },

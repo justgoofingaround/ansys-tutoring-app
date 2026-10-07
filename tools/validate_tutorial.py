@@ -2,7 +2,7 @@
 Validate a tutorial JSON file before running it in the guide.
 
 Usage:
-    .venv\\Scripts\\python tools\\validate_tutorial.py mock_server\\data\\tut2.json
+    .venv\\Scripts\\python tools\\validate_tutorial.py content\\data\\tut2.json
     .venv\\Scripts\\python tools\\validate_tutorial.py FILE [FILE ...] [--strict]
 
 Exit code 0 = usable (warnings allowed), 1 = has errors (or any warning with
@@ -11,9 +11,9 @@ file; WARN means it will run but something looks wrong or incomplete.
 
 Stdlib only -- no dependencies, runs on any Python 3.10+.
 
-The rules here mirror exactly what the runtime consumes (spikes/guide_tut1.py,
+The rules here mirror exactly what the runtime consumes (student_app/guide_tut1.py,
 locate.py, verify.py, report_verify.py). Field-by-field guidance for authors
-lives in mock_server/data/README.md and the annotated _template.json.
+lives in content/data/README.md and the annotated _template.json.
 """
 
 import json
@@ -22,7 +22,9 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-IMAGES_DIR_FMT = "mock_server/data/images/{tutorial_id}/"
+UPLOADED_IMAGES_PREFIX = "uploads/step_images/"
+LEGACY_IMAGES_DIR_FMT = "mock_server/data/images/{tutorial_id}/"
+IMAGES_DIR_FMT = "content/data/images/{tutorial_id}/"
 
 APPS = {"workbench", "spaceclaim", "discovery", "mechanical"}
 SELECTOR_TYPES = {"uia", "ocr_text", "viewport", "window"}
@@ -325,6 +327,10 @@ def _validate_images(f, data, all_steps, file_stem):
     convention_dirs = tuple({
         IMAGES_DIR_FMT.format(tutorial_id=file_stem),
         IMAGES_DIR_FMT.format(tutorial_id=data.get("tutorial_id", "<tutorial_id>")),
+        # Pre-rename paths (mock_server/ -> content/) are still valid: the
+        # versions carrying them cannot be rewritten.
+        LEGACY_IMAGES_DIR_FMT.format(tutorial_id=file_stem),
+        LEGACY_IMAGES_DIR_FMT.format(tutorial_id=data.get("tutorial_id", "<tutorial_id>")),
     })
     missing, off_convention = [], []
     for where, st in all_steps:
@@ -333,6 +339,11 @@ def _validate_images(f, data, all_steps, file_stem):
             continue
         if not isinstance(img, str):
             f.error(where, "'source_image' must be a string path (repo-root-relative) or null")
+            continue
+        if img.replace("\\", "/").startswith(UPLOADED_IMAGES_PREFIX):
+            # Uploaded through the web editor: the file lives in the server's
+            # DATA_DIR, which this validator cannot see, and the lab PC only
+            # gets a copy when the guide launcher syncs it. Nothing to check.
             continue
         if not (REPO_ROOT / img).is_file():
             missing.append(where)

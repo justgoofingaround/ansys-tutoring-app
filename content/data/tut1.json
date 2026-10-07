@@ -31,8 +31,8 @@
     "verify_legend": "uia = UI-tree check. script(engine) = authoritative model state (spaceclaim | pymechanical). window_appeared = transition. manual = student confirms (no programmatic check available).",
     "viewport_caveat": "Steps marked highlight=instruction happen inside the 3D graphics window, which UIA cannot enumerate. They are verified by model state where possible, else manual.",
     "workbench_uia_finding_2026-06": "CONFIRMED via live guide_tut1.py debug dump: Workbench's ribbon/menu bar IS exposed via UI Automation (File, Save, Save As all resolve correctly). The Toolbox panel and Project Schematic canvas are NOT exposed via UIA at all -- a snapshot dump of the main window's full descendant tree (154 controls) contained zero Toolbox/Schematic items, only ribbon/menu/status-bar chrome. This is almost certainly a custom-drawn control with no per-item (or even pane-level) automation peers, not a selector-naming issue. wb_03 (Toolbox drag) and wb_04 (schematic rename) were changed from highlight:uia/verify:uia to highlight:instruction/verify:manual as a result. If a later Workbench step targeting the Toolbox or Schematic also reports 'NOT FOUND' with an all-chrome sample dump, apply the same fix rather than re-diagnosing. Real fix (deferred): image-template matching over the Toolbox/Schematic region, per the build plan's Phase 0 contingency (Student-Track-App-Build-Plan.md, Phase 0 exit gate).",
-    "workbench_win32_finding_2026-06": "CONFIRMED via spikes/probe3_win32_toolbox.py on a live machine: the Toolbox is ALSO invisible to the raw Win32 HWND tree (backend='win32'), not just UIA. The 45-control dump under the Workbench window contains zero SysListView32/SysTreeView32/listbox-class windows anywhere -- the Toolbox region (L4,T183-R308,B954) is covered only by generic repeated 'WindowsForms10.Window.8...' container HWNDs, the same class used for unrelated panes. This rules out BOTH automation APIs as a source of live per-item coordinates for Toolbox/Schematic rows -- it's a single owner-drawn surface with no native row objects at all, at any level. Do not re-attempt UIA or win32-backend probes for Toolbox/Schematic rows -- both are exhausted.",
-    "workbench_template_match_rejected_2026-06": "TRIED AND REJECTED: image-template matching (OpenCV TM_CCOEFF_NORMED against a saved crop of the 'Static Structural' row) as the live-box fallback for Toolbox rows. Verified failure mode: matching the exact crop against the exact screenshot it came from picked the 'Modal' row (score 0.58) over the real 'Static Structural' location, because every Toolbox row shares the same icon+text layout and pixel correlation doesn't actually read the text -- raising the threshold would only ever produce 'not found', never fix the wrong-row match. Replaced with OCR (pytesseract over an upscaled grayscale screenshot of the Toolbox rect, see locate.locate_text()), which matches on the real string content and is what wb_03 now uses (highlight/selector.type == 'ocr_text'). spikes/capture_template.py and spikes/templates/*.png are leftover from the rejected approach and can be deleted.",
+    "workbench_win32_finding_2026-06": "CONFIRMED via student_app/probe3_win32_toolbox.py on a live machine: the Toolbox is ALSO invisible to the raw Win32 HWND tree (backend='win32'), not just UIA. The 45-control dump under the Workbench window contains zero SysListView32/SysTreeView32/listbox-class windows anywhere -- the Toolbox region (L4,T183-R308,B954) is covered only by generic repeated 'WindowsForms10.Window.8...' container HWNDs, the same class used for unrelated panes. This rules out BOTH automation APIs as a source of live per-item coordinates for Toolbox/Schematic rows -- it's a single owner-drawn surface with no native row objects at all, at any level. Do not re-attempt UIA or win32-backend probes for Toolbox/Schematic rows -- both are exhausted.",
+    "workbench_template_match_rejected_2026-06": "TRIED AND REJECTED: image-template matching (OpenCV TM_CCOEFF_NORMED against a saved crop of the 'Static Structural' row) as the live-box fallback for Toolbox rows. Verified failure mode: matching the exact crop against the exact screenshot it came from picked the 'Modal' row (score 0.58) over the real 'Static Structural' location, because every Toolbox row shares the same icon+text layout and pixel correlation doesn't actually read the text -- raising the threshold would only ever produce 'not found', never fix the wrong-row match. Replaced with OCR (pytesseract over an upscaled grayscale screenshot of the Toolbox rect, see locate.locate_text()), which matches on the real string content and is what wb_03 now uses (highlight/selector.type == 'ocr_text'). student_app/capture_template.py and student_app/templates/*.png are leftover from the rejected approach and can be deleted.",
     "wb03_verify_2026-06": "wb_03 verify.type is \"ocr_text_present\" with a multi-row \"texts\" list (Engineering Data / Geometry / Model / Setup / Solution / Results), not just a single \"Engineering Data\" check -- matches the full system-block structure shown in the reference screenshot the student attached (a 7-row block: Static Structural, Engineering Data, Geometry, Model, Setup, Solution, Results), rather than confirming only one row of it. \"Static Structural\" itself is deliberately excluded from the list -- it is also the Toolbox's own permanent template row, so re-checking it would be a guaranteed false positive even before the drag happens. Implementation: locate.all_texts_present() does ONE OCR pass per attempt over locate.schematic_rect() and checks all phrases against that single result (re-tried as a whole up to OCR_RETRIES times) -- deliberately NOT one Tesseract invocation per phrase per tick, which would be far too slow for the ~700ms tick budget. verify.ocr_text_present() in verify.py dispatches to it.",
     "wb04_geometry_2026-06": "wb_04 was changed from \"rename the system\" to \"select Geometry\" (double-click the Geometry row in the Static Structural schematic block to launch the geometry editor) -- this is the actual next real action in the live walkthrough; the rename step was dropped, not deferred. selector/highlight reuse the same ocr_text machinery as wb_03, but with selector.scope=\"schematic\" so guide_tut1.py scopes the OCR search to locate.schematic_rect() instead of the Toolbox -- a bare \"Geometry\" search over the whole screen would be too unscoped otherwise. verify uses \"window_appeared\" app=\"spaceclaim\" (same process-check pattern as wb_01) since double-clicking Geometry launches the geometry editor as its own process -- spaceclaim's process name in verify.APP_PROCESS_NAMES is still UNCONFIRMED, same caveat noted there since before this session; confirm against the real process name once tested live.",
     "wb04_verify_2026-06": "wb_04 verify.type changed from \"window_appeared\" (app=spaceclaim) to \"row_status_icon\" (text=\"Geometry\", scope=\"schematic\"). The student identified the real completion signal: once Geometry is defined (via EITHER \"New Geometry\" or \"Import Geometry\" from the right-click menu), the row's status icon in the schematic block turns from a blue question mark to a green checkmark. Checking for a spaceclaim window was unreliable for the \"Import\" path specifically (it may not launch the full editor at all), so this checks the actual outcome instead of one specific path to it. Implementation: locate.row_status_is_green() finds the row's label via the same OCR machinery as locate_text()/texts_found(), then samples the small icon area immediately to its right and classifies it by HSV hue/saturation (green checkmark vs blue question-mark vs background) -- a color check, not OCR, since a checkmark glyph isn't reliably read as text. UNTESTED against the real icon's exact pixel colors -- the live debug print (\"row_status_is_green(...) -> frac_green=...\") will show whether the hue range (35-95) and the 0.05 saturated-pixel threshold need tuning once tested against the real screen.",
@@ -142,7 +142,7 @@
           "hints": [
             "The Toolbox is on the left; expand Analysis Systems."
           ],
-          "source_image": "mock_server/data/images/tut1/wb_03_add_static_structural.png"
+          "source_image": "content/data/images/tut1/wb_03_add_static_structural.png"
         },
         {
           "step_id": "wb_04_select_geometry",
@@ -282,7 +282,7 @@
           "hints": [
             "Default mesh is fine for this tutorial."
           ],
-          "source_image": "mock_server/data/images/tut1/me_04_generate_mesh.png"
+          "source_image": "content/data/images/tut1/me_04_generate_mesh.png"
         },
         {
           "step_id": "me_05_select_static",
@@ -305,7 +305,7 @@
           "hints": [
             "This enables the Environment ribbon."
           ],
-          "source_image": "mock_server/data/images/tut1/me_05_select_static.png"
+          "source_image": "content/data/images/tut1/me_05_select_static.png"
         },
         {
           "step_id": "me_06_force_tool",
@@ -331,7 +331,7 @@
           "hints": [
             "Environment ribbon > Loads group."
           ],
-          "source_image": "mock_server/data/images/tut1/me_05_select_static.png"
+          "source_image": "content/data/images/tut1/me_05_select_static.png"
         },
         {
           "step_id": "me_07_force_face",
@@ -359,7 +359,7 @@
           "hints": [
             "Click the end face in the 3D view, then Apply in Details > Geometry."
           ],
-          "source_image": "mock_server/data/images/tut1/me_05_select_static.png"
+          "source_image": "content/data/images/tut1/me_05_select_static.png"
         },
         {
           "step_id": "me_08_force_magnitude",
@@ -388,7 +388,7 @@
           "hints": [
             "Magnitude is in the Definition section of Details."
           ],
-          "source_image": "mock_server/data/images/tut1/me_05_select_static.png"
+          "source_image": "content/data/images/tut1/me_05_select_static.png"
         },
         {
           "step_id": "me_09_fixed_tool",
@@ -414,7 +414,7 @@
           "hints": [
             "Environment ribbon > Structural group > Fixed."
           ],
-          "source_image": "mock_server/data/images/tut1/me_09_fixed_tool.png"
+          "source_image": "content/data/images/tut1/me_09_fixed_tool.png"
         },
         {
           "step_id": "me_10_fixed_face",
@@ -442,7 +442,7 @@
           "hints": [
             "Pick the end opposite to the force, then Apply."
           ],
-          "source_image": "mock_server/data/images/tut1/me_09_fixed_tool.png"
+          "source_image": "content/data/images/tut1/me_09_fixed_tool.png"
         },
         {
           "step_id": "me_11_solve",
@@ -468,7 +468,7 @@
           "hints": [
             "Solving may take a moment; watch the status."
           ],
-          "source_image": "mock_server/data/images/tut1/me_11_solve.png"
+          "source_image": "content/data/images/tut1/me_11_solve.png"
         }
       ]
     },
@@ -499,7 +499,7 @@
           "hints": [
             "Solution is under the analysis branch in the Outline."
           ],
-          "source_image": "mock_server/data/images/tut1/re_01_insert_dir_deformation.png"
+          "source_image": "content/data/images/tut1/re_01_insert_dir_deformation.png"
         },
         {
           "step_id": "re_02_orientation",
@@ -550,7 +550,7 @@
           "hints": [
             "Expected elongation is about 0.00382 in."
           ],
-          "source_image": "mock_server/data/images/tut1/re_03_evaluate.png"
+          "source_image": "content/data/images/tut1/re_03_evaluate.png"
         },
         {
           "step_id": "re_04_save",
@@ -572,7 +572,7 @@
           "hints": [
             "Final result: elongation approx 0.00382 in."
           ],
-          "source_image": "mock_server/data/images/tut1/re_04_save.png"
+          "source_image": "content/data/images/tut1/re_04_save.png"
         }
       ]
     }

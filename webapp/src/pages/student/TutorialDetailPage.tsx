@@ -66,7 +66,7 @@ function StepLine({ step, tutorialId }: { step: StepRow; tutorialId: string }) {
 function LaunchGuideCard({ tutorialId }: { tutorialId: string }) {
   const { data: me } = useMe();
   const [copied, setCopied] = useState<string | null>(null);
-  const command = `python spikes\\guide_tut1.py ${tutorialId}`;
+  const command = `python student_app\\guide_tut1.py ${tutorialId}`;
 
   function copy(text: string, key: string) {
     navigator.clipboard.writeText(text).then(() => {

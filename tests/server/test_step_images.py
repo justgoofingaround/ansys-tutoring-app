@@ -1,6 +1,6 @@
 """Step reference images uploaded through the editor, and blank tutorials.
 
-Uploads land in DATA_DIR rather than the repo: mock_server/data/images is baked
+Uploads land in DATA_DIR rather than the repo: content/data/images is baked
 into the Docker image, so anything written there would vanish on redeploy.
 """
 

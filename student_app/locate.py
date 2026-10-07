@@ -57,7 +57,7 @@ try:
     # tessdata/ folder is empty -- confirmed by a real TesseractError: "Error
     # opening data file .../tessdata/eng.traineddata"). Program Files isn't
     # writable without admin rights, so eng.traineddata lives project-local
-    # (spikes/tessdata/) instead. Passing `--tessdata-dir "<path>"` via
+    # (student_app/tessdata/) instead. Passing `--tessdata-dir "<path>"` via
     # pytesseract's `config=` doesn't work on Windows: pytesseract splits
     # config with shlex(posix=False), which does NOT strip quotes, so the
     # literal quote characters end up inside the path tesseract opens

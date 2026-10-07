@@ -123,7 +123,7 @@
           "hints": [
             "Right-click directly on the 'Mesh' branch in the Outline tree."
           ],
-          "source_image": "mock_server/data/images/tut6_mesh/me_01_generate_default_mesh.png"
+          "source_image": "content/data/images/tut6_mesh/me_01_generate_default_mesh.png"
         }
       ]
     },
@@ -224,7 +224,7 @@
           "hints": [
             "Same right-click menu as the first mesh generation."
           ],
-          "source_image": "mock_server/data/images/tut6_mesh/me_05_generate_mesh_global.png"
+          "source_image": "content/data/images/tut6_mesh/me_05_generate_mesh_global.png"
         }
       ]
     },
@@ -278,7 +278,7 @@
           "hints": [
             "Click the Body Sizing branch first so its Details panel and Geometry field are active."
           ],
-          "source_image": "mock_server/data/images/tut6_mesh/me_07_scope_body_sizing.png"
+          "source_image": "content/data/images/tut6_mesh/me_07_scope_body_sizing.png"
         },
         {
           "step_id": "me_08_set_body_element_size",
@@ -327,7 +327,7 @@
           "hints": [
             "The valve body should now appear visibly finer than the flanges/bolts in the Geometry view."
           ],
-          "source_image": "mock_server/data/images/tut6_mesh/me_09_generate_mesh_final.png"
+          "source_image": "content/data/images/tut6_mesh/me_09_generate_mesh_final.png"
         }
       ]
     },

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft, ChevronDown, ChevronUp, Plus, Save, Send, Trash2, TriangleAlert,
+  ArrowLeft, ChevronDown, ChevronUp, ImagePlus, Plus, Save, Send, Trash2, TriangleAlert,
 } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { LibraryTutorial, TutorialDoc, TutorialStep, ValidationFinding } from "@/types/api";
@@ -22,6 +22,19 @@ import { FindingsList } from "./TutorialLibraryPage";
  * through the Advanced box, because a wrong value there breaks the desktop
  * guide rather than just reading badly. */
 const PLAIN_FIELDS = ["step_id", "app", "title", "description", "hints"] as const;
+
+/** Same two mounts the student runner understands (see RunPage). */
+function stepImageUrl(sourceImage?: unknown): string | null {
+  if (typeof sourceImage !== "string" || !sourceImage) return null;
+  const norm = sourceImage.replace(/\\/g, "/");
+  if (norm.startsWith("uploads/step_images/")) {
+    return `/step-images/${norm.slice("uploads/step_images/".length)}`;
+  }
+  if (norm.startsWith("content/data/images/")) {
+    return `/tutorial-images/${norm.slice("content/data/images/".length)}`;
+  }
+  return null;
+}
 
 const APP_PREFIX: Record<string, string> = {
   workbench: "wb",
@@ -142,12 +155,51 @@ function Outline({
 
 function StepForm({
   step,
+  tutorialId,
   onChange,
 }: {
   step: TutorialStep;
+  tutorialId: string;
   onChange: (next: TutorialStep) => void;
 }) {
   const [advanced, setAdvanced] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const imageUrl = stepImageUrl(step.source_image);
+
+  async function upload(file: File) {
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch(`/api/instructor/tutorials/${tutorialId}/images`, {
+        method: "POST",
+        body: form,
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: { "X-Requested-With": "fetch" },
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        setUploadError(
+          { not_an_image: "That file isn't an image.",
+            unsupported_image_format: "Use a PNG, JPG, WEBP or GIF.",
+            image_too_large: "Images must be under 5 MB." }[body?.detail as string] ??
+            `Upload failed (${res.status}).`,
+        );
+        return;
+      }
+      // The file is stored immediately; the reference is saved with the document.
+      onChange({ ...step, source_image: body.source_image });
+    } catch {
+      setUploadError("Upload failed — is the server running?");
+    } finally {
+      setUploading(false);
+    }
+  }
+
   const [advancedText, setAdvancedText] = useState(() =>
     JSON.stringify(advancedPart(step), null, 2),
   );
@@ -241,6 +293,45 @@ function StepForm({
           <p className="mt-1.5 text-[13px] text-ink-faint">
             The first hint shows under the description in the student panel.
           </p>
+        </div>
+
+        <div className="border-t border-hairline pt-3">
+          <Label>Reference image</Label>
+          {imageUrl ? (
+            <div className="flex items-start gap-3">
+              <img
+                src={imageUrl}
+                alt=""
+                className="max-h-40 rounded-(--radius-control) border border-hairline"
+              />
+              <Button variant="ghost" onClick={() => onChange({ ...step, source_image: null })}>
+                <Trash2 className="size-4" /> Remove
+              </Button>
+            </div>
+          ) : (
+            <p className="text-[13px] text-ink-faint">No image on this step.</p>
+          )}
+          <div className="mt-2">
+            <Button variant="secondary" onClick={() => fileRef.current?.click()} loading={uploading}>
+              <ImagePlus className="size-4" /> {imageUrl ? "Replace image" : "Upload image"}
+            </Button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) upload(f);
+                e.target.value = "";
+              }}
+            />
+            <FieldError>{uploadError}</FieldError>
+            <p className="mt-1.5 text-[13px] text-ink-faint">
+              Shown beside the step. The desktop guide shows it only when highlight is
+              "instruction".
+            </p>
+          </div>
         </div>
 
         <div className="border-t border-hairline pt-3">
@@ -607,7 +698,7 @@ export function TutorialEditorPage() {
           </Card>
 
           {selectedStep ? (
-            <StepForm step={selectedStep} onChange={updateStep} />
+            <StepForm step={selectedStep} tutorialId={tutorialId} onChange={updateStep} />
           ) : (
             <Card>
               <p className="text-[15px] text-ink-faint">Select a step to edit it.</p>

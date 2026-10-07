@@ -1,5 +1,5 @@
 """Shim: the report validator was promoted to server/services/report_verify.py
-(it is shipped server code now, and spikes/ is not shipped). This re-export
+(it is shipped server code now, and student_app/ is not shipped). This re-export
 keeps `import report_verify` in guide_tut1.py working unchanged."""
 
 import sys

@@ -3,7 +3,7 @@
 # Ollama container (report review, FAQ drafting, PDF->tutorial); it is inert
 # on cloud deployments, which run with ENABLE_LLM=0. The Compass retrieval
 # extras (chromadb, sentence-transformers) are still NOT listed; see
-# chatbot_spike/requirements.txt for a full local install.
+# compass/requirements.txt for a full local install.
 fastapi>=0.115,<1
 uvicorn>=0.30,<1
 bcrypt>=4.0,<5

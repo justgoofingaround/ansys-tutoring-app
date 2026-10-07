@@ -8,8 +8,12 @@ tables themselves never store usernames, and exports stay token-only.
 """
 
 import json
+import re
 import sqlite3
 import time
+import uuid
+from pathlib import Path
+
 
 import csv
 import io
@@ -505,6 +509,121 @@ def publish_tutorial(
     return {"tutorial_id": tutorial_id, "published_version": version}
 
 
+# Reference screenshots for steps. Extension alone is not enough — a renamed
+# executable would sail through — so the magic bytes are checked too.
+_IMAGE_MAGIC = {
+    ".png": [b"\x89PNG\r\n\x1a\n"],
+    ".jpg": [b"\xff\xd8\xff"],
+    ".jpeg": [b"\xff\xd8\xff"],
+    ".gif": [b"GIF87a", b"GIF89a"],
+    ".webp": [b"RIFF"],  # plus "WEBP" at offset 8, checked below
+}
+MAX_STEP_IMAGE_BYTES = 5 * 1024 * 1024
+
+STEP_IMAGES_PREFIX = "uploads/step_images"
+
+
+@router.post("/tutorials/blank", status_code=201, dependencies=[Depends(csrf_check)])
+def create_blank_tutorial(
+    body: dict,
+    request: Request,
+    conn: sqlite3.Connection = Depends(get_db),
+    user: sqlite3.Row = Depends(require_instructor),
+) -> dict:
+    """Start a tutorial from nothing, as a draft, for the editor to fill in.
+
+    The skeleton is the smallest document tools/validate_tutorial.py accepts —
+    one section, one step — because import_tutorial validates before storing.
+    """
+    tutorial_id = (body.get("tutorial_id") or "").strip().lower()
+    title = (body.get("title") or "").strip()
+    if not re.fullmatch(r"[a-z0-9_]{3,64}", tutorial_id):
+        raise HTTPException(status_code=422, detail="tutorial_id_must_be_lowercase_words")
+    if not title:
+        raise HTTPException(status_code=422, detail="title_required")
+    if conn.execute(
+        "SELECT 1 FROM tutorials WHERE tutorial_id = ?", (tutorial_id,)
+    ).fetchone():
+        raise HTTPException(status_code=409, detail="tutorial_exists")
+
+    skeleton = {
+        "tutorial_id": tutorial_id,
+        "version": 1,
+        "title": title,
+        "problem": "",
+        "apps": ["workbench"],
+        "sections": [
+            {
+                "section": "Section 1",
+                "app": "workbench",
+                "steps": [
+                    {
+                        "step_id": "wb_01_first_step",
+                        "app": "workbench",
+                        "title": "First step",
+                        "description": "Describe what the student should do.",
+                        "highlight": "none",
+                        "verify": {"type": "manual", "prompt": "Did you complete this step?"},
+                        "hints": [],
+                    }
+                ],
+            }
+        ],
+    }
+    try:
+        return tutorial_store.import_tutorial(
+            conn, get_settings(request), json.dumps(skeleton).encode("utf-8"),
+            uploaded_by=user["id"], publish=False,
+        )
+    except TutorialValidationError as exc:  # pragma: no cover - skeleton is fixed
+        raise HTTPException(status_code=422, detail={"findings": exc.findings})
+
+
+@router.post("/tutorials/{tutorial_id}/images", dependencies=[Depends(csrf_check)])
+def upload_step_image(
+    tutorial_id: str,
+    file: UploadFile,
+    request: Request,
+    conn: sqlite3.Connection = Depends(get_db),
+) -> dict:
+    """Store a step reference screenshot and return the path to put in the
+    step's `source_image`.
+
+    The file lands in DATA_DIR (persistent across redeploys), and the path
+    recorded in the document stays relative so it means the same thing to the
+    browser runner and to the desktop guide, which downloads it before running.
+    """
+    settings = get_settings(request)
+    if conn.execute(
+        "SELECT 1 FROM tutorials WHERE tutorial_id = ?", (tutorial_id,)
+    ).fetchone() is None:
+        raise HTTPException(status_code=404, detail="tutorial_not_found")
+
+    name = Path(file.filename or "image.png").name
+    suffix = Path(name).suffix.lower()
+    if suffix not in _IMAGE_MAGIC:
+        raise HTTPException(status_code=400, detail="unsupported_image_format")
+
+    raw = file.file.read(MAX_STEP_IMAGE_BYTES + 1)
+    if len(raw) > MAX_STEP_IMAGE_BYTES:
+        raise HTTPException(status_code=413, detail="image_too_large")
+    if not any(raw.startswith(magic) for magic in _IMAGE_MAGIC[suffix]):
+        raise HTTPException(status_code=400, detail="not_an_image")
+    if suffix == ".webp" and raw[8:12] != b"WEBP":
+        raise HTTPException(status_code=400, detail="not_an_image")
+
+    safe = re.sub(r"[^A-Za-z0-9._-]", "_", name)
+    # Unique prefix: two uploads of "screenshot.png" must not overwrite each
+    # other, and an older published version may still reference the first.
+    stored = f"{uuid.uuid4().hex[:8]}_{safe}"
+    dest_dir = settings.step_images_dir / tutorial_id
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    (dest_dir / stored).write_bytes(raw)
+
+    rel = f"{STEP_IMAGES_PREFIX}/{tutorial_id}/{stored}"
+    return {"source_image": rel, "url": f"/step-images/{tutorial_id}/{stored}"}
+
+
 @router.get("/tutorials/{tutorial_id}/versions/{version}/content")
 def tutorial_version_content(
     tutorial_id: str, version: int, conn: sqlite3.Connection = Depends(get_db)
@@ -592,7 +711,7 @@ def upload_quiz(
     file: UploadFile,
     conn: sqlite3.Connection = Depends(get_db),
 ) -> dict:
-    """Upload an authored quiz JSON (see mock_server/data/quizzes/_template.json).
+    """Upload an authored quiz JSON (see content/data/quizzes/_template.json).
     Validator errors reject with 422 + findings; a valid quiz publishes
     immediately (re-uploading the same quiz_id replaces its questions)."""
     try:

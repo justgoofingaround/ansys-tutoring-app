@@ -2,11 +2,15 @@
 __pycache__/
 .env
 *.pyc
-chatbot_spike/data/
+compass/data/
 
 server_data/
 webapp/node_modules/
 webapp/dist/
 .gstack/
 webapp/*.tsbuildinfo
-deploy/DEPLOY-NYU.md
+# Step images downloaded from the hub by tools/guide_launcher.py
+uploads/
+
+# Internal correspondence, not code
+SECURITY-REVIEW-RESPONSE.md

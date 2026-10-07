@@ -1,7 +1,7 @@
 """Compass chatbot engine seam.
 
 The router talks to a ChatbotEngine protocol; the real implementation
-bridges to chatbot_spike/ (retrieve + stream_answer over local Ollama, the
+bridges to compass/ (retrieve + stream_answer over local Ollama, the
 same in-process bridge guide_tut1.py uses). Tests inject FakeChatbotEngine
 through Settings.chatbot_engine so no Ollama/ChromaDB/embedding model is
 needed to exercise the API.
@@ -35,7 +35,7 @@ class ChatbotEngine(Protocol):
 
 
 class OllamaEngine:
-    """Real engine: chatbot_spike's retrieve + stream_answer pipeline.
+    """Real engine: compass's retrieve + stream_answer pipeline.
     Imports lazily so a broken/absent chatbot install breaks only the
     chatbot endpoints (they surface a clean SSE error event), never boot."""
 
@@ -43,7 +43,7 @@ class OllamaEngine:
         self._lock = threading.Lock()
         self.model = "unknown"
         try:
-            from config import OLLAMA_MODEL  # chatbot_spike/config.py (sys.path bridge)
+            from config import OLLAMA_MODEL  # compass/config.py (sys.path bridge)
 
             self.model = OLLAMA_MODEL
         except Exception:
@@ -59,7 +59,7 @@ class OllamaEngine:
                 raise RuntimeError(
                     "Compass document search is not installed in this environment "
                     f"(missing module: {exc.name}). Build the image with WITH_COMPASS=1, "
-                    "or install chatbot_spike/requirements.txt for a local run."
+                    "or install compass/requirements.txt for a local run."
                 ) from exc
             # Check before retrieve(): chromadb would otherwise create an empty
             # index in the (mounted) folder, and every question would get
@@ -67,7 +67,7 @@ class OllamaEngine:
             if not (CHROMA_DIR / "chroma.sqlite3").exists():
                 raise RuntimeError(
                     f"Compass document index is not installed: {CHROMA_DIR} has no "
-                    "chroma.sqlite3. Copy chatbot_spike/data/ from the machine that built it."
+                    "chroma.sqlite3. Copy compass/data/ from the machine that built it."
                 )
 
             chunks = retrieve(question)
@@ -100,7 +100,7 @@ CLOUD_MAX_RESPONSE_TOKENS = 1024
 class CloudApiEngine:
     """OpenAI-compatible chat-completions bridge (Groq, OpenRouter, anything
     speaking POST /chat/completions with SSE streaming) for cloud/demo
-    deployments where neither Ollama nor the chatbot_spike index exists.
+    deployments where neither Ollama nor the compass index exists.
 
     NO RETRIEVAL: answers come from the model's general knowledge, so the
     sources list is always empty and the prompt forbids inline [n] markers

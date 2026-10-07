@@ -145,7 +145,7 @@
           "hints": [
             "The Section Plane tool is on the Graphics toolbar above the Geometry view."
           ],
-          "source_image": "mock_server/data/images/tut7_analysis_settings_loads_supports/me_01_define_section_plane.png"
+          "source_image": "content/data/images/tut7_analysis_settings_loads_supports/me_01_define_section_plane.png"
         },
         {
           "step_id": "me_02_select_wetted_surfaces",
@@ -167,7 +167,7 @@
             "Use the same technique as the Module 01 Step-by-Step Guide for the surfaces on the valve body.",
             "Rotate the model with the section plane active to reach hidden faces."
           ],
-          "source_image": "mock_server/data/images/tut7_analysis_settings_loads_supports/me_02_select_wetted_surfaces.png"
+          "source_image": "content/data/images/tut7_analysis_settings_loads_supports/me_02_select_wetted_surfaces.png"
         }
       ]
     },
@@ -254,7 +254,7 @@
           "hints": [
             "This is the flat annular face at the very end of one branch of the valve."
           ],
-          "source_image": "mock_server/data/images/tut7_analysis_settings_loads_supports/me_05_select_flange_face_1.png"
+          "source_image": "content/data/images/tut7_analysis_settings_loads_supports/me_05_select_flange_face_1.png"
         },
         {
           "step_id": "me_06_insert_frictionless_support_1",
@@ -303,7 +303,7 @@
           "hints": [
             "This is the flat annular face at the end of the other branch."
           ],
-          "source_image": "mock_server/data/images/tut7_analysis_settings_loads_supports/me_07_select_flange_face_2.png"
+          "source_image": "content/data/images/tut7_analysis_settings_loads_supports/me_07_select_flange_face_2.png"
         },
         {
           "step_id": "me_08_insert_frictionless_support_2",
@@ -358,7 +358,7 @@
           "hints": [
             "Rotate the view to make sure all 9 holes around the bolt circle are included."
           ],
-          "source_image": "mock_server/data/images/tut7_analysis_settings_loads_supports/me_09_select_holes_flange_1.png"
+          "source_image": "content/data/images/tut7_analysis_settings_loads_supports/me_09_select_holes_flange_1.png"
         },
         {
           "step_id": "me_10_insert_frictionless_support_3",
@@ -407,7 +407,7 @@
           "hints": [
             "Same technique as the previous flange, on the opposite end."
           ],
-          "source_image": "mock_server/data/images/tut7_analysis_settings_loads_supports/me_11_select_holes_flange_2.png"
+          "source_image": "content/data/images/tut7_analysis_settings_loads_supports/me_11_select_holes_flange_2.png"
         },
         {
           "step_id": "me_12_insert_frictionless_support_4",
@@ -463,7 +463,7 @@
           "hints": [
             "Pressure is usually labeled A (red); the four Frictionless Supports are B-E (blue/purple)."
           ],
-          "source_image": "mock_server/data/images/tut7_analysis_settings_loads_supports/me_13_review_environment_graphics.png"
+          "source_image": "content/data/images/tut7_analysis_settings_loads_supports/me_13_review_environment_graphics.png"
         }
       ]
     },
@@ -595,7 +595,7 @@
           "hints": [
             "The legend on the left shows the Min/Max deformation values."
           ],
-          "source_image": "mock_server/data/images/tut7_analysis_settings_loads_supports/me_18_review_total_deformation.png"
+          "source_image": "content/data/images/tut7_analysis_settings_loads_supports/me_18_review_total_deformation.png"
         },
         {
           "step_id": "me_19_review_equivalent_stress",
@@ -617,7 +617,7 @@
           "hints": [
             "The highest stress concentrations appear near the bolt holes and the body-to-bonnet junction."
           ],
-          "source_image": "mock_server/data/images/tut7_analysis_settings_loads_supports/me_19_review_equivalent_stress.png"
+          "source_image": "content/data/images/tut7_analysis_settings_loads_supports/me_19_review_equivalent_stress.png"
         }
       ]
     }

@@ -281,7 +281,7 @@
           "hints": [
             "Contact = red, Target = blue \u2014 this color convention holds throughout Mechanical."
           ],
-          "source_image": "mock_server/data/images/tut5_connections/me_08_review_graphics_display.png"
+          "source_image": "content/data/images/tut5_connections/me_08_review_graphics_display.png"
         }
       ]
     },
@@ -354,7 +354,7 @@
           "hints": [
             "Use Ctrl+click to deselect the shank face if both got selected together."
           ],
-          "source_image": "mock_server/data/images/tut5_connections/me_11_select_target_face.png"
+          "source_image": "content/data/images/tut5_connections/me_11_select_target_face.png"
         },
         {
           "step_id": "me_12_edit_contact_faces",
@@ -399,7 +399,7 @@
           "hints": [
             "Use Ctrl+click to deselect the cylindrical bore face if both got selected together."
           ],
-          "source_image": "mock_server/data/images/tut5_connections/me_13_select_contact_face.png"
+          "source_image": "content/data/images/tut5_connections/me_13_select_contact_face.png"
         },
         {
           "step_id": "me_14_repeat_other_bolts",
@@ -493,7 +493,7 @@
           "hints": [
             "No Apply needed here \u2014 this step is just for familiarization."
           ],
-          "source_image": "mock_server/data/images/tut5_connections/me_17_experiment_surface_selection.png"
+          "source_image": "content/data/images/tut5_connections/me_17_experiment_surface_selection.png"
         }
       ]
     },
@@ -617,7 +617,7 @@
           "hints": [
             "With the Body filter active, a single click selects the whole part."
           ],
-          "source_image": "mock_server/data/images/tut5_connections/me_22_select_flange_body.png"
+          "source_image": "content/data/images/tut5_connections/me_22_select_flange_body.png"
         },
         {
           "step_id": "me_23_goto_contacts_for_selected_bodies",
@@ -929,7 +929,7 @@
           "hints": [
             "The sphere is drawn at the contact/target boundary."
           ],
-          "source_image": "mock_server/data/images/tut5_connections/me_35_observe_pinball_sphere.png"
+          "source_image": "content/data/images/tut5_connections/me_35_observe_pinball_sphere.png"
         },
         {
           "step_id": "me_36_review_resulting_pinball_column",

@@ -5,7 +5,7 @@ The browser invokes this as:
 When the optional server param is present, the launcher first syncs the
 published tutorial JSON (and step reference images) from the hub, so the
 guide always runs the latest published version without a manual download.
-It then spawns the desktop guide (spikes/guide_tut1.py) for that tutorial
+It then spawns the desktop guide (student_app/guide_tut1.py) for that tutorial
 and exits. Runs under pythonw (no console), so everything is logged to
 server_data/guide_launcher.log for debugging.
 
@@ -27,11 +27,21 @@ import urllib.request
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-GUIDE = REPO_ROOT / "spikes" / "guide_tut1.py"
-TUTORIALS_DIR = REPO_ROOT / "mock_server" / "data"
-IMAGES_PREFIX = "mock_server/data/images/"
+GUIDE = REPO_ROOT / "student_app" / "guide_tut1.py"
+TUTORIALS_DIR = REPO_ROOT / "content" / "data"
+# Where a step's source_image can live, and how to fetch it from the hub.
+# Both are written back to the same relative path the document names, so the
+# guide's own REPO_ROOT / source_image lookup finds them either way.
+IMAGE_SOURCES = (
+    ("content/data/images/", "/tutorial-images/"),   # authored in the repo
+    ("uploads/step_images/", "/step-images/"),       # uploaded in the web editor
+    # Legacy prefix from before content/ was renamed from mock_server/. Stored
+    # tutorial versions are immutable, so old ones still name this path; the
+    # file is written where they expect it, and the guide finds it there.
+    ("mock_server/data/images/", "/tutorial-images/"),
+)
 LOG = REPO_ROOT / "server_data" / "guide_launcher.log"
-# Must match STOP_FILE in spikes/guide_tut1.py — the guide polls for it.
+# Must match STOP_FILE in student_app/guide_tut1.py — the guide polls for it.
 STOP_FILE = REPO_ROOT / "server_data" / "guide_stop"
 
 # Tutorial ids are slugs; anything else (path separators, dots) is rejected
@@ -72,18 +82,20 @@ def refresh_from_hub(server: str, tutorial_id: str) -> None:
     dest.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
     log(f"synced tutorial JSON v{data.get('version')} from {server}")
 
-    images_root = (REPO_ROOT / IMAGES_PREFIX).resolve()
     for section in data.get("sections", []):
         for step in section.get("steps", []):
             img = step.get("source_image")
             rel = img.replace("\\", "/") if isinstance(img, str) else ""
-            if not rel.startswith(IMAGES_PREFIX):
+            match = next((p for p in IMAGE_SOURCES if rel.startswith(p[0])), None)
+            if match is None:
                 continue
+            prefix, mount = match
+            root = (REPO_ROOT / prefix).resolve()
             target = (REPO_ROOT / rel).resolve()
-            if images_root not in target.parents:  # traversal guard
+            if root not in target.parents:  # traversal guard
                 log(f"skipped suspicious image path: {rel}")
                 continue
-            img_url = f"{server}/tutorial-images/{urllib.parse.quote(rel[len(IMAGES_PREFIX):])}"
+            img_url = f"{server}{mount}{urllib.parse.quote(rel[len(prefix):])}"
             try:
                 with urllib.request.urlopen(img_url, timeout=FETCH_TIMEOUT_S) as r:
                     target.parent.mkdir(parents=True, exist_ok=True)

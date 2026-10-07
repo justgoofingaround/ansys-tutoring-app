@@ -78,7 +78,7 @@ TEXT (pages {a}-{b}):
 
 
 def _extract_pages(raw: bytes) -> list[str]:
-    import fitz  # PyMuPDF — already a chatbot_spike dependency
+    import fitz  # PyMuPDF — already a compass dependency
 
     try:
         doc = fitz.open(stream=raw, filetype="pdf")
@@ -100,7 +100,7 @@ def _extract_pages(raw: bytes) -> list[str]:
 
 def _resolve_model() -> str:
     try:
-        from config import OLLAMA_MODEL  # chatbot_spike config (sys.path bridge)
+        from config import OLLAMA_MODEL  # compass config (sys.path bridge)
 
         return OLLAMA_MODEL
     except Exception:

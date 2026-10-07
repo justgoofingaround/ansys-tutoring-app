@@ -1,7 +1,7 @@
 """Editing an already-uploaded quiz from the instructor UI.
 
 Quizzes are unversioned: saving replaces the questions in place. The one trap
-is boot-time seeding from mock_server/data/quizzes/, which would otherwise undo
+is boot-time seeding from content/data/quizzes/, which would otherwise undo
 an edit on the next restart — see the edited_in_app tests at the end.
 """
 

@@ -1,6 +1,6 @@
 """Quiz storage + grading.
 
-Quizzes are authored as JSON in mock_server/data/quizzes/<tutorial_id>.json
+Quizzes are authored as JSON in content/data/quizzes/<tutorial_id>.json
 (same authoring-dir convention as tutorials) and imported at boot. Unlike
 tutorials they are NOT versioned for the pilot: re-importing replaces the
 question set in place (a quiz is a handful of rows, and submissions store the
@@ -18,7 +18,7 @@ from pathlib import Path
 
 from ..config import REPO_ROOT
 
-QUIZZES_DIR = REPO_ROOT / "mock_server" / "data" / "quizzes"
+QUIZZES_DIR = REPO_ROOT / "content" / "data" / "quizzes"
 
 
 def validate_quiz(conn: sqlite3.Connection, data: dict) -> list[dict]:
@@ -94,7 +94,7 @@ def import_quiz(
     """Insert or replace a quiz and its questions from an authored dict.
 
     edited_in_app marks the quiz as owned by the web editor, so boot-time
-    seeding from mock_server/data/quizzes/ stops overwriting it."""
+    seeding from content/data/quizzes/ stops overwriting it."""
     quiz_id = data["quiz_id"]
     tutorial_id = data["tutorial_id"]
     now = time.time()

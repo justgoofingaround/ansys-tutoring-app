@@ -5,13 +5,13 @@
 server_data
 webapp/node_modules
 webapp/dist
-chatbot_spike/data
-spikes
+compass/data
+student_app
 tests
 __pycache__
 *.pyc
 *.png
-!mock_server/data/images/**/*.png
+!content/data/images/**/*.png
 *.docx
 *.md
-!mock_server/data/README.md
+!content/data/README.md

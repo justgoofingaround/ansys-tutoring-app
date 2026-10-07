@@ -9,14 +9,11 @@ Greenfield. Currently building the **Student Interaction Track App** (the
 student-side module) first — it's the most important module and the integration
 point the others feed.
 
-## Source of truth (read these before planning work)
+## Source of truth
 
-- `Student-Track-App-Build-Plan.md` — the build plan for the module in progress
-  (approach, phases, contracts, the Phase 0 spike). **Start here.**
-- `ME-UY 4214 Tutoring System - Architecture Design v2.docx` — full 5-module
-  system architecture (v0.2). The authoritative spec.
-
-Do not duplicate these here; update them and link.
+`ME-UY 4214 Tutoring System - Architecture Design v2.docx` — full 5-module system
+architecture (v0.2), the authoritative spec. Do not duplicate it here; update it
+and link.
 
 ## System shape (one paragraph)
 
@@ -50,7 +47,7 @@ student-side module — the **Student Interaction Track App** — runs on each l
 Python 3.11+ · PyQt6 (transparent click-through overlay) · pynput (input capture)
 · pywinauto / uiautomation (UI Automation) · ansys-mechanical-core / PyMechanical
 (model state) · httpx (REST) · sqlite3 (disk-backed event buffer) · FastAPI
-(mock server standing in for Tutorials & Quizzes during dev) · pytest + pytest-qt.
+(the hub serves tutorials, quizzes and progress) · pytest + pytest-qt.
 
 ## Architecture conventions
 
@@ -64,34 +61,33 @@ Python 3.11+ · PyQt6 (transparent click-through overlay) · pynput (input captu
 - **Tutorial JSON is the cross-module contract.** Steps carry `app`,
   `selector`, `action`, `verify` (`uia` | `script` | `window_appeared`), and
   optional `launches` for app-transition steps. Tutorials are JSON-only: the
-  guide runs any `mock_server/data/<tutorial_id>.json` with no code changes
-  (`python spikes/guide_tut1.py <tutorial_id>`). Author new ones from
-  `mock_server/data/_template.json` per `mock_server/data/README.md`, and
+  guide runs any `content/data/<tutorial_id>.json` with no code changes
+  (`python student_app/guide_tut1.py <tutorial_id>`). Author new ones from
+  `content/data/_template.json` per `content/data/README.md`, and
   check them with `python tools/validate_tutorial.py <file>` before testing.
-- Spike/throwaway code lives in `spikes/`; it is not shipped.
+- `student_app/` is the desktop guide that runs on lab PCs; `tools/` holds the
+  author- and launcher-facing utilities. Both ship.
 
-## Planned repo layout
+## Repo layout
 
 | Path | Purpose |
 |---|---|
-| `student_app/runtime/` | State machine + session |
-| `student_app/overlay/` | PyQt6 transparent overlay (highlight, step panel, hint) |
-| `student_app/bridge/` | App-aware Ansys I/O (watcher, verifier, locator) + fakes |
-| `student_app/sync/` | API client, disk-backed event logger, local cache + fakes |
-| `student_app/quiz/` | Multiple-choice quiz runner |
-| `mock_server/` | FastAPI stand-in for Tutorials & Quizzes |
-| `mock_server/data/` | Tutorial JSONs + `_template.json` + authoring README (exists) |
-| `tools/` | Author-facing utilities, e.g. `validate_tutorial.py` (exists) |
-| `spikes/` | Phase 0 throwaway probes |
-| `tests/` | pytest (client testable without Ansys via fakes) |
+| `server/` | FastAPI hub: routers, services, SQLite schema |
+| `webapp/` | React SPA — student runner and instructor dashboards |
+| `student_app/` | Desktop guide that runs on lab PCs, over Ansys |
+| `content/data/` | Authored tutorials, quizzes, step images + authoring README |
+| `compass/` | Ansys-doc retrieval + local LLM for the chat assistant (off unless `ENABLE_AI=1`) |
+| `tools/` | Validator, guide launcher, protocol registration |
+| `deploy/` | Docker Compose, nginx and the NYU deployment runbook |
+| `tests/` | pytest — the hub is fully testable without Ansys or a model |
 
-## Commands (planned — wire up as code lands)
+## Commands
 
-- Install: `pip install -r requirements.txt`
-- Run mock server: `uvicorn mock_server.main:app --reload`
-- Run app: `python -m student_app.app`
-- Tests (no Ansys needed for client tests): `pytest`
-- Bridge integration tests require Ansys; mark and skip in CI.
+- Install: `pip install -r requirements.txt` (and `cd webapp && npm install && npm run build`)
+- Run the hub: `python -m uvicorn server.app:app --port 8000`
+- Run the desktop guide: `python student_app/guide_tut1.py <tutorial_id>` (needs Ansys)
+- Tests (no Ansys, no model, no Ollama): `pytest`
+- Validate an authored tutorial: `python tools/validate_tutorial.py <file>`
 
 ## Skill routing
 

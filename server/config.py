@@ -1,8 +1,8 @@
 """Server settings + repo path pinning.
 
 REPO_ROOT goes on sys.path so `tools.validate_tutorial` and the promoted
-services resolve, and chatbot_spike/ (bare intra-package imports) gets the
-same sys.path bridge spikes/guide_tut1.py uses.
+services resolve, and compass/ (bare intra-package imports) gets the
+same sys.path bridge student_app/guide_tut1.py uses.
 """
 
 import os
@@ -13,7 +13,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
-CHATBOT_DIR = REPO_ROOT / "chatbot_spike"
+CHATBOT_DIR = REPO_ROOT / "compass"
 if CHATBOT_DIR.exists() and str(CHATBOT_DIR) not in sys.path:
     sys.path.insert(0, str(CHATBOT_DIR))
 
@@ -53,7 +53,7 @@ class Settings:
     # CHATBOT_API_KEY), so no single missed env var can switch generation back on.
     enable_ai: bool = os.environ.get("ENABLE_AI", "0") == "1"
     enable_llm: bool = os.environ.get("ENABLE_LLM", "1") == "1"
-    # Cloud/demo deployments seed the whole mock_server/data catalog on first
+    # Cloud/demo deployments seed the whole content/data catalog on first
     # boot (ephemeral disks re-seed on every restart); local/dev/tests seed
     # only tut1 as before.
     seed_all_tutorials: bool = os.environ.get("SEED_ALL_TUTORIALS", "0") == "1"
@@ -85,7 +85,7 @@ class Settings:
     mailer: object | None = None  # test seam, mirrors chatbot_engine
     # Cloud chatbot: when CHATBOT_API_KEY is set, Compass answers through an
     # OpenAI-compatible chat-completions API (Groq, OpenRouter, ...) instead
-    # of local Ollama + the chatbot_spike retrieval index. Team-testing/demo
+    # of local Ollama + the compass retrieval index. Team-testing/demo
     # deployments only — the NYU pilot keeps the FERPA invariant (no cloud
     # LLM touches student data) by leaving this unset.
     chatbot_api_key: str | None = os.environ.get("CHATBOT_API_KEY") or None
@@ -114,6 +114,16 @@ class Settings:
     def reports_dir(self) -> Path:
         return self.data_dir / "uploads" / "reports"
 
+    @property
+    def step_images_dir(self) -> Path:
+        """Step reference screenshots uploaded through the tutorial editor.
+
+        Deliberately under DATA_DIR, not the repo: content/data/images is
+        baked into the Docker image, so anything written there is lost on the
+        next redeploy. DATA_DIR is the bind-mounted volume."""
+        return self.data_dir / "uploads" / "step_images"
+
     def ensure_dirs(self) -> None:
-        for d in (self.data_dir, self.tutorials_dir, self.reports_dir):
+        for d in (self.data_dir, self.tutorials_dir, self.reports_dir,
+                  self.step_images_dir):
             d.mkdir(parents=True, exist_ok=True)

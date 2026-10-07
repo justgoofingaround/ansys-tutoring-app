@@ -1,11 +1,11 @@
 {
   "_readme": [
-    "TEMPLATE for authoring a new tutorial. Copy this file to mock_server/data/<tutorial_id>.json,",
-    "replace every placeholder, then check it:   .venv\\Scripts\\python tools\\validate_tutorial.py mock_server\\data\\<your file>.json",
-    "and run it in the guide:                    .venv\\Scripts\\python spikes\\guide_tut1.py <tutorial_id>",
+    "TEMPLATE for authoring a new tutorial. Copy this file to content/data/<tutorial_id>.json,",
+    "replace every placeholder, then check it:   .venv\\Scripts\\python tools\\validate_tutorial.py content\\data\\<your file>.json",
+    "and run it in the guide:                    .venv\\Scripts\\python student_app\\guide_tut1.py <tutorial_id>",
     "Any key starting with '_' (like this one) is a comment: the app and the validator ignore it.",
     "Delete the _comment keys once you're done, or keep them -- either is fine.",
-    "Full field guidance: mock_server/data/README.md. Real example: tut1.json."
+    "Full field guidance: content/data/README.md. Real example: tut1.json."
   ],
 
   "tutorial_id": "tut0_template",
@@ -87,7 +87,7 @@
       "app": "mechanical",
       "steps": [
         {
-          "_pattern": "PATTERN 4 -- 3D viewport action (pick a face, rotate, sketch): selector 'viewport', highlight 'instruction'. Nothing inside the 3D window is automatable, so the panel shows your reference screenshot (source_image, path relative to the repo root, under mock_server/data/images/<tutorial>/ -- folder named after your tutorial file) instead of a live box. The validator warns until the screenshot file actually exists -- take it while testing your tutorial live.",
+          "_pattern": "PATTERN 4 -- 3D viewport action (pick a face, rotate, sketch): selector 'viewport', highlight 'instruction'. Nothing inside the 3D window is automatable, so the panel shows your reference screenshot (source_image, path relative to the repo root, under content/data/images/<tutorial>/ -- folder named after your tutorial file) instead of a live box. The validator warns until the screenshot file actually exists -- take it while testing your tutorial live.",
           "step_id": "me_01_pick_face",
           "app": "mechanical",
           "title": "Select the loaded face",
@@ -97,7 +97,7 @@
           "action": { "kind": "select_face" },
           "verify": { "type": "manual", "prompt": "Face selected (highlighted green in the 3D view)?" },
           "hints": ["Use the Face selection filter in the toolbar if clicks select edges instead."],
-          "source_image": "mock_server/data/images/tut0_template/me_01_pick_face.png"
+          "source_image": "content/data/images/tut0_template/me_01_pick_face.png"
         },
         {
           "_pattern": "PATTERN 2 again, plus a forward-looking verify. verify.type today: everything degrades to a manual 'Mark step complete' button, but AUTHOR THE REAL CHECK anyway ('script' with engine pymechanical/spaceclaim, or 'uia', or 'window_appeared' with 'app') -- the runtime will grow into it, per the build plan. 'manual' + a clear prompt is always a safe choice.",

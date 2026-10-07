@@ -107,7 +107,7 @@ def test_library_upload_validate_publish(client, seeded, settings):
 
     # valid: tut1's content under a new id -> stored as an UNPUBLISHED draft
     data = json.loads(
-        (REPO_ROOT / "mock_server" / "data" / "tut1.json").read_text(encoding="utf-8")
+        (REPO_ROOT / "content" / "data" / "tut1.json").read_text(encoding="utf-8")
     )
     data["tutorial_id"] = "tut_test_upload"
     data["title"] = "Uploaded test tutorial"
@@ -148,7 +148,7 @@ def test_identical_reupload_keeps_version(client, seeded):
     must not mint a duplicate version."""
     login(client, "prof", "prof-pass-123")
     data = json.loads(
-        (REPO_ROOT / "mock_server" / "data" / "tut1.json").read_text(encoding="utf-8")
+        (REPO_ROOT / "content" / "data" / "tut1.json").read_text(encoding="utf-8")
     )
     data["tutorial_id"] = "tut_dup_upload"
 

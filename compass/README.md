@@ -4,7 +4,7 @@ Phase 0 spike for the **Ansys Help Chatbot** module (architecture doc Section 8)
 named **Compass** in the student-facing UI (`guide_tut1.py`'s "💬 Ask Compass"
 button) — proves the RAG (retrieval-augmented generation) pipeline works end-to-end
 against real Ansys Mechanical documentation, fully local, before the real module
-gets built. Same "de-risk first" approach as `spikes/` for the Student Interaction
+gets built. Same "de-risk first" approach as `student_app/` for the Student Interaction
 Track App, just a separate module with its own spike directory (see the Jira
 ticket for the full scope/risks this is meant to surface).
 

@@ -11,8 +11,8 @@ CODE ORGANIZATION (three modules, each owning one concern):
 This mirrors the real architecture's split between the Tutorial client and
 the Ansys bridge's State verifier / Element locator sub-pieces (CLAUDE.md).
 
-"ASK CHATBOT" BUTTON: bridges to chatbot_spike/ (a SEPARATE module's spike --
-see chatbot_spike/README.md and architecture doc Section 8, "Module: Ansys
+"ASK CHATBOT" BUTTON: bridges to compass/ (a SEPARATE module's spike --
+see compass/README.md and architecture doc Section 8, "Module: Ansys
 Help Chatbot") via the CHATBOT_DIR sys.path insert below, rather than
 duplicating its retrieve/generate pipeline here. ChatbotDialog is non-modal
 and ChatbotWorker runs on a background QThread, since a real query (local
@@ -74,13 +74,13 @@ PER APP (self._locators, created lazily via _locator_for()), since a
 tutorial spans multiple apps.
 
 RUN (with Workbench already open, or about to open it):
-  .venv\\Scripts\\python spikes\\guide_tut1.py                     # defaults to tut1.json
-  .venv\\Scripts\\python spikes\\guide_tut1.py mock_server\\data\\tut2.json
-  .venv\\Scripts\\python spikes\\guide_tut1.py tut2                # bare id -> mock_server/data/tut2.json
+  .venv\\Scripts\\python student_app\\guide_tut1.py                     # defaults to tut1.json
+  .venv\\Scripts\\python student_app\\guide_tut1.py content\\data\\tut2.json
+  .venv\\Scripts\\python student_app\\guide_tut1.py tut2                # bare id -> content/data/tut2.json
 
 DEPS: pip install pywinauto pyqt6 opencv-python-headless numpy pillow pytesseract markdown
       (markdown renders the chatbot's answers; the chatbot feature itself also
-      needs chatbot_spike/'s own deps -- see chatbot_spike/requirements.txt --
+      needs compass/'s own deps -- see compass/requirements.txt --
       but guide_tut1.py still runs fine without them, just with the chatbot
       button showing a graceful error instead, see ChatbotDialog._on_failed)
       (psutil/ansys-mechanical-core no longer needed by the live guide --
@@ -105,7 +105,7 @@ import report_verify
 import verify
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-TUTORIALS_DIR = REPO_ROOT / "mock_server" / "data"
+TUTORIALS_DIR = REPO_ROOT / "content" / "data"
 DEFAULT_TUT_PATH = TUTORIALS_DIR / "tut1.json"
 # The web app's "Close guide" button (ansysguide://close -> guide_launcher.py)
 # can't reach this process directly, so it drops this sentinel file instead;
@@ -116,8 +116,8 @@ STOP_FILE = REPO_ROOT / "server_data" / "guide_stop"
 def resolve_tutorial_path(arg):
     """Turn the CLI argument into a tutorial JSON path. Accepts a real path
     (absolute, or relative to the cwd or repo root), a bare file name
-    ('tut2' -> mock_server/data/tut2.json), or a tutorial_id from inside any
-    JSON in mock_server/data ('tut1_3d_bar' -> tut1.json)."""
+    ('tut2' -> content/data/tut2.json), or a tutorial_id from inside any
+    JSON in content/data ('tut1_3d_bar' -> tut1.json)."""
     if not arg:
         return DEFAULT_TUT_PATH
     for candidate in (Path(arg), REPO_ROOT / arg,
@@ -134,16 +134,16 @@ def resolve_tutorial_path(arg):
             continue
     return Path(arg)  # let main() report the miss with the name as given
 
-# chatbot_spike/ is a SEPARATE module (architecture doc Section 8, its own
-# spike directory -- see chatbot_spike/README.md), not part of the Student
+# compass/ is a SEPARATE module (architecture doc Section 8, its own
+# spike directory -- see compass/README.md), not part of the Student
 # Interaction Track App's spike. Its modules use bare imports (`from config
-# import ...`) that resolve relative to chatbot_spike/ being on sys.path,
+# import ...`) that resolve relative to compass/ being on sys.path,
 # the same convention this file's own `import locate`/`import verify` relies
-# on for spikes/. Bridging it here is the simplest way to call the already-
+# on for student_app/. Bridging it here is the simplest way to call the already-
 # working retrieve/generate pipeline in-process (one model load per running
 # guide_tut1.py session) instead of shelling out to query.py per question,
 # which would reload the embedding model from scratch every single ask.
-CHATBOT_DIR = REPO_ROOT / "chatbot_spike"
+CHATBOT_DIR = REPO_ROOT / "compass"
 if CHATBOT_DIR.exists() and str(CHATBOT_DIR) not in sys.path:
     sys.path.insert(0, str(CHATBOT_DIR))
 RELOCATE_MS = 700   # re-check ~1.4 Hz: follows window moves AND advances the
@@ -220,11 +220,11 @@ class Highlight(QtWidgets.QWidget):
 
 
 class ChatbotWorker(QtCore.QObject):
-    """Runs chatbot_spike's retrieve+generate pipeline OFF the Qt main
+    """Runs compass's retrieve+generate pipeline OFF the Qt main
     thread -- a real query takes several seconds (embedding + ChromaDB/BM25
     search + a local Ollama generation call), and CLAUDE.md/the build plan
     are explicit that the main thread owns the event loop and must never
-    block on slow work. Imports chatbot_spike's modules lazily, inside run(),
+    block on slow work. Imports compass's modules lazily, inside run(),
     so a missing/broken chatbot install only breaks the chatbot feature, not
     guide_tut1.py's own startup.
 
@@ -235,7 +235,7 @@ class ChatbotWorker(QtCore.QObject):
     generation time, but the student sees the answer growing immediately
     instead of a frozen "Thinking..." -- the standard chat-UI fix for
     exactly this perceived-latency problem. Actual latency is separately
-    addressed by config.MAX_RESPONSE_TOKENS (chatbot_spike/generate.py)
+    addressed by config.MAX_RESPONSE_TOKENS (compass/generate.py)
     capping how much the model generates in the first place."""
     token = QtCore.pyqtSignal(str)
     finished = QtCore.pyqtSignal(str, list)

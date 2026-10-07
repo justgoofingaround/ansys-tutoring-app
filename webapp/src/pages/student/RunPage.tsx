@@ -12,12 +12,24 @@ import { StatusDot } from "@/components/StatusDot";
 import { Spinner } from "@/components/Spinner";
 import { cn } from "@/components/cn";
 
-/** "mock_server/data/images/tut1/x.png" -> served at "/tutorial-images/tut1/x.png" */
+/** Step images come from two places, both stored as relative paths:
+ *   "content/data/images/tut1/x.png" -> "/tutorial-images/tut1/x.png" (authored in the repo)
+ *   "uploads/step_images/tut1/x.png"     -> "/step-images/tut1/x.png"     (uploaded in the editor) */
+const IMAGE_MOUNTS: [string, string][] = [
+  ["content/data/images/", "/tutorial-images/"],
+  ["uploads/step_images/", "/step-images/"],
+  // Legacy: versions published before content/ was renamed from mock_server/.
+  // Stored versions are immutable, so the old prefix must keep resolving.
+  ["mock_server/data/images/", "/tutorial-images/"],
+];
+
 function imageUrl(sourceImage: string | null | undefined): string | null {
   if (!sourceImage) return null;
-  const prefix = "mock_server/data/images/";
   const norm = sourceImage.replace(/\\/g, "/");
-  return norm.startsWith(prefix) ? `/tutorial-images/${norm.slice(prefix.length)}` : null;
+  for (const [prefix, mount] of IMAGE_MOUNTS) {
+    if (norm.startsWith(prefix)) return `${mount}${norm.slice(prefix.length)}`;
+  }
+  return null;
 }
 
 interface RunStep {

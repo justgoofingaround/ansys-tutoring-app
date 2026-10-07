@@ -1,6 +1,6 @@
 """Report validation against a tutorial's report_checks rubric.
 
-Promoted from spikes/report_verify.py (which now re-exports this module so
+Promoted from student_app/report_verify.py (which now re-exports this module so
 the desktop guide keeps working). The student uploads a generated report;
 this performs the rubric checks plus an optional local-LLM review and
 returns structured feedback the UI can display.
@@ -174,7 +174,7 @@ def _review_report_with_llm(text, rubric, validation_summary, guidelines=None):
         }
 
     try:
-        from config import OLLAMA_MODEL  # chatbot_spike is added to sys.path by the guide
+        from config import OLLAMA_MODEL  # compass is added to sys.path by the guide
     except Exception:
         OLLAMA_MODEL = "gemma3:4b"
 

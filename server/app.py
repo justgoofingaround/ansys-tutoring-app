@@ -87,12 +87,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         application.include_router(chatbot_router.router)
 
     # Reference screenshots for tutorial steps (authored under
-    # mock_server/data/images/<tutorial>/, served read-only to the web runner).
-    images_dir = REPO_ROOT / "mock_server" / "data" / "images"
+    # content/data/images/<tutorial>/, served read-only to the web runner).
+    images_dir = REPO_ROOT / "content" / "data" / "images"
     if images_dir.is_dir():
         application.mount(
             "/tutorial-images", StaticFiles(directory=images_dir), name="tutorial-images"
         )
+
+    # Images uploaded through the editor. Same unauthenticated treatment as
+    # /tutorial-images above — tutorial content is not student data.
+    application.mount(
+        "/step-images", StaticFiles(directory=settings.step_images_dir), name="step-images"
+    )
 
     if WEBAPP_DIST.is_dir():
         application.mount(
