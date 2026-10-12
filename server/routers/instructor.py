@@ -624,6 +624,19 @@ def upload_step_image(
     return {"source_image": rel, "url": f"/step-images/{tutorial_id}/{stored}"}
 
 
+@router.post("/tutorials/visibility", dependencies=[Depends(csrf_check)])
+def set_all_tutorial_visibility(
+    body: dict, conn: sqlite3.Connection = Depends(get_db)
+) -> dict:
+    """Hide or show every tutorial at once — for swapping a term's content in
+    one go rather than toggling each row. Nothing is deleted: hidden tutorials
+    keep their versions, quizzes and student history, and can be shown again."""
+    hidden = bool(body.get("is_archived", True))
+    cur = conn.execute("UPDATE tutorials SET is_archived = ?", (int(hidden),))
+    conn.commit()
+    return {"is_archived": hidden, "updated": cur.rowcount}
+
+
 @router.get("/tutorials/{tutorial_id}/versions/{version}/content")
 def tutorial_version_content(
     tutorial_id: str, version: int, conn: sqlite3.Connection = Depends(get_db)
@@ -684,6 +697,14 @@ def tutorial_settings(
         conn.execute(
             "UPDATE tutorials SET is_mandatory = ? WHERE tutorial_id = ?",
             (int(bool(body["is_mandatory"])), tutorial_id),
+        )
+    if "is_archived" in body:
+        # Hiding removes a tutorial from the student catalog and blocks the
+        # detail/run endpoints, but keeps its versions and every recorded
+        # attempt — it is reversible, unlike deleting.
+        conn.execute(
+            "UPDATE tutorials SET is_archived = ? WHERE tutorial_id = ?",
+            (int(bool(body["is_archived"])), tutorial_id),
         )
     if "report_guidelines" in body:
         raw = body["report_guidelines"]

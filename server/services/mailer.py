@@ -27,8 +27,10 @@ Confirm your Tutoring Hub account for ME-UY 4214 by opening this link:
 
 {url}
 
-The link can only be used once and expires in {hours} hours. It opens only on
-the NYU network or VPN, so use a lab machine or connect to the VPN first.
+Then sign in with this email address and the password you chose.
+
+The link expires in {hours} hours. It opens only on the NYU network or VPN, so
+use a lab machine or connect to the VPN first.
 
 If you weren't expecting this email you can ignore it — the account stays
 inactive until the link is opened.

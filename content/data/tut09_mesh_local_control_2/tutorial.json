@@ -1,0 +1,570 @@
+{
+  "tutorial_id": "tut09_mesh_local_control_2",
+  "version": 1,
+  "title": "Tutorial 9 — Meshing: local control, part 2",
+  "problem": "Imported from the ANSYS step-by-step guide deck. Each step shows the slide it came from; review the wording and selectors before publishing.",
+  "apps": [
+    "mechanical",
+    "workbench"
+  ],
+  "sections": [
+    {
+      "section": "Goals",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_01_use_various_ansys_mechanic",
+          "app": "mechanical",
+          "title": "Use various ANSYS Mechanical mesh controls to enhance the mesh for the…",
+          "description": "Use various ANSYS Mechanical mesh controls to enhance the mesh for the model below. Our goal is to use mesh controls to deal with some defects in the imported geometry.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p02.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Use various ANSYS Mechanical mesh controls to enhance the mesh for the…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 2)."
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Project Schematic",
+      "app": "workbench",
+      "steps": [
+        {
+          "step_id": "wb_02_from_the_units_menu_verify",
+          "app": "workbench",
+          "title": "From the Units menu, verify that:",
+          "description": "From the Units menu, verify that: a. Project units are set to \"Metric (kg, mm, s, °C, mA, N, mV). If this system is not displayed in the Units menu, click \"Unit Systems… \" and unsuppress it. b. \"Display Values in Project Units\" is checked.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p03.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: From the Units menu, verify that:?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 3)."
+          ]
+        },
+        {
+          "step_id": "wb_03_from_the_toolbox_double_cl",
+          "app": "workbench",
+          "title": "From the Toolbox, double-click \"Static Structural\" to create a new ana…",
+          "description": "From the Toolbox, double-click \"Static Structural\" to create a new analysis system.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p03.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: From the Toolbox, double-click \"Static Structural\" to create a new ana…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 3)."
+          ]
+        },
+        {
+          "step_id": "wb_04_rmb_on_the_geometry_cell_t",
+          "app": "workbench",
+          "title": "RMB on the Geometry cell, then \"Import Geometry\" and browse to \"assemb…",
+          "description": "RMB on the Geometry cell, then \"Import Geometry\" and browse to \"assembly_solid.stp.\"",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p03.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: RMB on the Geometry cell, then \"Import Geometry\" and browse to \"assemb…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 3)."
+          ]
+        },
+        {
+          "step_id": "wb_05_double_click_the_model_cel",
+          "app": "workbench",
+          "title": "Double click the \"Model\" cell to open the Mechanical application",
+          "description": "Double click the \"Model\" cell to open the Mechanical application.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p04.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Double click the \"Model\" cell to open the Mechanical application?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 4)."
+          ]
+        },
+        {
+          "step_id": "wb_06_set_the_working_unit_syste",
+          "app": "workbench",
+          "title": "Set the working unit system to \"Metric (mm, kg, N, s, mV, mA).\"",
+          "description": "Set the working unit system to \"Metric (mm, kg, N, s, mV, mA).\"",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p04.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Set the working unit system to \"Metric (mm, kg, N, s, mV, mA).\"?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 4)."
+          ]
+        },
+        {
+          "step_id": "me_07_expand_the_geometry_branch",
+          "app": "mechanical",
+          "title": "Expand the Geometry branch, select part \"2\" and part \"3,\" and RMB > Su…",
+          "description": "Expand the Geometry branch, select part \"2\" and part \"3,\" and RMB > Suppress Body. This will allow us to isolate part \"1\" for attention in this workshop.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p05.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Expand the Geometry branch, select part \"2\" and part \"3,\" and RMB > Su…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 5)."
+          ]
+        },
+        {
+          "step_id": "me_08_click_on_mesh_then_rmb_gen",
+          "app": "mechanical",
+          "title": "Click on Mesh, then RMB > Generate Mesh to generate a default mesh",
+          "description": "Click on Mesh, then RMB > Generate Mesh to generate a default mesh.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p05.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Click on Mesh, then RMB > Generate Mesh to generate a default mesh?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 5)."
+          ]
+        },
+        {
+          "step_id": "me_09_from_the_mesh_details_view",
+          "app": "mechanical",
+          "title": "From the Mesh Details view, expand Statistics, then set Mesh Metric = …",
+          "description": "From the Mesh Details view, expand Statistics, then set Mesh Metric = Element Quality and review the element quality data.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p06.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: From the Mesh Details view, expand Statistics, then set Mesh Metric = …?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 6)."
+          ]
+        },
+        {
+          "step_id": "me_10_from_the_mesh_sizing_eleme",
+          "app": "mechanical",
+          "title": "From the Mesh—Sizing—Element Size Detail, change the element size to 4…",
+          "description": "From the Mesh—Sizing—Element Size Detail, change the element size to 4 mm, regenerate the mesh, and re-check the mesh metric data.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p07.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: From the Mesh—Sizing—Element Size Detail, change the element size to 4…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 7)."
+          ]
+        },
+        {
+          "step_id": "me_11_insert_a_face_meshing_bran",
+          "app": "mechanical",
+          "title": "Insert a Face Meshing branch scoped to the circular surface shown belo…",
+          "description": "Insert a Face Meshing branch scoped to the circular surface shown below and set the Internal Number of Divisions to 2.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p08.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Insert a Face Meshing branch scoped to the circular surface shown belo…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 8)."
+          ]
+        },
+        {
+          "step_id": "me_12_repeat_step_10_for_the_2_c",
+          "app": "mechanical",
+          "title": "Repeat Step 10 for the 2 circular surfaces shown",
+          "description": "Repeat Step 10 for the 2 circular surfaces shown.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p08.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Repeat Step 10 for the 2 circular surfaces shown?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 8)."
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Mesh Control",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_13_insert_a_sizing_control_sc",
+          "app": "mechanical",
+          "title": "Insert a Sizing control scoped to the rectangular surface shown below …",
+          "description": "Insert a Sizing control scoped to the rectangular surface shown below and set the Element Size to 3 mm.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p09.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Insert a Sizing control scoped to the rectangular surface shown below …?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 9)."
+          ]
+        },
+        {
+          "step_id": "me_14_create_a_named_selection_a",
+          "app": "mechanical",
+          "title": "Create a Named Selection:",
+          "description": "Create a Named Selection: a. Select one of the 2 surfaces in any one of the 8 holes (i.e., half of the hole) and RMB > Create Named Selection. b. In the Selection Name dialog, change the name to \"holes,\" select \"Apply geometry items of same,\" check \"Size,\" and click \"OK.\" 13a. 13b.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p10.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Create a Named Selection:?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 10)."
+          ]
+        },
+        {
+          "step_id": "me_15_insert_a_face_meshing_cont",
+          "app": "mechanical",
+          "title": "Insert a Face Meshing control",
+          "description": "Insert a Face Meshing control. Change the Scoping Method to \"Named Selection\" and change the Named Selection to \"holes.\" Generate the mesh. Observe that the number of distorted elements has been reduced by checking the mesh metric.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p11.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Insert a Face Meshing control?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 11)."
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Geometry Correction",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_16_we_will_now_focus_on_deali",
+          "app": "mechanical",
+          "title": "We will now focus on dealing with some small geometric features like t…",
+          "description": "We will now focus on dealing with some small geometric features like the ones indicated here:",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p12.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: We will now focus on dealing with some small geometric features like t…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 12)."
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Geometry Correction: Pinch",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_17_insert_a_pinch_control_sel",
+          "app": "mechanical",
+          "title": "Insert a Pinch control",
+          "description": "Insert a Pinch control. Select the two edges shown in blue as the Master Geometry and the two edges shown in red as the Slave Geometry. Set the Tolerance to 2 mm.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p13.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Insert a Pinch control?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 13)."
+          ]
+        },
+        {
+          "step_id": "me_18_after_generating_the_mesh",
+          "app": "mechanical",
+          "title": "After generating the mesh, review the results in the region of the Pin…",
+          "description": "After generating the mesh, review the results in the region of the Pinch control and compare them to the original mesh in the same region.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p14.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: After generating the mesh, review the results in the region of the Pin…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 14)."
+          ]
+        },
+        {
+          "step_id": "me_19_geometry_correction_pinch",
+          "app": "mechanical",
+          "title": "Geometry Correction:",
+          "description": "Geometry Correction: Pinch",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p15.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Geometry Correction:?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 15)."
+          ]
+        },
+        {
+          "step_id": "me_20_clear_the_mesh_rmb_clear_g",
+          "app": "mechanical",
+          "title": "Clear the mesh (RMB > Clear Generated Data) and activate Show Vertices",
+          "description": "Clear the mesh (RMB > Clear Generated Data) and activate Show Vertices.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p15.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Clear the mesh (RMB > Clear Generated Data) and activate Show Vertices?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 15)."
+          ]
+        },
+        {
+          "step_id": "me_21_insert_another_pinch_contr",
+          "app": "mechanical",
+          "title": "Insert another Pinch control",
+          "description": "Insert another Pinch control. Select the vertex indicated by the blue flag as the Master Geometry and the three vertices highlighted in green as the Slave Geometry. Set the Tolerance to 2 mm and generate the mesh.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p15.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Insert another Pinch control?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 15)."
+          ]
+        },
+        {
+          "step_id": "me_22_create_another_pinch_contr",
+          "app": "mechanical",
+          "title": "Create another Pinch control:",
+          "description": "Create another Pinch control: a. Scope the Pinch control to the vertices shown. Adjust the tolerance value if necessary. b. Compare the mesh results in this region. (Previous Pinch Control) 18a. 18b.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p16.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Create another Pinch control:?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 16)."
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Geometry Correction: Virtual Topology",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_23_virtual_topology_offers_an",
+          "app": "mechanical",
+          "title": "Virtual Topology offers another method of consolidating small geometri…",
+          "description": "Virtual Topology offers another method of consolidating small geometric details. We will use a Virtual Topology object to mimic the behavior of the two Pinch controls on the opposite side of the part: Pinch Virtual Topology",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p17.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Virtual Topology offers another method of consolidating small geometri…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 17)."
+          ]
+        },
+        {
+          "step_id": "me_24_from_the_model_branch_rmb",
+          "app": "mechanical",
+          "title": "From the Model branch, RMB > Insert > Virtual Topology",
+          "description": "From the Model branch, RMB > Insert > Virtual Topology.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p18.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: From the Model branch, RMB > Insert > Virtual Topology?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 18)."
+          ]
+        },
+        {
+          "step_id": "me_25_complete_the_definition_a",
+          "app": "mechanical",
+          "title": "Complete the definition:",
+          "description": "Complete the definition: a. Select the 3 edges shown. b. Click on Merge Cells. Generate the mesh and compare.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p18.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Complete the definition:?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 18)."
+          ]
+        },
+        {
+          "step_id": "me_26_20b_geometry_correction_vi",
+          "app": "mechanical",
+          "title": "20b",
+          "description": "20b. Geometry Correction: Virtual Topology 20a.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p18.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: 20b?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 18)."
+          ]
+        },
+        {
+          "step_id": "me_27_pinch_and_virtual_topology",
+          "app": "mechanical",
+          "title": "Pinch and Virtual Topology are often complementary tools",
+          "description": "Pinch and Virtual Topology are often complementary tools. If one cannot be applied successfully in a particular application, the other may work better. An example: Select 3 Edges Geometry Correction: Virtual Topology versus Pinch",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p19.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Pinch and Virtual Topology are often complementary tools?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 19)."
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Geometry Correction: Virtual Topology versus Pinch",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_28_try_pinch_control_instead",
+          "app": "mechanical",
+          "title": "Try Pinch control instead:",
+          "description": "Try Pinch control instead:",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p20.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Try Pinch control instead:?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 20)."
+          ]
+        },
+        {
+          "step_id": "me_29_insert_a_pinch_control_and",
+          "app": "mechanical",
+          "title": "Insert a Pinch control and select the two vertices shown here as the M…",
+          "description": "Insert a Pinch control and select the two vertices shown here as the Master Geometry: and the two vertices shown here as the Slave Geometry: Use a Tolerance of 1 mm.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p20.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Insert a Pinch control and select the two vertices shown here as the M…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 20)."
+          ]
+        },
+        {
+          "step_id": "me_30_generated_the_mesh_and_com",
+          "app": "mechanical",
+          "title": "Generated the mesh and compare:",
+          "description": "Generated the mesh and compare:",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p21.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Generated the mesh and compare:?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 21)."
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Go Further!",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_31_in_this_workshop_we_focuse",
+          "app": "mechanical",
+          "title": "In this workshop we focused on sizing and cleaning operations",
+          "description": "In this workshop we focused on sizing and cleaning operations. If you find yourself with extra time, try the following:",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p22.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: In this workshop we focused on sizing and cleaning operations?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 22)."
+          ]
+        },
+        {
+          "step_id": "me_32_test_the_hex_dominant_meth",
+          "app": "mechanical",
+          "title": "Test the Hex Dominant method on part \"1:\"",
+          "description": "Test the Hex Dominant method on part \"1:\"",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p22.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Test the Hex Dominant method on part \"1:\"?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 22)."
+          ]
+        },
+        {
+          "step_id": "me_33_unsuppress_part_2_and_part",
+          "app": "mechanical",
+          "title": "Unsuppress part \"2\" and part \"3.\" Insert a Sizing control with Element…",
+          "description": "Unsuppress part \"2\" and part \"3.\" Insert a Sizing control with Element Size = 5 mm scoped to both bodies, and test the Multizone method with Free Mesh Type = Hexa Dominant on both bodies.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p23.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Unsuppress part \"2\" and part \"3.\" Insert a Sizing control with Element…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 23)."
+          ]
+        },
+        {
+          "step_id": "me_34_test_inflation_on_part_2_u",
+          "app": "mechanical",
+          "title": "Test Inflation on part \"2.\" Use a Sizing control of 3mm on the body",
+          "description": "Test Inflation on part \"2.\" Use a Sizing control of 3mm on the body.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut09_mesh_local_control_2/p24.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Test Inflation on part \"2.\" Use a Sizing control of 3mm on the body?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 24)."
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -67,7 +67,11 @@ export function StudentAuthForm() {
   const resend = useResendVerification();
   const forgot = useForgotPassword();
 
-  const [email, setEmail] = useState("");
+  // Prefilled when the confirmation page sends the student here (?email=...),
+  // so they only have to type the password.
+  const [email, setEmail] = useState(
+    () => new URLSearchParams(window.location.search).get("email") ?? "",
+  );
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [mismatch, setMismatch] = useState(false);

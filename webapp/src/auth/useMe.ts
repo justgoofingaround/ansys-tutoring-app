@@ -54,13 +54,15 @@ export function useResendVerification() {
   });
 }
 
-/** Opening the emailed link both confirms the address and starts the session. */
+/** Opening the emailed link confirms the address only — it does not sign the
+ * student in, so there is no Me to cache. They go to the sign-in page next. */
 export function useVerifyEmail() {
-  const qc = useQueryClient();
   return useMutation({
     mutationFn: (token: string) =>
-      apiFetch<Me>(`/api/auth/verify?token=${encodeURIComponent(token)}`, { method: "GET" }),
-    onSuccess: (me) => qc.setQueryData(["me"], me),
+      apiFetch<{ status: string; email: string | null }>(
+        `/api/auth/verify?token=${encodeURIComponent(token)}`,
+        { method: "GET" },
+      ),
   });
 }
 

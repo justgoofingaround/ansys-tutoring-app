@@ -1,0 +1,918 @@
+{
+  "tutorial_id": "tut08_mesh_local_control_1",
+  "version": 1,
+  "title": "Tutorial 8 — Meshing: local control, part 1",
+  "problem": "Imported from the ANSYS step-by-step guide deck. Each step shows the slide it came from; review the wording and selectors before publishing.",
+  "apps": [
+    "mechanical",
+    "workbench"
+  ],
+  "sections": [
+    {
+      "section": "Goals",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_01_the_goal_of_this_workshop",
+          "app": "mechanical",
+          "title": "The goal of this workshop is to use several techniques in order to mes…",
+          "description": "The goal of this workshop is to use several techniques in order to mesh an assembly. We will work with one-half of the actual assembly, as the assembly exhibits mirror symmetry. The part numbers shown below will be used for reference on the subsequent slides. Part 1 Part 2 Part 3 Part 6 Part 4 Part 5",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p02.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: The goal of this workshop is to use several techniques in order to mes…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 2)."
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Project Schematic",
+      "app": "workbench",
+      "steps": [
+        {
+          "step_id": "wb_02_begin_a_new_workbench_sess",
+          "app": "workbench",
+          "title": "Begin a new Workbench session and, from the Workbench window, choose \"…",
+          "description": "Begin a new Workbench session and, from the Workbench window, choose \"Restore Archive… ,\" browse to file \"Meshing.wbpz,\" and click Open.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p03.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Begin a new Workbench session and, from the Workbench window, choose \"…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 3)."
+          ]
+        },
+        {
+          "step_id": "wb_03_when_prompted_save_using_t",
+          "app": "workbench",
+          "title": "When prompted, \"Save\" using the default name in the same location as t…",
+          "description": "When prompted, \"Save\" using the default name in the same location as the archive file.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p03.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: When prompted, \"Save\" using the default name in the same location as t…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 3)."
+          ]
+        },
+        {
+          "step_id": "wb_04_double_click_the_model_cel",
+          "app": "workbench",
+          "title": "Double click the \"Model\" cell to start Mechanical",
+          "description": "Double click the \"Model\" cell to start Mechanical.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p03.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Double click the \"Model\" cell to start Mechanical?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 3)."
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Generate a default mesh: RMB on Mesh > Generate Mesh",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_05_take_a_few_minutes_to_revi",
+          "app": "mechanical",
+          "title": "Take a few minutes to review the results",
+          "description": "Take a few minutes to review the results. By default, ANSYS Mechanical will use hexahedral elements for sweepable bodies (Parts 4 and 5) and patch-conforming tetrahedral elements elsewhere.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p04.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Take a few minutes to review the results?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 4)."
+          ]
+        },
+        {
+          "step_id": "me_06_we_will_choose_the_most_ef",
+          "app": "mechanical",
+          "title": "We will choose the most effective and/or most convenient meshing metho…",
+          "description": "We will choose the most effective and/or most convenient meshing method for each part. Part 1 has a lot of very small surfaces compared to the overall size of the part. We will use the patch-independent tetrahedrons algorithm to get efficient node distribution on these small surfaces.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p05.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: We will choose the most effective and/or most convenient meshing metho…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 5)."
+          ]
+        },
+        {
+          "step_id": "me_07_choose_the_body_selection",
+          "app": "mechanical",
+          "title": "Choose the Body selection mode",
+          "description": "Choose the Body selection mode.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p06.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Choose the Body selection mode?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 6)."
+          ]
+        },
+        {
+          "step_id": "me_08_select_the_mesh_branch",
+          "app": "mechanical",
+          "title": "Select the Mesh branch",
+          "description": "Select the Mesh branch.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p06.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Select the Mesh branch?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 6)."
+          ]
+        },
+        {
+          "step_id": "me_09_select_part_1_then_rmb_ins",
+          "app": "mechanical",
+          "title": "Select Part 1, then RMB > Insert > Method",
+          "description": "Select Part 1, then RMB > Insert > Method.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p06.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Select Part 1, then RMB > Insert > Method?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 6)."
+          ]
+        },
+        {
+          "step_id": "me_10_change_the_method_to_tetra",
+          "app": "mechanical",
+          "title": "Change the Method to \"Tetrahedrons.\"",
+          "description": "Change the Method to \"Tetrahedrons.\"",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p06.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Change the Method to \"Tetrahedrons.\"?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 6)."
+          ]
+        },
+        {
+          "step_id": "me_11_change_the_algorithm_to_pa",
+          "app": "mechanical",
+          "title": "Change the Algorithm to \"Patch Independent.\"",
+          "description": "Change the Algorithm to \"Patch Independent.\"",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p06.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Change the Algorithm to \"Patch Independent.\"?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 6)."
+          ]
+        },
+        {
+          "step_id": "me_12_set_min_size_limit_to_5_mm",
+          "app": "mechanical",
+          "title": "Set \"Min Size Limit\" to 5 mm",
+          "description": "Set \"Min Size Limit\" to 5 mm.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p06.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Set \"Min Size Limit\" to 5 mm?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 6)."
+          ]
+        },
+        {
+          "step_id": "me_13_select_part_1_then_rmb_gen",
+          "app": "mechanical",
+          "title": "Select Part 1, then RMB > Generate Mesh On Selected Bodies",
+          "description": "Select Part 1, then RMB > Generate Mesh On Selected Bodies.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p07.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Select Part 1, then RMB > Generate Mesh On Selected Bodies?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 7)."
+          ]
+        },
+        {
+          "step_id": "me_14_part_2_is_sweepable_since",
+          "app": "mechanical",
+          "title": "Part 2 is sweepable since it was split prior to import",
+          "description": "Part 2 is sweepable since it was split prior to import. We can create a swept mesh by sweeping an appropriate surface mesh along the direction of the red arrows.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p08.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Part 2 is sweepable since it was split prior to import?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 8)."
+          ]
+        },
+        {
+          "step_id": "me_15_select_any_body_in_part_2",
+          "app": "mechanical",
+          "title": "Select any body in Part 2, then RMB > Insert > Method",
+          "description": "Select any body in Part 2, then RMB > Insert > Method.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p09.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Select any body in Part 2, then RMB > Insert > Method?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 9)."
+          ]
+        },
+        {
+          "step_id": "me_16_change_the_method_to_sweep",
+          "app": "mechanical",
+          "title": "Change the Method to \"Sweep.\"",
+          "description": "Change the Method to \"Sweep.\"",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p09.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Change the Method to \"Sweep.\"?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 9)."
+          ]
+        },
+        {
+          "step_id": "me_17_change_the_src_trg_selecti",
+          "app": "mechanical",
+          "title": "Change the Src/Trg Selection to \"Manual Source and Target.\" Select the…",
+          "description": "Change the Src/Trg Selection to \"Manual Source and Target.\" Select the source graphically, then the target.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p09.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Change the Src/Trg Selection to \"Manual Source and Target.\" Select the…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 9)."
+          ]
+        },
+        {
+          "step_id": "me_18_set_sweep_num_divs_to_10",
+          "app": "mechanical",
+          "title": "Set \"Sweep Num Divs\" to 10",
+          "description": "Set \"Sweep Num Divs\" to 10.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p09.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Set \"Sweep Num Divs\" to 10?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 9)."
+          ]
+        },
+        {
+          "step_id": "me_19_repeat_the_operations_11_1",
+          "app": "mechanical",
+          "title": "Repeat the operations 11 > 14 for the three other bodies in the part",
+          "description": "Repeat the operations 11 > 14 for the three other bodies in the part.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p10.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Repeat the operations 11 > 14 for the three other bodies in the part?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 10)."
+          ]
+        },
+        {
+          "step_id": "me_20_select_the_4_bodies_of_par",
+          "app": "mechanical",
+          "title": "Select the 4 bodies of Part 2 and RMB > Generate Mesh On Selected Bodi…",
+          "description": "Select the 4 bodies of Part 2 and RMB > Generate Mesh On Selected Bodies.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p10.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Select the 4 bodies of Part 2 and RMB > Generate Mesh On Selected Bodi…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 10)."
+          ]
+        },
+        {
+          "step_id": "me_21_part_3_has_no_special_chal",
+          "app": "mechanical",
+          "title": "Part 3 has no special challenges",
+          "description": "Part 3 has no special challenges. This part is simple to mesh with the patch- conforming tetrahedrons method.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p11.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Part 3 has no special challenges?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 11)."
+          ]
+        },
+        {
+          "step_id": "me_22_select_part_3_rmb_insert_m",
+          "app": "mechanical",
+          "title": "Select Part 3 > RMB > insert > method",
+          "description": "Select Part 3 > RMB > insert > method.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p12.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Select Part 3 > RMB > insert > method?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 12)."
+          ]
+        },
+        {
+          "step_id": "me_23_change_the_method_to_tetra",
+          "app": "mechanical",
+          "title": "Change the method to \"Tetrahedrons.\"",
+          "description": "Change the method to \"Tetrahedrons.\"",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p12.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Change the method to \"Tetrahedrons.\"?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 12)."
+          ]
+        },
+        {
+          "step_id": "me_24_change_the_algorithm_to_pa",
+          "app": "mechanical",
+          "title": "Change the algorithm to \"Patch Conforming.\"",
+          "description": "Change the algorithm to \"Patch Conforming.\"",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p12.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Change the algorithm to \"Patch Conforming.\"?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 12)."
+          ]
+        },
+        {
+          "step_id": "me_25_select_part_3_then_rmb_ins",
+          "app": "mechanical",
+          "title": "Select Part 3, then RMB > Insert > Sizing",
+          "description": "Select Part 3, then RMB > Insert > Sizing.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p12.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Select Part 3, then RMB > Insert > Sizing?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 12)."
+          ]
+        },
+        {
+          "step_id": "me_26_set_element_size_to_8_mm",
+          "app": "mechanical",
+          "title": "Set \"Element Size\" to 8 mm",
+          "description": "Set \"Element Size\" to 8 mm.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p12.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Set \"Element Size\" to 8 mm?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 12)."
+          ]
+        },
+        {
+          "step_id": "me_27_select_part_3_then_rmb_gen",
+          "app": "mechanical",
+          "title": "Select Part 3, then RMB > Generate Mesh On Selected Bodies",
+          "description": "Select Part 3, then RMB > Generate Mesh On Selected Bodies.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p13.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Select Part 3, then RMB > Generate Mesh On Selected Bodies?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 13)."
+          ]
+        },
+        {
+          "step_id": "me_28_parts_4_and_5_are_very_sim",
+          "app": "mechanical",
+          "title": "Parts 4 and 5 are very simple",
+          "description": "Parts 4 and 5 are very simple. We will use the sweep method in the direction of the red arrows to generate the mesh.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p14.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Parts 4 and 5 are very simple?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 14)."
+          ]
+        },
+        {
+          "step_id": "me_29_select_part_4_then_rmb_ins",
+          "app": "mechanical",
+          "title": "Select Part 4, then RMB > Insert > Method",
+          "description": "Select Part 4, then RMB > Insert > Method.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p15.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Select Part 4, then RMB > Insert > Method?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 15)."
+          ]
+        },
+        {
+          "step_id": "me_30_change_the_method_to_sweep",
+          "app": "mechanical",
+          "title": "Change the Method to \"Sweep.\"",
+          "description": "Change the Method to \"Sweep.\"",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p15.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Change the Method to \"Sweep.\"?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 15)."
+          ]
+        },
+        {
+          "step_id": "me_31_change_the_src_trg_selecti",
+          "app": "mechanical",
+          "title": "Change the Src/Trg Selection to \"Manual Source and Target.\" Select the…",
+          "description": "Change the Src/Trg Selection to \"Manual Source and Target.\" Select the source graphically, then the target.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p15.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Change the Src/Trg Selection to \"Manual Source and Target.\" Select the…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 15)."
+          ]
+        },
+        {
+          "step_id": "me_32_set_sweep_num_divs_to_25",
+          "app": "mechanical",
+          "title": "Set \"Sweep Num Divs\" to 25",
+          "description": "Set \"Sweep Num Divs\" to 25.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p15.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Set \"Sweep Num Divs\" to 25?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 15)."
+          ]
+        },
+        {
+          "step_id": "me_33_repeat_steps_23_through_26",
+          "app": "mechanical",
+          "title": "Repeat Steps 23 through 26 for Part 5",
+          "description": "Repeat Steps 23 through 26 for Part 5.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p16.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Repeat Steps 23 through 26 for Part 5?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 16)."
+          ]
+        },
+        {
+          "step_id": "me_34_switch_to_face_selection",
+          "app": "mechanical",
+          "title": "Switch to face selection",
+          "description": "Switch to face selection.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p16.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Switch to face selection?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 16)."
+          ]
+        },
+        {
+          "step_id": "me_35_select_the_source_face_on",
+          "app": "mechanical",
+          "title": "Select the source face on each Parts 4 and 5, then RMB > Insert > Sizi…",
+          "description": "Select the source face on each Parts 4 and 5, then RMB > Insert > Sizing.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p16.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Select the source face on each Parts 4 and 5, then RMB > Insert > Sizi…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 16)."
+          ]
+        },
+        {
+          "step_id": "me_36_set_element_size_to_8_mm",
+          "app": "mechanical",
+          "title": "Set \"Element Size\" to 8 mm",
+          "description": "Set \"Element Size\" to 8 mm.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p16.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Set \"Element Size\" to 8 mm?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 16)."
+          ]
+        },
+        {
+          "step_id": "me_37_select_parts_4_and_5_then",
+          "app": "mechanical",
+          "title": "Select Parts 4 and 5, then RMB > Generate Mesh On Selected Bodies",
+          "description": "Select Parts 4 and 5, then RMB > Generate Mesh On Selected Bodies.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p17.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Select Parts 4 and 5, then RMB > Generate Mesh On Selected Bodies?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 17)."
+          ]
+        },
+        {
+          "step_id": "me_38_part_6_can_be_swept_in_dif",
+          "app": "mechanical",
+          "title": "Part 6 can be swept in different ways",
+          "description": "Part 6 can be swept in different ways. This part can also be sliced in DesignModeler or SpaceClaim before import into Mechanical to mesh using the Hex Dominant method.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p18.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Part 6 can be swept in different ways?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 18)."
+          ]
+        },
+        {
+          "step_id": "me_39_switch_to_body_selection",
+          "app": "mechanical",
+          "title": "Switch to body selection",
+          "description": "Switch to body selection.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p19.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Switch to body selection?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 19)."
+          ]
+        },
+        {
+          "step_id": "me_40_select_part_6_then_rmb_ins",
+          "app": "mechanical",
+          "title": "Select Part 6, then RMB > Insert > Method",
+          "description": "Select Part 6, then RMB > Insert > Method.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p19.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Select Part 6, then RMB > Insert > Method?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 19)."
+          ]
+        },
+        {
+          "step_id": "me_41_change_the_method_to_hex_d",
+          "app": "mechanical",
+          "title": "Change the Method to \"Hex Dominant.\"",
+          "description": "Change the Method to \"Hex Dominant.\"",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p19.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Change the Method to \"Hex Dominant.\"?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 19)."
+          ]
+        },
+        {
+          "step_id": "me_42_select_part_6_then_rmb_ins",
+          "app": "mechanical",
+          "title": "Select Part 6, then RMB> Insert > Sizing",
+          "description": "Select Part 6, then RMB> Insert > Sizing.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p19.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Select Part 6, then RMB> Insert > Sizing?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 19)."
+          ]
+        },
+        {
+          "step_id": "me_43_put_8_mm_for_element_size",
+          "app": "mechanical",
+          "title": "Put 8 mm for element size",
+          "description": "Put 8 mm for element size.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p19.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Put 8 mm for element size?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 19)."
+          ]
+        },
+        {
+          "step_id": "me_44_select_part_6_then_rmb_gen",
+          "app": "mechanical",
+          "title": "Select Part 6, then RMB > Generate Mesh On Selected Bodies",
+          "description": "Select Part 6, then RMB > Generate Mesh On Selected Bodies.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p20.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Select Part 6, then RMB > Generate Mesh On Selected Bodies?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 20)."
+          ]
+        },
+        {
+          "step_id": "me_45_you_can_now_review_the_ent",
+          "app": "mechanical",
+          "title": "You can now review the entire mesh",
+          "description": "You can now review the entire mesh.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p21.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: You can now review the entire mesh?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 21)."
+          ]
+        },
+        {
+          "step_id": "me_46_you_can_check_the_mesh_sta",
+          "app": "mechanical",
+          "title": "You can check the mesh statistics for the number of nodes, number of e…",
+          "description": "You can check the mesh statistics for the number of nodes, number of elements, and element quality.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p22.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: You can check the mesh statistics for the number of nodes, number of e…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 22)."
+          ]
+        },
+        {
+          "step_id": "me_47_select_the_mesh_branch",
+          "app": "mechanical",
+          "title": "Select the Mesh branch",
+          "description": "Select the Mesh branch.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p22.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Select the Mesh branch?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 22)."
+          ]
+        },
+        {
+          "step_id": "me_48_in_the_details_view_expand",
+          "app": "mechanical",
+          "title": "In the Details view, expand Statistics, then check the numbers of node…",
+          "description": "In the Details view, expand Statistics, then check the numbers of nodes and elements.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p22.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: In the Details view, expand Statistics, then check the numbers of node…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 22)."
+          ]
+        },
+        {
+          "step_id": "me_49_change_mesh_metric_to_elem",
+          "app": "mechanical",
+          "title": "Change Mesh Metric to Element Quality and review the mesh quality",
+          "description": "Change Mesh Metric to Element Quality and review the mesh quality. Note: Metrics can be plotted on the mesh via ''Display Style'' in the Mesh Details view.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p22.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Change Mesh Metric to Element Quality and review the mesh quality?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 22)."
+          ]
+        }
+      ]
+    },
+    {
+      "section": "You can now improve the mesh locally by using local",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_50_switch_to_face_selection",
+          "app": "mechanical",
+          "title": "Switch to face selection",
+          "description": "Switch to face selection.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p23.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Switch to face selection?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 23)."
+          ]
+        },
+        {
+          "step_id": "me_51_we_can_create_mapped_meshe",
+          "app": "mechanical",
+          "title": "We can create mapped meshes on some faces to improve quality",
+          "description": "We can create mapped meshes on some faces to improve quality. Select the 6 faces shown at right, then RMB > Insert > Face Meshing.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p23.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: We can create mapped meshes on some faces to improve quality?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 23)."
+          ]
+        },
+        {
+          "step_id": "me_52_generate_the_mesh_on_this",
+          "app": "mechanical",
+          "title": "Generate the mesh on this part",
+          "description": "Generate the mesh on this part.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p23.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Generate the mesh on this part?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 23)."
+          ]
+        }
+      ]
+    },
+    {
+      "section": "We can improve the mesh by using",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_53_select_mesh_then_rmb_inser",
+          "app": "mechanical",
+          "title": "Select Mesh, then > RMB > Insert > Inflation",
+          "description": "Select Mesh, then > RMB > Insert > Inflation.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p24.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Select Mesh, then > RMB > Insert > Inflation?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 24)."
+          ]
+        },
+        {
+          "step_id": "me_54_for_geometry_select_part_1",
+          "app": "mechanical",
+          "title": "For Geometry, select Part 1",
+          "description": "For Geometry, select Part 1.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p24.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: For Geometry, select Part 1?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 24)."
+          ]
+        },
+        {
+          "step_id": "me_55_for_boundary_select_the_tw",
+          "app": "mechanical",
+          "title": "For Boundary, select the two faces shown",
+          "description": "For Boundary, select the two faces shown. Set Inflation Option = Total Thickness, Number of Layers = 5, Growth Rate = 1, and Maximum Thickness = 8 mm.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p24.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: For Boundary, select the two faces shown?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 24)."
+          ]
+        },
+        {
+          "step_id": "me_56_generate_the_mesh",
+          "app": "mechanical",
+          "title": "Generate the mesh",
+          "description": "Generate the mesh.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p24.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Generate the mesh?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 24)."
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Go Further!",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_57_if_you_find_yourself_with",
+          "app": "mechanical",
+          "title": "If you find yourself with extra time, try the following:",
+          "description": "If you find yourself with extra time, try the following:",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p25.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: If you find yourself with extra time, try the following:?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 25)."
+          ]
+        },
+        {
+          "step_id": "me_58_look_at_the_mesh_quality_t",
+          "app": "mechanical",
+          "title": "Look at the mesh quality to identify the bad elements",
+          "description": "Look at the mesh quality to identify the bad elements. Try other global or local mesh methods in order to improve overall mesh quality.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut08_mesh_local_control_1/p25.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Look at the mesh quality to identify the bad elements?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 25)."
+          ]
+        }
+      ]
+    }
+  ]
+}

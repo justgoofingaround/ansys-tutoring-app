@@ -2,11 +2,10 @@ import { useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft, Check, ChevronDown, Copy, FileUp, ListChecks, MonitorPlay, Play, X,
+  ArrowLeft, Check, ChevronDown, FileUp, ListChecks, MonitorPlay, Play, X,
 } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { Faq, ReportResult, StepRow, TutorialDetailData } from "@/types/api";
-import { useMe } from "@/auth/useMe";
 import { Card, CardTitle } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
@@ -64,17 +63,6 @@ function StepLine({ step, tutorialId }: { step: StepRow; tutorialId: string }) {
 /* ── launch guide ───────────────────────────────────────────────────── */
 
 function LaunchGuideCard({ tutorialId }: { tutorialId: string }) {
-  const { data: me } = useMe();
-  const [copied, setCopied] = useState<string | null>(null);
-  const command = `python student_app\\guide_tut1.py ${tutorialId}`;
-
-  function copy(text: string, key: string) {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(key);
-      setTimeout(() => setCopied(null), 1500);
-    });
-  }
-
   return (
     <Card>
       <div className="flex items-center gap-2">
@@ -108,31 +96,10 @@ function LaunchGuideCard({ tutorialId }: { tutorialId: string }) {
           latest published version from the server automatically.
         </div>
         <div className="mt-1">
-          The guide itself must be installed once per PC:{" "}
-          <code className="font-mono">register_guide_protocol.py</code> from the repo.
+          If nothing opens, this PC has not been set up for the guide yet — tell your
+          instructor or TA.
         </div>
       </div>
-      <button
-        onClick={() => copy(command, "cmd")}
-        className="mt-2 flex w-full items-center justify-between gap-2 rounded-(--radius-control) border border-hairline bg-paper px-3 py-2 text-left font-mono text-[13px] text-ink hover:border-ink-faint"
-        title="Copy"
-      >
-        <span className="truncate">{command}</span>
-        {copied === "cmd" ? <Check className="size-4 text-success" /> : <Copy className="size-4 text-ink-faint" />}
-      </button>
-      {me?.opaque_token && (
-        <>
-          <p className="mt-3 text-sm text-ink-soft">Your anonymous session token (for pairing):</p>
-          <button
-            onClick={() => copy(me.opaque_token!, "tok")}
-            className="mt-1 flex w-full items-center justify-between gap-2 rounded-(--radius-control) border border-hairline bg-paper px-3 py-2 text-left font-mono text-[13px] text-ink hover:border-ink-faint"
-            title="Copy"
-          >
-            <span>{me.opaque_token}</span>
-            {copied === "tok" ? <Check className="size-4 text-success" /> : <Copy className="size-4 text-ink-faint" />}
-          </button>
-        </>
-      )}
     </Card>
   );
 }

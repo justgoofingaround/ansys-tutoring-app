@@ -3,6 +3,22 @@
 A tutorial is **one JSON file** in this folder. The guide app reads it directly —
 adding a new tutorial requires **no code changes**.
 
+## Where a tutorial lives
+
+Two layouts work, and the server loads both:
+
+- **Folder (preferred for new tutorials)** — `content/data/<tutorial_id>/` holding
+  `tutorial.json` and that tutorial's step images side by side. Reference an image as
+  `content/data/<tutorial_id>/<file>.jpg`; it is served at
+  `/tutorial-content/<tutorial_id>/<file>.jpg`. Only image files in that folder are
+  served — the JSON is not.
+- **Flat (the older tutorials)** — `content/data/<tutorial_id>.json` with images under
+  `content/data/images/<tutorial_id>/`.
+
+Keeping a tutorial's JSON and screenshots in one folder makes it easy to move, copy or
+delete the tutorial as a unit.
+
+
 ## Quick start
 
 ```

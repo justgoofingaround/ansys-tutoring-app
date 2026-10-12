@@ -1,0 +1,126 @@
+{
+  "tutorial_id": "tut07_mesh_global_control",
+  "version": 1,
+  "title": "Tutorial 7 — Meshing: global control",
+  "problem": "Imported from the ANSYS step-by-step guide deck. Each step shows the slide it came from; review the wording and selectors before publishing.",
+  "apps": [
+    "mechanical",
+    "workbench"
+  ],
+  "sections": [
+    {
+      "section": "Steps",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_01_use_this_guide_to_repeat_t",
+          "app": "mechanical",
+          "title": "Use this guide to repeat the steps the instructor demonstrated within …",
+          "description": "Use this guide to repeat the steps the instructor demonstrated within this module.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut07_mesh_global_control/p02.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Use this guide to repeat the steps the instructor demonstrated within …?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 2)."
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Open Archive \"Globe_Valve_SS06_Start.wbpz\"",
+      "app": "workbench",
+      "steps": [
+        {
+          "step_id": "wb_02_open_mechanical",
+          "app": "workbench",
+          "title": "Open Mechanical",
+          "description": "Open Mechanical",
+          "highlight": "instruction",
+          "source_image": "content/data/tut07_mesh_global_control/p03.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Open Mechanical?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 3)."
+          ]
+        },
+        {
+          "step_id": "me_03_generate_the_default_mesh",
+          "app": "mechanical",
+          "title": "Generate the default Mesh:",
+          "description": "Generate the default Mesh: RMB – Mesh > Generate Mesh",
+          "highlight": "instruction",
+          "source_image": "content/data/tut07_mesh_global_control/p04.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Generate the default Mesh:?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 4)."
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Details of Mesh > Sizing >",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_04_use_adaptive_sizing_yes_el",
+          "app": "mechanical",
+          "title": "Use Adaptive Sizing:",
+          "description": "Use Adaptive Sizing: Yes; Element Size > 6.35 mm Generate Mesh Specify Global Element Size of 6.35 mm along with Adaptive Size Function:",
+          "highlight": "instruction",
+          "source_image": "content/data/tut07_mesh_global_control/p05.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Use Adaptive Sizing:?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 5)."
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Turn Use Adaptive Sizing",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_05_to_no_change_capture_curva",
+          "app": "mechanical",
+          "title": "to:",
+          "description": "to: No Change Capture Curvature to: Yes Change Element Size to 3 mm Generate Mesh Change to Curvature Size Function:",
+          "highlight": "instruction",
+          "source_image": "content/data/tut07_mesh_global_control/p06.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: to:?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 6)."
+          ]
+        },
+        {
+          "step_id": "me_06_save_project_for_use_later",
+          "app": "mechanical",
+          "title": "Save Project for use later if desired",
+          "description": "Save Project for use later if desired.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut07_mesh_global_control/p07.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Save Project for use later if desired?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 7)."
+          ]
+        }
+      ]
+    }
+  ]
+}

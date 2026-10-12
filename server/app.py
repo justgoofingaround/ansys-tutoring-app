@@ -100,6 +100,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         "/step-images", StaticFiles(directory=settings.step_images_dir), name="step-images"
     )
 
+    # Folder layout: content/data/<tutorial_id>/ keeps a tutorial's JSON and its
+    # step images together. Served by an explicit route rather than a static
+    # mount, because that directory ALSO holds tutorial JSON and the quiz files
+    # with their answer keys — only image files may be served.
+    content_root = (REPO_ROOT / "content" / "data").resolve()
+    image_suffixes = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+
+    @application.get("/tutorial-content/{tutorial_id}/{filename}", include_in_schema=False)
+    def tutorial_content_image(tutorial_id: str, filename: str):
+        target = (content_root / tutorial_id / filename).resolve()
+        if (
+            content_root not in target.parents
+            or target.suffix.lower() not in image_suffixes
+            or not target.is_file()
+        ):
+            raise HTTPException(status_code=404, detail="not_found")
+        return FileResponse(target)
+
     if WEBAPP_DIST.is_dir():
         application.mount(
             "/assets", StaticFiles(directory=WEBAPP_DIST / "assets"), name="assets"

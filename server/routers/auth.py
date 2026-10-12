@@ -23,6 +23,7 @@ from ..models import (
     RegisterRequest,
     ResendRequest,
     ResetPasswordRequest,
+    VerifiedResponse,
 )
 from ..security import (
     hash_password,
@@ -213,30 +214,38 @@ def resend_verification(
 @router.get("/verify")
 def verify_email(
     token: str,
-    response: Response,
     conn: sqlite3.Connection = Depends(get_db),
-    settings: Settings = Depends(get_settings),
-) -> MeResponse:
-    """Opening the link confirms the address AND signs the student in."""
+) -> VerifiedResponse:
+    """Opening the link confirms the address. It deliberately does NOT start a
+    session: the student signs in afterwards, like any other account system.
+
+    Two reasons beyond convention. The link travels through email, and NYU
+    rewrites it through Proofpoint — an auto-login link hands a session to
+    whoever (or whatever) opens the message. And scanners *fetch* links to
+    check them, so confirmation is idempotent: replaying a token whose account
+    is already confirmed reports success instead of burning the student's
+    click on a "this link didn't work" page.
+    """
     now = time.time()
     row = conn.execute(
-        """SELECT * FROM email_verifications
-           WHERE token_hash = ? AND used = 0 AND expires_at > ?""",
+        "SELECT * FROM email_verifications WHERE token_hash = ? AND expires_at > ?",
         (hash_session_token(token), now),
     ).fetchone()
     if row is None:
         raise HTTPException(status_code=400, detail="invalid_or_expired_token")
-    conn.execute(
-        "UPDATE email_verifications SET used = 1 WHERE token_hash = ?", (row["token_hash"],)
-    )
-    conn.execute(
-        "UPDATE users SET email_verified_at = ? WHERE id = ? AND email_verified_at IS NULL",
-        (now, row["user_id"]),
-    )
-    conn.commit()
     user = conn.execute("SELECT * FROM users WHERE id = ?", (row["user_id"],)).fetchone()
-    _start_session(response, conn, user["id"], settings)
-    return _me(conn, user, settings)
+    if user is None:
+        raise HTTPException(status_code=400, detail="invalid_or_expired_token")
+    if user["email_verified_at"] is None:
+        conn.execute(
+            "UPDATE email_verifications SET used = 1 WHERE token_hash = ?",
+            (row["token_hash"],),
+        )
+        conn.execute(
+            "UPDATE users SET email_verified_at = ? WHERE id = ?", (now, user["id"])
+        )
+        conn.commit()
+    return VerifiedResponse(email=user["email"])
 
 
 @router.post("/login", dependencies=[Depends(csrf_check)])

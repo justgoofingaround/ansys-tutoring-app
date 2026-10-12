@@ -37,6 +37,14 @@ class ResetPasswordRequest(BaseModel):
     password: str = Field(min_length=8, max_length=72)
 
 
+class VerifiedResponse(BaseModel):
+    """Confirming an address does not sign anyone in, so there is no session to
+    describe — only the address that was confirmed, for the success page."""
+
+    status: str = "verified"
+    email: str | None = None
+
+
 class LoginRequest(BaseModel):
     username: str
     password: str

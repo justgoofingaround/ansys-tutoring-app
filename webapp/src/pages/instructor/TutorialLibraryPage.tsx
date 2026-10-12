@@ -2,8 +2,8 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  AlertTriangle, BookOpen, CheckCircle2, ClipboardList, FileUp, ListChecks,
-  Pencil, Plus, Sparkles, XCircle,
+  AlertTriangle, BookOpen, CheckCircle2, ClipboardList, Eye, EyeOff, FileUp,
+  ListChecks, Pencil, Plus, Sparkles, XCircle,
 } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { LibraryTutorial, ValidationFinding } from "@/types/api";
@@ -465,6 +465,13 @@ function TutorialRow({ t }: { t: LibraryTutorial }) {
       }),
     onSuccess: invalidate,
   });
+  const toggleHidden = useMutation({
+    mutationFn: () =>
+      apiFetch(`/api/instructor/tutorials/${t.tutorial_id}/settings`, {
+        json: { is_archived: !t.is_archived },
+      }),
+    onSuccess: invalidate,
+  });
   const [open, setOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [draft, setDraft] = useState(t.report_guidelines ?? "");
@@ -493,6 +500,7 @@ function TutorialRow({ t }: { t: LibraryTutorial }) {
             {hasPendingDraft && t.published_version != null && (
               <Badge tone="warning" className="font-mono">draft v{latestVersion} pending</Badge>
             )}
+            {t.is_archived && <Badge tone="warning">Hidden</Badge>}
             {t.is_mandatory && <Badge tone="violet">Mandatory</Badge>}
             {t.quiz_id && (
               <span title="Has a quiz">
@@ -511,6 +519,16 @@ function TutorialRow({ t }: { t: LibraryTutorial }) {
             onClick={() => navigate(`/instructor/tutorials/${t.tutorial_id}/edit`)}
           >
             <Pencil className="size-3.5" /> Edit
+          </Button>
+          <Button
+            variant="ghost"
+            className="h-8 px-2 text-[13px]"
+            loading={toggleHidden.isPending}
+            onClick={() => toggleHidden.mutate()}
+            title={t.is_archived ? "Show to students again" : "Remove from the student catalog"}
+          >
+            {t.is_archived ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
+            {t.is_archived ? "Show" : "Hide"}
           </Button>
           <Button variant="ghost" className="h-8 px-2 text-[13px]" onClick={() => toggleMandatory.mutate()}>
             {t.is_mandatory ? "Make optional" : "Make mandatory"}
@@ -599,6 +617,50 @@ function TutorialRow({ t }: { t: LibraryTutorial }) {
   );
 }
 
+/** Swapping a term's content in one go: hide everything students can currently
+ * see, then publish the new set. Hiding keeps versions, quizzes and recorded
+ * attempts — it is reversible, unlike deleting. */
+function HideAllButton({ library }: { library: LibraryTutorial[] | undefined }) {
+  const qc = useQueryClient();
+  const visible = (library ?? []).filter((t) => !t.is_archived);
+  const allHidden = (library ?? []).length > 0 && visible.length === 0;
+
+  const setAll = useMutation({
+    mutationFn: (hide: boolean) =>
+      apiFetch("/api/instructor/tutorials/visibility", { json: { is_archived: hide } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["instructor", "library"] });
+      qc.invalidateQueries({ queryKey: ["instructor", "progress"] });
+    },
+  });
+
+  if (!library || library.length === 0) return null;
+
+  return (
+    <Button
+      variant="secondary"
+      loading={setAll.isPending}
+      onClick={() => {
+        if (allHidden) {
+          setAll.mutate(false);
+          return;
+        }
+        const ok = window.confirm(
+          [
+            `Hide all ${visible.length} visible tutorial${visible.length === 1 ? "" : "s"} from students?`,
+            "",
+            "They disappear from the student dashboard but keep their versions, quizzes and recorded attempts. You can show them again at any time.",
+          ].join("\n"),
+        );
+        if (ok) setAll.mutate(true);
+      }}
+    >
+      {allHidden ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
+      {allHidden ? "Show all" : `Hide all (${visible.length})`}
+    </Button>
+  );
+}
+
 export function TutorialLibraryPage() {
   const { data: me } = useMe();
   const { data: library, isPending } = useQuery({
@@ -611,6 +673,7 @@ export function TutorialLibraryPage() {
       <PageHeader
         title="Tutorial library"
         subtitle="Versioned tutorial content — upload, validate, publish."
+        actions={<HideAllButton library={library} />}
       />
       <div className="grid items-start gap-4 xl:grid-cols-[1fr_420px]">
         <Card>

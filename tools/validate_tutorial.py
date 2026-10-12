@@ -24,6 +24,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 UPLOADED_IMAGES_PREFIX = "uploads/step_images/"
 LEGACY_IMAGES_DIR_FMT = "mock_server/data/images/{tutorial_id}/"
+FOLDER_IMAGES_DIR_FMT = "content/data/{tutorial_id}/"
 IMAGES_DIR_FMT = "content/data/images/{tutorial_id}/"
 
 APPS = {"workbench", "spaceclaim", "discovery", "mechanical"}
@@ -331,6 +332,9 @@ def _validate_images(f, data, all_steps, file_stem):
         # versions carrying them cannot be rewritten.
         LEGACY_IMAGES_DIR_FMT.format(tutorial_id=file_stem),
         LEGACY_IMAGES_DIR_FMT.format(tutorial_id=data.get("tutorial_id", "<tutorial_id>")),
+        # Folder layout: content/data/<tutorial_id>/ holds the JSON and its
+        # images side by side.
+        FOLDER_IMAGES_DIR_FMT.format(tutorial_id=data.get("tutorial_id", "<tutorial_id>")),
     })
     missing, off_convention = [], []
     for where, st in all_steps:

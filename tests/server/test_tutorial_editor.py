@@ -178,3 +178,62 @@ def test_unknown_tutorial_is_404(client, seeded):
     content["tutorial_id"] = "nope_not_here"
     r = client.post("/api/instructor/tutorials/nope_not_here/content", json=content)
     assert r.status_code == 404
+
+
+# --- hiding tutorials from students -----------------------------------------
+
+
+def _student_sees(client, seeded, name):
+    """Register a student and return the tutorial ids on their dashboard."""
+    register_student(client, seeded, name, "pw-eight-chars")
+    return {t["tutorial_id"] for t in client.get("/api/student/dashboard").json()["tutorials"]}
+
+
+def test_hiding_a_tutorial_removes_it_from_students(client, seeded):
+    login(client, "prof", "prof-pass-123")
+    r = client.post(f"/api/instructor/tutorials/{TUT}/settings", json={"is_archived": True})
+    assert r.status_code == 200 and r.json()["is_archived"] is True
+    client.post("/api/auth/logout", json={})
+
+    assert TUT not in _student_sees(client, seeded, "stu_hidden")
+    # and the tutorial itself is no longer reachable
+    assert client.get(f"/api/student/tutorials/{TUT}").status_code == 404
+
+
+def test_hiding_keeps_versions_and_can_be_undone(client, seeded):
+    """Hiding is reversible and loses nothing — that is why it exists instead
+    of a delete."""
+    login(client, "prof", "prof-pass-123")
+    before = {t["tutorial_id"]: t for t in client.get("/api/instructor/tutorials").json()}[TUT]
+    client.post(f"/api/instructor/tutorials/{TUT}/settings", json={"is_archived": True})
+
+    hidden = {t["tutorial_id"]: t for t in client.get("/api/instructor/tutorials").json()}[TUT]
+    assert hidden["is_archived"] is True
+    assert len(hidden["versions"]) == len(before["versions"])
+    assert hidden["published_version"] == before["published_version"]
+
+    client.post(f"/api/instructor/tutorials/{TUT}/settings", json={"is_archived": False})
+    client.post("/api/auth/logout", json={})
+    assert TUT in _student_sees(client, seeded, "stu_shown")
+
+
+def test_hide_all_then_show_all(client, seeded):
+    login(client, "prof", "prof-pass-123")
+    total = len(client.get("/api/instructor/tutorials").json())
+
+    r = client.post("/api/instructor/tutorials/visibility", json={"is_archived": True})
+    assert r.status_code == 200 and r.json()["updated"] == total
+    assert all(t["is_archived"] for t in client.get("/api/instructor/tutorials").json())
+    client.post("/api/auth/logout", json={})
+    assert _student_sees(client, seeded, "stu_all_hidden") == set()
+
+    login(client, "prof", "prof-pass-123")
+    client.post("/api/instructor/tutorials/visibility", json={"is_archived": False})
+    assert not any(t["is_archived"] for t in client.get("/api/instructor/tutorials").json())
+
+
+def test_students_cannot_change_visibility(client, seeded):
+    register_student(client, seeded, "stu_vis", "pw-eight-chars")
+    assert client.post(
+        "/api/instructor/tutorials/visibility", json={"is_archived": True}
+    ).status_code == 403

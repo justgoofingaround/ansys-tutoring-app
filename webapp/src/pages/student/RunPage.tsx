@@ -16,7 +16,10 @@ import { cn } from "@/components/cn";
  *   "content/data/images/tut1/x.png" -> "/tutorial-images/tut1/x.png" (authored in the repo)
  *   "uploads/step_images/tut1/x.png"     -> "/step-images/tut1/x.png"     (uploaded in the editor) */
 const IMAGE_MOUNTS: [string, string][] = [
+  // Most specific first: content/data/images/ must match before content/data/.
   ["content/data/images/", "/tutorial-images/"],
+  // Folder layout — content/data/<tutorial>/shot.jpg beside its tutorial.json.
+  ["content/data/", "/tutorial-content/"],
   ["uploads/step_images/", "/step-images/"],
   // Legacy: versions published before content/ was renamed from mock_server/.
   // Stored versions are immutable, so the old prefix must keep resolving.

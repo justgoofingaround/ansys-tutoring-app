@@ -203,3 +203,43 @@ def test_students_cannot_create_tutorials(client, seeded):
         "/api/instructor/tutorials/blank", json={"tutorial_id": "sneaky", "title": "x"}
     )
     assert r.status_code == 403
+
+
+# --- the folder layout: content/data/<tutorial_id>/ --------------------------
+
+
+def test_folder_layout_images_are_served(client, seeded):
+    """A tutorial authored as content/data/<id>/tutorial.json keeps its step
+    images in the same folder; those are served, and nothing else there is."""
+    r = client.get("/tutorial-content/tut07_mesh_global_control/p03.jpg")
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("image/")
+
+
+def test_folder_layout_never_serves_tutorial_or_quiz_json(client, seeded):
+    """The same directory holds tutorial JSON, and content/data/quizzes holds
+    answer keys — only image files may be reachable."""
+    assert client.get("/tutorial-content/tut07_mesh_global_control/tutorial.json").status_code == 404
+    assert client.get("/tutorial-content/quizzes/tut1_3d_bar.json").status_code == 404
+
+
+def test_folder_layout_rejects_traversal(client, seeded):
+    """Escaping the content directory is refused. A path whose encoded slashes
+    change the route shape falls through to the SPA shell, which is also safe —
+    what matters is that no file outside the directory is ever returned."""
+    inside = client.get("/tutorial-content/tut07_mesh_global_control/..%5C..%5Cschema.sql")
+    assert inside.status_code == 404
+
+    reshaped = client.get("/tutorial-content/..%2F..%2Fserver/schema.sql")
+    assert "CREATE TABLE" not in reshaped.text
+
+
+def test_foldered_tutorials_are_seeded(settings, app, seeded):
+    """Both layouts are picked up at boot, so a folder tutorial reaches
+    students like any other."""
+    from server.services import tutorial_store
+
+    names = {p.parent.name if p.name == "tutorial.json" else p.stem
+             for p in tutorial_store.authored_tutorial_files()}
+    assert "tut07_mesh_global_control" in names   # folder layout
+    assert "tut1" in names                        # flat layout

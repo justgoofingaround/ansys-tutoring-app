@@ -165,20 +165,34 @@ def _token_from(mailer):
     return mailer.sent[-1]["url"].split("token=")[1]
 
 
-def test_link_verifies_and_signs_in(client, rostered, mailer):
+def test_link_confirms_without_signing_in(client, rostered, mailer):
+    """The link proves the address; it does not hand out a session. It travels
+    through email (and through NYU's link rewriter), so whoever opens the
+    message must still know the password."""
     _register(client, "ben@nyu.edu")
     r = client.get("/api/auth/verify", params={"token": _token_from(mailer)})
     assert r.status_code == 200
-    me = client.get("/api/auth/me").json()
-    assert me["username"] == "Ben Cole" and me["role"] == "student"
+    assert r.json() == {"status": "verified", "email": "ben@nyu.edu"}
+    assert "session" not in r.cookies
+    assert client.get("/api/auth/me").status_code == 401
+
+    # ...and signing in by hand then works
+    r = client.post(
+        "/api/auth/login", json={"username": "ben@nyu.edu", "password": "pw-eight-chars"}
+    )
+    assert r.status_code == 200 and r.json()["username"] == "Ben Cole"
 
 
-def test_link_is_single_use(client, rostered, mailer):
+def test_opening_the_link_twice_still_reports_success(client, rostered, mailer):
+    """Mail scanners fetch links to check them, which would otherwise consume
+    the token and leave the student on an error page for an account that is in
+    fact confirmed. Replaying confirms nothing new, so it is allowed."""
     _register(client, "ben@nyu.edu")
     token = _token_from(mailer)
     assert client.get("/api/auth/verify", params={"token": token}).status_code == 200
-    client.post("/api/auth/logout", json={})
-    assert client.get("/api/auth/verify", params={"token": token}).status_code == 400
+    r = client.get("/api/auth/verify", params={"token": token})
+    assert r.status_code == 200 and r.json()["status"] == "verified"
+    assert "session" not in r.cookies
 
 
 def test_expired_link_is_refused(client, rostered, mailer, settings):
@@ -512,9 +526,9 @@ def test_no_mail_server_configured_does_not_promise_an_email(tmp_path):
     """Default deployment (no SMTP_HOST): the link is only logged, so the
     student must be told to ask the instructor rather than wait for mail."""
     s = Settings(
-        data_dir=tmp_path / "nomail", enable_llm=False,
+        data_dir=tmp_path / "nomail", enable_llm=False, smtp_host=None,
         instructor_username="prof", instructor_password="prof-pass-123",
-    )  # mailer=None -> LoggingMailer
+    )  # no mailer and no SMTP host -> LoggingMailer
     with TestClient(create_app(s)) as c:
         login(c, "prof", "prof-pass-123")
         section_id = c.get("/api/instructor/sections").json()[0]["id"]

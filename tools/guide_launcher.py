@@ -33,7 +33,9 @@ TUTORIALS_DIR = REPO_ROOT / "content" / "data"
 # Both are written back to the same relative path the document names, so the
 # guide's own REPO_ROOT / source_image lookup finds them either way.
 IMAGE_SOURCES = (
+    # Most specific prefix first: content/data/images/ before content/data/.
     ("content/data/images/", "/tutorial-images/"),   # authored in the repo
+    ("content/data/", "/tutorial-content/"),         # tutorial folder layout
     ("uploads/step_images/", "/step-images/"),       # uploaded in the web editor
     # Legacy prefix from before content/ was renamed from mock_server/. Stored
     # tutorial versions are immutable, so old ones still name this path; the

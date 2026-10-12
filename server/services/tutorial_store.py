@@ -20,6 +20,16 @@ from tools.validate_tutorial import validate  # repo root is on sys.path (config
 from ..config import REPO_ROOT, Settings
 
 DEFAULT_SEED = REPO_ROOT / "content" / "data" / "tut1.json"
+CONTENT_DIR = REPO_ROOT / "content" / "data"
+
+
+def authored_tutorial_files() -> list[Path]:
+    """Authored tutorials, in both layouts: a bare <id>.json, and the newer
+    <id>/tutorial.json folder that keeps a tutorial's JSON and its step images
+    together. Files starting with '_' are templates."""
+    flat = [p for p in CONTENT_DIR.glob("*.json") if not p.name.startswith("_")]
+    foldered = [p for p in CONTENT_DIR.glob("*/tutorial.json")]
+    return sorted(flat + foldered, key=lambda p: p.stem if p.name != "tutorial.json" else p.parent.name)
 
 
 class TutorialValidationError(Exception):
@@ -213,9 +223,7 @@ def seed_if_empty(conn: sqlite3.Connection, settings: Settings) -> None:
     if row["n"] != 0:
         return
     if settings.seed_all_tutorials:
-        for path in sorted(DEFAULT_SEED.parent.glob("*.json")):
-            if path.name.startswith("_"):
-                continue
+        for path in authored_tutorial_files():
             import_tutorial(
                 conn, settings, path,
                 product="mechanical", is_mandatory=path == DEFAULT_SEED,

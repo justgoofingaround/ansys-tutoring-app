@@ -1,0 +1,586 @@
+{
+  "tutorial_id": "tut1_3d_bar",
+  "version": 1,
+  "title": "Tutorial 1 — Elongation of a 3D Bar Under Tension",
+  "problem": "A bar fixed at one end with a 3000 lbf tensile load on the other. Steel: E = 30e6 psi, nu = 0.27. Radius 0.5 in, length 30 in. Compute the elongation.",
+  "report_checks": {
+    "required_sections": [
+      "Static Structural",
+      "Solution",
+      "Results"
+    ],
+    "preferred_sections": [
+      "Total Deformation",
+      "Equivalent Stress"
+    ],
+    "must_contain": [
+      "Structural Steel"
+    ],
+    "expected_result": {
+      "value": 0.00382,
+      "tolerance": 0.0002,
+      "units": "in",
+      "aliases": [
+        "0.00382"
+      ]
+    }
+  },
+  "_notes": {
+    "selector_status": "UNVERIFIED — selectors use display names from the source screenshots; resolve real UIA automation_id/name via the Phase 0 spike before relying on them.",
+    "highlight_legend": "uia = overlay draws a box around a UIA element (element locator resolves the bbox at runtime). instruction = 3D-viewport action UIA cannot see; show an instruction/arrow, no tracked box. none = no highlight (launch/close).",
+    "verify_legend": "uia = UI-tree check. script(engine) = authoritative model state (spaceclaim | pymechanical). window_appeared = transition. manual = student confirms (no programmatic check available).",
+    "viewport_caveat": "Steps marked highlight=instruction happen inside the 3D graphics window, which UIA cannot enumerate. They are verified by model state where possible, else manual.",
+    "workbench_uia_finding_2026-06": "CONFIRMED via live guide_tut1.py debug dump: Workbench's ribbon/menu bar IS exposed via UI Automation (File, Save, Save As all resolve correctly). The Toolbox panel and Project Schematic canvas are NOT exposed via UIA at all -- a snapshot dump of the main window's full descendant tree (154 controls) contained zero Toolbox/Schematic items, only ribbon/menu/status-bar chrome. This is almost certainly a custom-drawn control with no per-item (or even pane-level) automation peers, not a selector-naming issue. wb_03 (Toolbox drag) and wb_04 (schematic rename) were changed from highlight:uia/verify:uia to highlight:instruction/verify:manual as a result. If a later Workbench step targeting the Toolbox or Schematic also reports 'NOT FOUND' with an all-chrome sample dump, apply the same fix rather than re-diagnosing. Real fix (deferred): image-template matching over the Toolbox/Schematic region, per the build plan's Phase 0 contingency (Student-Track-App-Build-Plan.md, Phase 0 exit gate).",
+    "workbench_win32_finding_2026-06": "CONFIRMED via spikes/probe3_win32_toolbox.py on a live machine: the Toolbox is ALSO invisible to the raw Win32 HWND tree (backend='win32'), not just UIA. The 45-control dump under the Workbench window contains zero SysListView32/SysTreeView32/listbox-class windows anywhere -- the Toolbox region (L4,T183-R308,B954) is covered only by generic repeated 'WindowsForms10.Window.8...' container HWNDs, the same class used for unrelated panes. This rules out BOTH automation APIs as a source of live per-item coordinates for Toolbox/Schematic rows -- it's a single owner-drawn surface with no native row objects at all, at any level. Do not re-attempt UIA or win32-backend probes for Toolbox/Schematic rows -- both are exhausted.",
+    "workbench_template_match_rejected_2026-06": "TRIED AND REJECTED: image-template matching (OpenCV TM_CCOEFF_NORMED against a saved crop of the 'Static Structural' row) as the live-box fallback for Toolbox rows. Verified failure mode: matching the exact crop against the exact screenshot it came from picked the 'Modal' row (score 0.58) over the real 'Static Structural' location, because every Toolbox row shares the same icon+text layout and pixel correlation doesn't actually read the text -- raising the threshold would only ever produce 'not found', never fix the wrong-row match. Replaced with OCR (pytesseract over an upscaled grayscale screenshot of the Toolbox rect, see locate.locate_text()), which matches on the real string content and is what wb_03 now uses (highlight/selector.type == 'ocr_text'). spikes/capture_template.py and spikes/templates/*.png are leftover from the rejected approach and can be deleted.",
+    "wb03_verify_2026-06": "wb_03 verify.type is \"ocr_text_present\" with a multi-row \"texts\" list (Engineering Data / Geometry / Model / Setup / Solution / Results), not just a single \"Engineering Data\" check -- matches the full system-block structure shown in the reference screenshot the student attached (a 7-row block: Static Structural, Engineering Data, Geometry, Model, Setup, Solution, Results), rather than confirming only one row of it. \"Static Structural\" itself is deliberately excluded from the list -- it is also the Toolbox's own permanent template row, so re-checking it would be a guaranteed false positive even before the drag happens. Implementation: locate.all_texts_present() does ONE OCR pass per attempt over locate.schematic_rect() and checks all phrases against that single result (re-tried as a whole up to OCR_RETRIES times) -- deliberately NOT one Tesseract invocation per phrase per tick, which would be far too slow for the ~700ms tick budget. verify.ocr_text_present() in verify.py dispatches to it.",
+    "wb04_geometry_2026-06": "wb_04 was changed from \"rename the system\" to \"select Geometry\" (double-click the Geometry row in the Static Structural schematic block to launch the geometry editor) -- this is the actual next real action in the live walkthrough; the rename step was dropped, not deferred. selector/highlight reuse the same ocr_text machinery as wb_03, but with selector.scope=\"schematic\" so guide_tut1.py scopes the OCR search to locate.schematic_rect() instead of the Toolbox -- a bare \"Geometry\" search over the whole screen would be too unscoped otherwise. verify uses \"window_appeared\" app=\"spaceclaim\" (same process-check pattern as wb_01) since double-clicking Geometry launches the geometry editor as its own process -- spaceclaim's process name in verify.APP_PROCESS_NAMES is still UNCONFIRMED, same caveat noted there since before this session; confirm against the real process name once tested live.",
+    "wb04_verify_2026-06": "wb_04 verify.type changed from \"window_appeared\" (app=spaceclaim) to \"row_status_icon\" (text=\"Geometry\", scope=\"schematic\"). The student identified the real completion signal: once Geometry is defined (via EITHER \"New Geometry\" or \"Import Geometry\" from the right-click menu), the row's status icon in the schematic block turns from a blue question mark to a green checkmark. Checking for a spaceclaim window was unreliable for the \"Import\" path specifically (it may not launch the full editor at all), so this checks the actual outcome instead of one specific path to it. Implementation: locate.row_status_is_green() finds the row's label via the same OCR machinery as locate_text()/texts_found(), then samples the small icon area immediately to its right and classifies it by HSV hue/saturation (green checkmark vs blue question-mark vs background) -- a color check, not OCR, since a checkmark glyph isn't reliably read as text. UNTESTED against the real icon's exact pixel colors -- the live debug print (\"row_status_is_green(...) -> frac_green=...\") will show whether the hue range (35-95) and the 0.05 saturated-pixel threshold need tuning once tested against the real screen.",
+    "wb05_model_2026-06": "wb_05 was changed from \"set unit system\" to \"select Model\" (double-click the Model row in the Static Structural schematic block to launch Ansys Mechanical) -- same pattern as wb_04's replacement: this is the actual next real action in the live walkthrough (working top-to-bottom through the schematic block: Engineering Data done, Geometry done at wb_04, Model next), the units-menu step was dropped, not deferred. selector/highlight reuse the ocr_text + scope=\"schematic\" pattern from wb_04. verify uses \"window_appeared\" app=\"mechanical\" (same process-check pattern as wb_01/wb_04's original spaceclaim check) rather than \"row_status_icon\" -- unlike Geometry (which has two valid completion paths, New vs Import, motivating the checkmark-based check), double-clicking Model has exactly one outcome (Mechanical opens), so a straightforward process check fits and avoids extending the still-being-debugged row_status_icon approach to a new step. mechanical's process name in verify.APP_PROCESS_NAMES (\"AnsysWBU\") remains UNCONFIRMED -- check against the real process name once tested live.",
+    "me_material_split_2026-06": "me_01_open_model was removed (redundant -- wb_05_select_model already double-clicks Model to open Mechanical). me_02_assign_material (one combined step: expand Geometry, select Solid, set Assignment) was split into 3 granular steps -- me_01_expand_geometry, me_02_select_solid, me_03_set_material_steel -- matching the one-action-per-step pattern every other step in this tutorial follows. Target material confirmed as Steel (matches the original tutorial doc's \"Assign the steel material to Solid body\"), not Aluminum -- Aluminum was only an illustrative example of the assignment-dropdown mechanism. me_02_select_solid matches by the substring \"\\Solid\" (via ElementLocator._match()'s existing substring matching) rather than an exact name, since the live screenshot showed the real child node named \"anothermodel\\Solid\", not the tutorial doc's \"SYS-1\\Solid\" -- the prefix depends on the imported part/file name, but always ends in '\\Solid'. The 2 new precursor steps (expand, select) use verify.type=\"manual\" since tree-expand-state and tree-selection-state UIA checks are untested; the material-assignment step keeps the original script/pymechanical verify. All subsequent me_NN step_ids were renumbered (+1) to stay sequential -- step_ids are unique labels only, nothing in code hardcodes them, so renumbering is safe.",
+    "runtime_steps_2026-07": "The step subset/order the guide runs was moved OUT of guide_tut1.py (formerly the hardcoded STEP_IDS list) into this file's top-level runtime_steps, so a tutorial JSON is the only thing needed to add/run a tutorial. Omit runtime_steps entirely to run every step in document order; tut1 keeps it because live testing jumps Workbench -> Mechanical, skipping the SpaceClaim/Engineering Data sections. The re_01..re_03-before-me_11_solve ordering is deliberate (insert results before solving so one solve evaluates them). report_checks.expected_result was also added (migrated from the display-only top-level expected_answer) so report_verify.py's numeric check actually runs.",
+    "trim_2026-07": "Removed the never-run SpaceClaim (sc_01-sc_13) and Engineering Data (ed_01-ed_04) sections -- runtime_steps has always skipped them (live testing goes Workbench -> Mechanical with imported geometry) and the pilot doesn't use them. They remain in git history (commit c599d73 onward) if the SpaceClaim path is ever revived. Also removed dead metadata fields nothing reads (product, geometry_tool, ansys_version_source, is_mandatory, quiz_id, source, expected_answer -- the checked value lives in report_checks.expected_result) and dead selector keys (automation_id, group). runtime_steps is still needed for ORDER, not just selection: re_01-re_03 insert results before me_11_solve so a single solve evaluates them.",
+    "manual_verify_switch_2026-06": "Converted all currently-AUTOMATIC verify checks back to verify.type=\"manual\" -- wb_01_open (window_appeared), wb_02_save_project (window_title_excludes), wb_03_add_static_structural (ocr_text_present), wb_04_select_geometry (row_status_icon), wb_05_select_model (window_appeared), me_03_set_material_steel and me_04_generate_mesh (script/pymechanical material_assignment / mesh_node_count). Decision: for this Phase 0 spike/pilot, a simple manual confirm button is more practical and robust than continuing to chase OCR/UIA/gRPC reliability issues (panel-text leaking into OCR captures, hue-range mis-calibration, frac_green=0 bugs, untested PyMechanical gRPC connectivity) -- all real, but not worth the fragility for a student-facing pilot right now. The underlying detection code (window_appeared/window_title_excludes/ocr_text_present/row_status_icon/PyMechanical integration) was REMOVED from verify.py (and texts_found/row_status_is_green/_row_icon_rect from locate.py) as dead code, not just disabled -- see git history / conversation log if this needs to be revived later. HIGHLIGHTING is unaffected -- locate_text(), schematic_rect(), ElementLocator, etc. are all still live and unchanged, since the live box is independent of how a step gets verified. Also converted sc_01_open_geometry and sc_13_close_save (not yet loaded into STEP_IDS, but still declared window_appeared) for consistency -- leaving them referencing a verify.type with zero implementing code anywhere would be a dangling/confusing state once window_appeared() is removed from verify.py."
+  },
+  "apps": [
+    "workbench",
+    "mechanical"
+  ],
+  "runtime_steps": [
+    "wb_01_open",
+    "wb_02_save_project",
+    "wb_03_add_static_structural",
+    "wb_04_select_geometry",
+    "wb_05_select_model",
+    "me_01_expand_geometry",
+    "me_02_select_solid",
+    "me_03_set_material_steel",
+    "me_04_generate_mesh",
+    "me_05_select_static",
+    "me_06_force_tool",
+    "me_07_force_face",
+    "me_08_force_magnitude",
+    "me_09_fixed_tool",
+    "me_10_fixed_face",
+    "re_01_insert_dir_deformation",
+    "re_02_orientation",
+    "re_03_evaluate",
+    "me_11_solve",
+    "re_04_save"
+  ],
+  "sections": [
+    {
+      "section": "Create a new Static Structural analysis case",
+      "app": "workbench",
+      "steps": [
+        {
+          "step_id": "wb_01_open",
+          "app": "workbench",
+          "title": "Open Ansys Workbench",
+          "description": "Launch Ansys Workbench to start the project.",
+          "selector": {
+            "type": "window",
+            "app": "workbench"
+          },
+          "highlight": "none",
+          "action": {
+            "kind": "launch"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Is Ansys Workbench open?"
+          },
+          "hints": [
+            "Start it from the Windows Start menu or the lab launcher."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_02_save_project",
+          "app": "workbench",
+          "title": "Save the project as \"Tut-1\"",
+          "description": "Open the File menu, click \"Save As...\", then name the project \"Tut-1\".",
+          "selector": {
+            "type": "uia",
+            "name": "Save As",
+            "via": "File"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "menu_select",
+            "via": "File",
+            "then": "text_entry",
+            "value": "Tut-1"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Project saved as 'Tut-1' (title bar no longer says 'Unsaved Project')?"
+          },
+          "hints": [
+            "Click File to open the menu, then choose Save As..."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "wb_03_add_static_structural",
+          "app": "workbench",
+          "title": "Add a Static Structural analysis",
+          "description": "Drag 'Static Structural' from Toolbox > Analysis Systems onto the Project Schematic.",
+          "selector": {
+            "type": "ocr_text",
+            "name": "Static Structural",
+            "text": "Static Structural"
+          },
+          "highlight": "ocr_text",
+          "action": {
+            "kind": "drag"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Dragged 'Static Structural' onto the Project Schematic?"
+          },
+          "hints": [
+            "The Toolbox is on the left; expand Analysis Systems."
+          ],
+          "source_image": "mock_server/data/images/tut1/wb_03_add_static_structural.png"
+        },
+        {
+          "step_id": "wb_04_select_geometry",
+          "app": "workbench",
+          "title": "Select Geometry",
+          "description": "Right-click 'Geometry' in the Static Structural system block and choose whether to import an existing geometry or create a new one.",
+          "selector": {
+            "type": "ocr_text",
+            "text": "Geometry",
+            "scope": "schematic"
+          },
+          "highlight": "ocr_text",
+          "action": {
+            "kind": "right_click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Geometry defined (status icon next to Geometry turned green)?"
+          },
+          "hints": [
+            "The system block is in the Project Schematic; 'Geometry' is the row with the '?' icon.",
+            "Right-click brings up a menu with options like \"Import Geometry\" and \"New Geometry\"."
+          ]
+        },
+        {
+          "step_id": "wb_05_select_model",
+          "app": "workbench",
+          "title": "Select Model",
+          "description": "Double-click 'Model' (just below 'Geometry') in the Static Structural system block to launch Ansys Mechanical and build/solve the FE model.",
+          "selector": {
+            "type": "ocr_text",
+            "text": "Model",
+            "scope": "schematic"
+          },
+          "highlight": "ocr_text",
+          "action": {
+            "kind": "double_click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Mechanical opened?"
+          },
+          "hints": [
+            "The system block is in the Project Schematic; 'Model' is the row right below 'Geometry'."
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Setup and solve in Mechanical",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_01_expand_geometry",
+          "app": "mechanical",
+          "title": "Expand Geometry",
+          "description": "In the Outline tree, expand 'Geometry' to reveal the solid body underneath it.",
+          "selector": {
+            "type": "uia",
+            "name": "Geometry"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Geometry expanded in the Outline tree?"
+          },
+          "hints": [
+            "Click the small expand arrow to the left of 'Geometry'."
+          ]
+        },
+        {
+          "step_id": "me_02_select_solid",
+          "app": "mechanical",
+          "title": "Select the Solid body",
+          "description": "Select the body item under Geometry (named '<part name>\\Solid') to open its Details.",
+          "selector": {
+            "type": "uia",
+            "name": "\\Solid"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Solid body selected and Details panel showing?"
+          },
+          "hints": [
+            "It's the single child under 'Geometry' once expanded; its name depends on the imported part, but always ends in '\\Solid'."
+          ]
+        },
+        {
+          "step_id": "me_03_set_material_steel",
+          "app": "mechanical",
+          "title": "Assign Steel to the Solid body",
+          "description": "In the Details panel, click the current Material > Assignment value (e.g. 'Structural Steel') and choose 'Steel' instead.",
+          "selector": {
+            "type": "uia",
+            "name": "Assignment"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click",
+            "then": "select",
+            "value": "Steel"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Material assignment set to 'Steel'?"
+          },
+          "hints": [
+            "Material > Assignment is a dropdown in the Definition section of Details."
+          ]
+        },
+        {
+          "step_id": "me_04_generate_mesh",
+          "app": "mechanical",
+          "title": "Generate the mesh",
+          "description": "Right-click 'Mesh' in the Outline tree and choose 'Generate Mesh'.",
+          "selector": {
+            "type": "uia",
+            "name": "Mesh"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Generate Mesh"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Mesh generated?"
+          },
+          "hints": [
+            "Default mesh is fine for this tutorial."
+          ],
+          "source_image": "mock_server/data/images/tut1/me_04_generate_mesh.png"
+        },
+        {
+          "step_id": "me_05_select_static",
+          "app": "mechanical",
+          "title": "Select Static Structural",
+          "description": "Select 'Static Structural' in the Outline tree to add loads.",
+          "selector": {
+            "type": "uia",
+            "name": "Static Structural"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "uia",
+            "check": "selected",
+            "target": "Static Structural"
+          },
+          "hints": [
+            "This enables the Environment ribbon."
+          ],
+          "source_image": "mock_server/data/images/tut1/me_05_select_static.png"
+        },
+        {
+          "step_id": "me_06_force_tool",
+          "app": "mechanical",
+          "title": "Insert a Force load",
+          "description": "On the Environment ribbon, click 'Force' in the Loads group.",
+          "selector": {
+            "type": "uia",
+            "name": "Force"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "load_exists",
+            "args": {
+              "type": "Force"
+            }
+          },
+          "hints": [
+            "Environment ribbon > Loads group."
+          ],
+          "source_image": "mock_server/data/images/tut1/me_05_select_static.png"
+        },
+        {
+          "step_id": "me_07_force_face",
+          "app": "mechanical",
+          "title": "Scope the force to one end face",
+          "description": "Select one circular end face of the bar, then click 'Apply' in the Geometry box of the Force Details.",
+          "selector": {
+            "type": "viewport"
+          },
+          "highlight": "instruction",
+          "action": {
+            "kind": "select_face",
+            "then": "click",
+            "value": "Apply"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "load_scope_face_count",
+            "args": {
+              "type": "Force",
+              "faces": 1
+            }
+          },
+          "hints": [
+            "Click the end face in the 3D view, then Apply in Details > Geometry."
+          ],
+          "source_image": "mock_server/data/images/tut1/me_05_select_static.png"
+        },
+        {
+          "step_id": "me_08_force_magnitude",
+          "app": "mechanical",
+          "title": "Set the force magnitude to 3000 lbf",
+          "description": "In the Force Details, set Magnitude to 3000 lbf.",
+          "selector": {
+            "type": "uia",
+            "name": "Magnitude"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "text_entry",
+            "value": "3000 lbf"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "force_magnitude",
+            "args": {
+              "value": 3000,
+              "unit": "lbf",
+              "tol": 0.1
+            }
+          },
+          "hints": [
+            "Magnitude is in the Definition section of Details."
+          ],
+          "source_image": "mock_server/data/images/tut1/me_05_select_static.png"
+        },
+        {
+          "step_id": "me_09_fixed_tool",
+          "app": "mechanical",
+          "title": "Insert a Fixed Support",
+          "description": "On the Environment tab, click 'Fixed' in the Structural group.",
+          "selector": {
+            "type": "uia",
+            "name": "Fixed"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "bc_exists",
+            "args": {
+              "type": "Fixed Support"
+            }
+          },
+          "hints": [
+            "Environment ribbon > Structural group > Fixed."
+          ],
+          "source_image": "mock_server/data/images/tut1/me_09_fixed_tool.png"
+        },
+        {
+          "step_id": "me_10_fixed_face",
+          "app": "mechanical",
+          "title": "Scope the fixed support to the opposite face",
+          "description": "Select the opposite end face of the bar, then click 'Apply'.",
+          "selector": {
+            "type": "viewport"
+          },
+          "highlight": "instruction",
+          "action": {
+            "kind": "select_face",
+            "then": "click",
+            "value": "Apply"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "bc_scope_face_count",
+            "args": {
+              "type": "Fixed Support",
+              "faces": 1
+            }
+          },
+          "hints": [
+            "Pick the end opposite to the force, then Apply."
+          ],
+          "source_image": "mock_server/data/images/tut1/me_09_fixed_tool.png"
+        },
+        {
+          "step_id": "me_11_solve",
+          "app": "mechanical",
+          "title": "Solve",
+          "description": "Click 'Solve' on the Home ribbon.",
+          "selector": {
+            "type": "uia",
+            "name": "Solve"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "click"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "solve_status",
+            "args": {
+              "status": "Done"
+            }
+          },
+          "hints": [
+            "Solving may take a moment; watch the status."
+          ],
+          "source_image": "mock_server/data/images/tut1/me_11_solve.png"
+        }
+      ]
+    },
+    {
+      "section": "Generate the result",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "re_01_insert_dir_deformation",
+          "app": "mechanical",
+          "title": "Insert Directional Deformation",
+          "description": "Right-click 'Solution' in the Outline tree and insert Directional Deformation.",
+          "selector": {
+            "type": "uia",
+            "name": "Solution"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Insert > Directional Deformation"
+          },
+          "verify": {
+            "type": "uia",
+            "check": "exists",
+            "target": "Directional Deformation"
+          },
+          "hints": [
+            "Solution is under the analysis branch in the Outline."
+          ],
+          "source_image": "mock_server/data/images/tut1/re_01_insert_dir_deformation.png"
+        },
+        {
+          "step_id": "re_02_orientation",
+          "app": "mechanical",
+          "title": "Set orientation to the bar axis",
+          "description": "In the Directional Deformation Details, set Orientation to the perpendicular (axial, Y) direction.",
+          "selector": {
+            "type": "uia",
+            "name": "Orientation"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "select",
+            "value": "Y Axis"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Orientation set to the bar's axis (Y)?"
+          },
+          "hints": [
+            "Match the direction the load stretches the bar."
+          ],
+          "source_image": null
+        },
+        {
+          "step_id": "re_03_evaluate",
+          "app": "mechanical",
+          "title": "Evaluate all results",
+          "description": "Right-click 'Directional Deformation' and choose 'Evaluate All Results'.",
+          "selector": {
+            "type": "uia",
+            "name": "Directional Deformation"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "right_click",
+            "then": "menu_select",
+            "value": "Evaluate All Results"
+          },
+          "verify": {
+            "type": "script",
+            "engine": "pymechanical",
+            "check": "result_evaluated",
+            "args": {
+              "result": "Directional Deformation"
+            }
+          },
+          "hints": [
+            "Expected elongation is about 0.00382 in."
+          ],
+          "source_image": "mock_server/data/images/tut1/re_03_evaluate.png"
+        },
+        {
+          "step_id": "re_04_save",
+          "app": "mechanical",
+          "title": "Save the project",
+          "description": "Save the project to finish.",
+          "selector": {
+            "type": "uia",
+            "name": "Save"
+          },
+          "highlight": "uia",
+          "action": {
+            "kind": "menu_select"
+          },
+          "verify": {
+            "type": "manual",
+            "prompt": "Project saved?"
+          },
+          "hints": [
+            "Final result: elongation approx 0.00382 in."
+          ],
+          "source_image": "mock_server/data/images/tut1/re_04_save.png"
+        }
+      ]
+    }
+  ],
+  "_meta": {
+    "version": 1,
+    "product": "mechanical",
+    "is_mandatory": true,
+    "quiz_id": "quiz_tut1_3d_bar"
+  }
+}

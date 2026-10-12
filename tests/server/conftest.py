@@ -18,7 +18,11 @@ from server.security import hash_password, new_class_code  # noqa: E402
 
 @pytest.fixture()
 def settings(tmp_path):
-    return Settings(data_dir=tmp_path / "server_data", enable_llm=False)
+    # smtp_host is pinned off, not left to the environment: Settings reads the
+    # repo .env, so a developer with real SMTP credentials configured would
+    # otherwise have the suite mail confirmation links to the fake addresses in
+    # these tests. Tests never touch the network.
+    return Settings(data_dir=tmp_path / "server_data", enable_llm=False, smtp_host=None)
 
 
 @pytest.fixture()

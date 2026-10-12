@@ -13,7 +13,10 @@ type Role = "student" | "instructor";
 export function LoginPage() {
   const { data: me, isPending } = useMe();
   const location = useLocation();
-  const expired = new URLSearchParams(location.search).get("expired") === "1";
+  const query = new URLSearchParams(location.search);
+  const expired = query.get("expired") === "1";
+  // Set by the confirmation page, which sends the student here to sign in.
+  const confirmed = query.get("confirmed") === "1";
   const [role, setRole] = useState<Role>(
     () => (localStorage.getItem("login-role") as Role) || "student",
   );
@@ -50,6 +53,12 @@ export function LoginPage() {
           <p className="mt-2 text-[15px] text-ink-soft">
             Step-by-step Ansys tutorials, quizzes, and help — for the FEA lab.
           </p>
+
+          {confirmed && (
+            <p className="mt-4 rounded-(--radius-control) border border-success/30 bg-success-tint px-3 py-2 text-sm text-success">
+              Email confirmed — sign in to continue.
+            </p>
+          )}
 
           {expired && (
             <p className="mt-4 rounded-(--radius-control) border border-hairline bg-surface px-3 py-2 text-sm text-ink-soft">

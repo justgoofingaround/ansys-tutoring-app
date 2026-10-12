@@ -1,0 +1,195 @@
+{
+  "tutorial_id": "tut11_loads_supports",
+  "version": 1,
+  "title": "Tutorial 11 — Loads and supports",
+  "problem": "Imported from the ANSYS step-by-step guide deck. Each step shows the slide it came from; review the wording and selectors before publishing.",
+  "apps": [
+    "mechanical",
+    "workbench"
+  ],
+  "sections": [
+    {
+      "section": "Steps",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_01_use_this_guide_to_work_on",
+          "app": "mechanical",
+          "title": "Use this guide to work on the Journal Bearing model",
+          "description": "Use this guide to work on the Journal Bearing model.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut11_loads_supports/p02.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Use this guide to work on the Journal Bearing model?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 2)."
+          ]
+        },
+        {
+          "step_id": "wb_02_open_archive_shaft_bearing",
+          "app": "workbench",
+          "title": "Open Archive \"Shaft_Bearings_WS07_Start.wbpz\" or continue with the pro…",
+          "description": "Open Archive \"Shaft_Bearings_WS07_Start.wbpz\" or continue with the project as it is after Module 06 completion Open Mechanical",
+          "highlight": "instruction",
+          "source_image": "content/data/tut11_loads_supports/p03.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Open Archive \"Shaft_Bearings_WS07_Start.wbpz\" or continue with the pro…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 3)."
+          ]
+        },
+        {
+          "step_id": "me_03_verify_the_analysis_settin",
+          "app": "mechanical",
+          "title": "Verify the Analysis Settings",
+          "description": "Verify the Analysis Settings. Check the Analysis contains 1 step",
+          "highlight": "instruction",
+          "source_image": "content/data/tut11_loads_supports/p04.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Verify the Analysis Settings?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 4)."
+          ]
+        }
+      ]
+    },
+    {
+      "section": "We are now starting the loads definition",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_04_insert_a_standard_earth_gr",
+          "app": "mechanical",
+          "title": "Insert a Standard Earth Gravity load (RMB on Static Structural Branch)…",
+          "description": "Insert a Standard Earth Gravity load (RMB on Static Structural Branch), define it in -Z direction in the Global Coordinate System",
+          "highlight": "instruction",
+          "source_image": "content/data/tut11_loads_supports/p05.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Insert a Standard Earth Gravity load (RMB on Static Structural Branch)…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 5)."
+          ]
+        },
+        {
+          "step_id": "me_05_insert_a_force_load_rmb_on",
+          "app": "mechanical",
+          "title": "Insert a Force load (RMB on Static Structural Branch), scope it to the…",
+          "description": "Insert a Force load (RMB on Static Structural Branch), scope it to the external face of the pulley A (the smallest one) and Apply the selection Change the 'Define By' setting to Components and define a -2000 N magnitude in the Global Coordinate System Z direction",
+          "highlight": "instruction",
+          "source_image": "content/data/tut11_loads_supports/p06.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Insert a Force load (RMB on Static Structural Branch), scope it to the…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 6)."
+          ]
+        },
+        {
+          "step_id": "me_06_insert_another_force_load",
+          "app": "mechanical",
+          "title": "Insert another Force load (RMB on Static Structural Branch), scope it …",
+          "description": "Insert another Force load (RMB on Static Structural Branch), scope it to the external face of the pulley B (the biggest one) and Apply the selection Change the 'Define By' setting to Components and define a 2500 N magnitude in the Coordinate System X direction (use the defined coordinate system and not the default global coordinate system)",
+          "highlight": "instruction",
+          "source_image": "content/data/tut11_loads_supports/p07.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Insert another Force load (RMB on Static Structural Branch), scope it …?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 7)."
+          ]
+        },
+        {
+          "step_id": "me_07_we_move_to_the_supports_de",
+          "app": "mechanical",
+          "title": "We move to the supports definition:",
+          "description": "We move to the supports definition: Insert a Fixed Support and scope it to the side faces of a Ground body",
+          "highlight": "instruction",
+          "source_image": "content/data/tut11_loads_supports/p08.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: We move to the supports definition:?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 8)."
+          ]
+        }
+      ]
+    },
+    {
+      "section": "Duplicate the Fixed Support (RMB > Duplicate)",
+      "app": "mechanical",
+      "steps": [
+        {
+          "step_id": "me_08_edit_the_geometry_scoping",
+          "app": "mechanical",
+          "title": "Edit the Geometry scoping, by clicking on the 2 Faces field",
+          "description": "Edit the Geometry scoping, by clicking on the 2 Faces field. Apply and Cancel buttons appear. Select the 2 side faces of the other Ground body and Apply selection.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut11_loads_supports/p09.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Edit the Geometry scoping, by clicking on the 2 Faces field?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 9)."
+          ]
+        },
+        {
+          "step_id": "me_09_click_on_the_static_struct",
+          "app": "mechanical",
+          "title": "Click on the Static Structural branch, and check in the Graphics windo…",
+          "description": "Click on the Static Structural branch, and check in the Graphics window that all loads and boundary conditions are correctly applied",
+          "highlight": "instruction",
+          "source_image": "content/data/tut11_loads_supports/p10.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Click on the Static Structural branch, and check in the Graphics windo…?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 10)."
+          ]
+        },
+        {
+          "step_id": "me_10_save_project_for_use_later",
+          "app": "mechanical",
+          "title": "Save Project for use later if desired",
+          "description": "Save Project for use later if desired.",
+          "highlight": "instruction",
+          "source_image": "content/data/tut11_loads_supports/p11.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Save Project for use later if desired?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 11)."
+          ]
+        },
+        {
+          "step_id": "me_11_module_07_workshop_analysi",
+          "app": "mechanical",
+          "title": "Module 07 Workshop:",
+          "description": "Module 07 Workshop: Analysis Settings, Loads, and Supports",
+          "highlight": "instruction",
+          "source_image": "content/data/tut11_loads_supports/p12.jpg",
+          "verify": {
+            "type": "manual",
+            "prompt": "Done: Module 07 Workshop:?"
+          },
+          "hints": [
+            "The slide screenshot for this step is shown above (deck page 12)."
+          ]
+        }
+      ]
+    }
+  ]
+}
