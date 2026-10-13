@@ -30,6 +30,22 @@ from .services import quiz_store, tutorial_store
 WEBAPP_DIST = REPO_ROOT / "webapp" / "dist"
 
 
+class RevalidatingStaticFiles(StaticFiles):
+    """Static images that must be revalidated, not trusted from cache.
+
+    A replaced step image keeps its filename, and these responses carry no
+    Cache-Control, so browsers fall back to heuristic freshness (a fraction of
+    the file's age) and can serve a stale picture for days after a redeploy.
+    `no-cache` means "ask first", not "don't store": the ETag still earns a
+    cheap 304 when the image has not changed.
+    """
+
+    def file_response(self, *args, **kwargs):
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 def bootstrap_demo_state(settings: Settings) -> None:
     conn = dbmod.connect(settings.db_path)
     try:
@@ -91,13 +107,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     images_dir = REPO_ROOT / "content" / "data" / "images"
     if images_dir.is_dir():
         application.mount(
-            "/tutorial-images", StaticFiles(directory=images_dir), name="tutorial-images"
+            "/tutorial-images", RevalidatingStaticFiles(directory=images_dir),
+            name="tutorial-images",
         )
 
     # Images uploaded through the editor. Same unauthenticated treatment as
     # /tutorial-images above — tutorial content is not student data.
     application.mount(
-        "/step-images", StaticFiles(directory=settings.step_images_dir), name="step-images"
+        "/step-images", RevalidatingStaticFiles(directory=settings.step_images_dir),
+        name="step-images",
     )
 
     # Folder layout: content/data/<tutorial_id>/ keeps a tutorial's JSON and its
@@ -116,7 +134,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             or not target.is_file()
         ):
             raise HTTPException(status_code=404, detail="not_found")
-        return FileResponse(target)
+        return FileResponse(target, headers={"Cache-Control": "no-cache"})
 
     if WEBAPP_DIST.is_dir():
         application.mount(
