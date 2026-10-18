@@ -301,8 +301,9 @@ function ReportUploadCard({ detail }: { detail: TutorialDetailData }) {
         {detail.report?.ok && <Badge tone="success">Passed</Badge>}
       </div>
       <p className="mt-2 text-sm text-ink-soft">
-        Upload the report you generated from Mechanical (.html, .docx, .pdf…). It's graded
-        against the tutorial rubric.
+        {detail.has_rubric
+          ? "Upload the report you generated from Mechanical (.html, .docx, .pdf…). It is checked against the tutorial rubric, then your instructor reviews it."
+          : "Upload the report you generated from Mechanical (.html, .docx, .pdf…). Your instructor reviews it and writes back."}
       </p>
       {waiting && (
         <div className="mt-3 flex items-center gap-2.5 rounded-(--radius-control) border border-warning/30 bg-warning-tint px-4 py-3">
@@ -543,7 +544,7 @@ export function TutorialDetailPage() {
         <div className="space-y-4">
           <LaunchGuideCard tutorialId={detail.tutorial_id} />
           <QuizCard detail={detail} />
-          {detail.needs_report && <ReportUploadCard detail={detail} />}
+          <ReportUploadCard detail={detail} />
         </div>
       </div>
     </>

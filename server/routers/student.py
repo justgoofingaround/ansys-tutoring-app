@@ -132,6 +132,9 @@ def tutorial_detail(
         "needs_report": summary["needs_report"],
         "report": summary["report"],
         "report_guidelines": meta["report_guidelines"],
+        # Whether the rubric exists decides what the upload card says, not
+        # whether it appears: every tutorial accepts a report now.
+        "has_rubric": bool(content.get("report_checks")),
         "report_submissions": submissions,
         "quiz": summary["quiz"],
     }

@@ -31,8 +31,6 @@ def upload_report(
     if found is None:
         raise HTTPException(status_code=404, detail="tutorial_not_found")
     content, meta = found
-    if not content.get("report_checks"):
-        raise HTTPException(status_code=400, detail="tutorial_has_no_report_checks")
 
     filename = Path(file.filename or "report").name
     suffix = Path(filename).suffix.lower()
@@ -55,8 +53,14 @@ def upload_report(
                 raise HTTPException(status_code=413, detail="report_too_large")
             out.write(chunk)
 
-    queued = settings.report_checker == "agent"
-    if queued:
+    # No rubric means nothing to check automatically. The submission is
+    # still worth keeping: the instructor reads it and writes back.
+    has_rubric = bool(content.get("report_checks"))
+    queued = has_rubric and settings.report_checker == "agent"
+    if not has_rubric:
+        result = {"ok": False, "score": 0, "total": 0, "checks": [],
+                  "feedback": "", "llm_review": None}
+    elif queued:
         # The hub only takes custody of the file; the checker on the
         # instructor desktop claims it and posts the result back. Nothing is
         # graded here, so the row starts empty and the student sees "queued".
@@ -87,13 +91,14 @@ def upload_report(
             int(result["ok"]), result["score"], result["total"],
             json.dumps(result["checks"]), result["feedback"],
             json.dumps(result.get("llm_review")), time.time(),
-            "pending" if queued else "checked", None if queued else time.time(),
+            "pending" if queued else "unchecked" if not has_rubric else "checked",
+            None if queued else time.time(),
         ),
     )
     conn.commit()
     return {
         "submission_id": cur.lastrowid,
-        "status": "pending" if queued else "checked",
+        "status": "pending" if queued else "unchecked" if not has_rubric else "checked",
         "ok": result["ok"],
         "score": result["score"],
         "total": result["total"],

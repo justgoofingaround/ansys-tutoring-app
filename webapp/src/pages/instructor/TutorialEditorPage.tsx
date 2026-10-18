@@ -368,6 +368,166 @@ function StepForm({
 
 /* ── the page ───────────────────────────────────────────────────────── */
 
+
+/* ── report rubric ──────────────────────────────────────────────────── */
+
+interface Rubric {
+  required_sections?: string[];
+  preferred_sections?: string[];
+  must_contain?: string[];
+  expected_result?: { value?: number; tolerance?: number; units?: string; aliases?: string[] };
+}
+
+/** One comma-separated list of phrases. Empty input means "drop this check". */
+function ListField({
+  id,
+  label,
+  help,
+  placeholder,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  help: string;
+  placeholder: string;
+  value: string[] | undefined;
+  onChange: (next: string[] | undefined) => void;
+}) {
+  return (
+    <div>
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
+        value={(value ?? []).join(", ")}
+        placeholder={placeholder}
+        onChange={(e) => {
+          const parts = e.target.value
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+          onChange(parts.length ? parts : undefined);
+        }}
+      />
+      <p className="mt-1.5 text-[13px] leading-snug text-ink-faint">{help}</p>
+    </div>
+  );
+}
+
+function RubricPanel({
+  rubric,
+  onChange,
+}: {
+  rubric: Rubric | undefined;
+  onChange: (next: Rubric | undefined) => void;
+}) {
+  const r = rubric ?? {};
+  const empty =
+    !r.required_sections?.length &&
+    !r.preferred_sections?.length &&
+    !r.must_contain?.length &&
+    r.expected_result?.value == null;
+
+  const set = (patch: Partial<Rubric>) => {
+    const next = { ...r, ...patch };
+    for (const k of Object.keys(next) as (keyof Rubric)[]) {
+      const v = next[k];
+      if (v === undefined || (Array.isArray(v) && v.length === 0)) delete next[k];
+    }
+    onChange(Object.keys(next).length ? next : undefined);
+  };
+
+  const expected = r.expected_result ?? {};
+  const setExpected = (patch: Partial<NonNullable<Rubric["expected_result"]>>) => {
+    const next = { ...expected, ...patch };
+    if (next.value == null || Number.isNaN(next.value)) {
+      set({ expected_result: undefined });
+      return;
+    }
+    set({ expected_result: next });
+  };
+
+  return (
+    <Card>
+      <CardTitle>Report rubric</CardTitle>
+      <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">
+        {empty
+          ? "No rubric yet. Students can still submit a report on this tutorial — it just goes straight to you for review. Fill any of these in and submissions get checked automatically first."
+          : "What a submitted report is checked against. Leave a field empty to drop that check."}
+      </p>
+
+      <div className="mt-4 space-y-4">
+        <ListField
+          id="rubric-required"
+          label="Required sections"
+          placeholder="Static Structural, Solution, Results"
+          help="Headings the report must contain. A missing one fails the check."
+          value={r.required_sections}
+          onChange={(v) => set({ required_sections: v })}
+        />
+        <ListField
+          id="rubric-preferred"
+          label="Preferred sections"
+          placeholder="Total Deformation, Equivalent Stress"
+          help="Nice to have. A missing one is a warning, not a failure."
+          value={r.preferred_sections}
+          onChange={(v) => set({ preferred_sections: v })}
+        />
+        <ListField
+          id="rubric-phrases"
+          label="Must mention"
+          placeholder="Structural Steel, 3000 lbf"
+          help="Exact words or numbers that prove the right model was solved."
+          value={r.must_contain}
+          onChange={(v) => set({ must_contain: v })}
+        />
+
+        <div className="rounded-(--radius-control) border border-hairline bg-paper p-3">
+          <Label htmlFor="rubric-value">Expected answer</Label>
+          <p className="mb-2 mt-1 text-[13px] leading-snug text-ink-faint">
+            The number the report should arrive at. Leave the value empty to skip it.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Input
+              id="rubric-value"
+              className="w-32"
+              inputMode="decimal"
+              placeholder="0.00382"
+              value={expected.value ?? ""}
+              onChange={(e) =>
+                setExpected({ value: e.target.value === "" ? undefined : Number(e.target.value) })
+              }
+            />
+            <Input
+              className="w-32"
+              inputMode="decimal"
+              placeholder="± 0.0002"
+              value={expected.tolerance ?? ""}
+              onChange={(e) =>
+                setExpected({
+                  tolerance: e.target.value === "" ? undefined : Number(e.target.value),
+                })
+              }
+            />
+            <Input
+              className="w-24"
+              placeholder="in"
+              value={expected.units ?? ""}
+              onChange={(e) => setExpected({ units: e.target.value || undefined })}
+            />
+          </div>
+        </div>
+      </div>
+
+      <p className="mt-4 text-[13px] leading-snug text-ink-faint">
+        Saving puts this in a new draft version; students see it once you publish.
+        Writing instructions in your own words is a different thing:
+        that is <strong>Guidelines</strong> on the tutorial library row, saved instantly.
+      </p>
+    </Card>
+  );
+}
+
 export function TutorialEditorPage() {
   const { tutorialId = "" } = useParams();
   const navigate = useNavigate();
@@ -649,6 +809,11 @@ export function TutorialEditorPage() {
         </Card>
 
         <div className="space-y-4">
+          <RubricPanel
+            rubric={doc.report_checks as Rubric | undefined}
+            onChange={(next) => update({ ...doc, report_checks: next })}
+          />
+
           <Card>
             <CardTitle>Tutorial</CardTitle>
             <div className="mt-3 space-y-4">

@@ -555,8 +555,10 @@ function TutorialRow({ t }: { t: LibraryTutorial }) {
         <div className="mt-2 rounded-(--radius-control) border border-hairline bg-paper p-3">
           <div className="text-[13px] font-medium text-ink">Report-checking guidelines</div>
           <p className="mt-0.5 text-[12px] text-ink-faint">
-            Shown to students next to the report upload box and used by the AI report
-            review as its primary criteria. Leave empty to clear.
+            Free text shown to students next to the report upload box, and used by the AI
+            review as its criteria. Saved immediately, no publish needed. Leave empty to
+            clear. The automatic checks are separate: Edit this tutorial and use the
+            <strong> Report rubric</strong> panel.
           </p>
           <textarea
             value={draft}

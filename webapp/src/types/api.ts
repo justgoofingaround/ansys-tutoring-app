@@ -135,6 +135,9 @@ export interface TutorialDetailData {
   needs_report: boolean;
   report: ReportState | null;
   report_guidelines: string | null;
+  /** False when the tutorial has no rubric: submissions go straight to the
+   * instructor with nothing checked automatically. */
+  has_rubric?: boolean;
   report_submissions: {
     submission_id: number;
     status?: "checked" | "pending" | "claimed" | "failed";
