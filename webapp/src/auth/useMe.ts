@@ -47,6 +47,15 @@ export function useResetPassword() {
   });
 }
 
+/** Change your own password while signed in. Other sessions are revoked
+ * server-side; this one survives, so there is no Me to refresh. */
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (body: { current_password: string; password: string }) =>
+      apiFetch<{ status: string }>("/api/auth/password", { json: body }),
+  });
+}
+
 export function useResendVerification() {
   return useMutation({
     mutationFn: (body: { email: string }) =>

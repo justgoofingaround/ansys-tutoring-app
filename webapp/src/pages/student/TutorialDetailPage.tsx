@@ -1,8 +1,9 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft, Check, ChevronDown, FileUp, ListChecks, MonitorPlay, Play, X,
+  ArrowLeft, Check, ChevronDown, Clock, FileUp, ListChecks, MessageSquare,
+  MonitorPlay, Play, X,
 } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { Faq, ReportResult, StepRow, TutorialDetailData } from "@/types/api";
@@ -96,7 +97,7 @@ function LaunchGuideCard({ tutorialId }: { tutorialId: string }) {
           latest published version from the server automatically.
         </div>
         <div className="mt-1">
-          If nothing opens, this PC has not been set up for the guide yet — tell your
+          If nothing opens, this PC has not been set up for the guide yet. Tell your
           instructor or TA.
         </div>
       </div>
@@ -133,7 +134,7 @@ function QuizCard({ detail }: { detail: TutorialDetailData }) {
       )}
       {!attempted && !stepsDone && (
         <p className="mt-1.5 text-[13px] text-ink-faint">
-          Tip: finish the steps first — the questions assume you've run the analysis.
+          Tip: finish the steps first. The questions assume you've run the analysis.
         </p>
       )}
       <Link
@@ -154,23 +155,39 @@ function QuizCard({ detail }: { detail: TutorialDetailData }) {
 
 /* ── report upload + rubric feedback ────────────────────────────────── */
 
-function RubricFeedback({ result }: { result: ReportResult }) {
+function RubricFeedback({
+  result,
+  reviewed,
+}: {
+  result: ReportResult;
+  /** The instructor has written back about this submission. */
+  reviewed: boolean;
+}) {
   const errors = result.checks.filter((c) => c.severity !== "warning");
   const warnings = result.checks.filter((c) => c.severity === "warning");
   return (
     <div className="mt-4 space-y-3">
+      {/* Until the instructor has written back, this is a machine reading
+          the file, not a mark. Saying "needs fixes" the instant a student
+          uploads reads as a grade nobody gave them. */}
       <div
         className={cn(
           "rounded-(--radius-control) border px-3 py-2 text-[15px] font-semibold",
-          result.ok
-            ? "border-success/30 bg-success-tint text-success"
-            : "border-warning/30 bg-warning-tint text-warning",
+          !reviewed
+            ? "border-hairline bg-paper text-ink"
+            : result.ok
+              ? "border-success/30 bg-success-tint text-success"
+              : "border-warning/30 bg-warning-tint text-warning",
         )}
       >
-        {result.ok ? "Report verified" : "Report needs fixes"}{" "}
-        <span className="font-mono">
-          {result.score}/{result.total}
-        </span>
+        {!reviewed
+          ? "Submitted. Your instructor will review it."
+          : result.ok
+            ? "Report verified"
+            : "Report needs fixes"}
+      </div>
+      <div className="text-xs font-semibold uppercase tracking-wide text-ink-faint">
+        {reviewed ? "Rubric checks" : "Automatic checks, to help you while you wait"}
       </div>
       <ul className="space-y-1.5">
         {[...errors, ...warnings].map((c) => (
@@ -193,7 +210,7 @@ function RubricFeedback({ result }: { result: ReportResult }) {
       {result.llm_review?.available && (
         <div className="border-l-2 border-hairline pl-3 text-sm text-ink-soft">
           <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-faint">
-            Feedback (AI-generated — the rubric above is authoritative)
+            Feedback (AI-generated, the rubric above is authoritative)
           </div>
           <p>{result.llm_review.overall}</p>
           {result.llm_review.suggestions.length > 0 && (
@@ -214,6 +231,36 @@ function ReportUploadCard({ detail }: { detail: TutorialDetailData }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [result, setResult] = useState<ReportResult | null>(null);
+
+  // A queued submission is checked on the instructor's desktop, so the answer
+  // arrives out of band. Two sources have to agree: the upload response (which
+  // is only a placeholder while queued) and the refreshed submission list.
+  const queuedRow = detail.report_submissions.find(
+    (s) => s.status === "pending" || s.status === "claimed",
+  );
+  const justQueued =
+    result?.status === "pending" &&
+    !detail.report_submissions.some((s) => s.submission_id === result.submission_id);
+  const waiting = !!queuedRow || justQueued;
+
+  useEffect(() => {
+    if (!waiting) return;
+    const id = setInterval(() => {
+      qc.invalidateQueries({ queryKey: ["student", "tutorial", detail.tutorial_id] });
+    }, 5000);
+    return () => clearInterval(id);
+  }, [waiting, qc, detail.tutorial_id]);
+
+  // Once the checker has posted a real verdict, drop the placeholder: holding
+  // on to it is what made the card claim "0/0" under a spinner that never
+  // stopped.
+  useEffect(() => {
+    if (result?.status !== "pending") return;
+    const row = detail.report_submissions.find(
+      (s) => s.submission_id === result.submission_id,
+    );
+    if (row && row.status !== "pending" && row.status !== "claimed") setResult(null);
+  }, [detail.report_submissions, result]);
 
   const upload = useMutation({
     mutationFn: async (file: File) => {
@@ -257,6 +304,15 @@ function ReportUploadCard({ detail }: { detail: TutorialDetailData }) {
         Upload the report you generated from Mechanical (.html, .docx, .pdf…). It's graded
         against the tutorial rubric.
       </p>
+      {waiting && (
+        <div className="mt-3 flex items-center gap-2.5 rounded-(--radius-control) border border-warning/30 bg-warning-tint px-4 py-3">
+          <Spinner className="size-4 text-warning" />
+          <div className="text-sm text-ink">
+            <span className="font-medium">Sent for checking.</span> Your instructor's
+            machine runs the rubric. This page updates by itself when it's done.
+          </div>
+        </div>
+      )}
       {detail.report_guidelines && (
         <div className="mt-3 rounded-(--radius-control) border border-violet/30 bg-violet-tint px-4 py-3">
           <div className="text-xs font-semibold uppercase tracking-wide text-violet">
@@ -303,10 +359,17 @@ function ReportUploadCard({ detail }: { detail: TutorialDetailData }) {
             ? "That file type isn't supported."
             : upload.error instanceof ApiError && upload.error.code === "report_too_large"
               ? "That file is too large (max 20 MB)."
-              : "Upload failed — try again."}
+              : "Upload failed. Try again."}
         </p>
       )}
-      {result && <RubricFeedback result={result} />}
+      {result && result.status !== "pending" && (
+        <RubricFeedback
+          result={result}
+          reviewed={detail.report_submissions.some(
+            (s) => s.submission_id === result.submission_id && !!s.instructor_feedback,
+          )}
+        />
+      )}
       {detail.report_submissions.length > 0 && (
         <div className="mt-4 border-t border-hairline pt-3">
           <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-faint">
@@ -314,16 +377,65 @@ function ReportUploadCard({ detail }: { detail: TutorialDetailData }) {
           </div>
           <ul className="space-y-1">
             {detail.report_submissions.map((s) => (
-              <li key={s.submission_id} className="flex items-center gap-2 text-sm">
-                {s.ok ? (
-                  <Check className="size-3.5 text-success" strokeWidth={3} />
-                ) : (
-                  <X className="size-3.5 text-error" strokeWidth={3} />
+              <li key={s.submission_id} className="space-y-1.5">
+                <div className="flex items-center gap-2 text-sm">
+                  {s.status === "pending" || s.status === "claimed" ? (
+                    <Clock className="size-3.5 shrink-0 text-warning" />
+                  ) : s.ok ? (
+                    <Check className="size-3.5 shrink-0 text-success" strokeWidth={3} />
+                  ) : (
+                    // No cross for a submission that did not pass: the score
+                    // beside it already says so, and a red X on your own work
+                    // reads as a verdict on you rather than on the file.
+                    <span className="size-3.5 shrink-0" />
+                  )}
+                  <span className="truncate text-ink-soft">{s.filename}</span>
+                  {/* A bare score was read as a mark out of 4. It counts
+                      required rubric checks, which is not what a student
+                      assumes, so say the outcome in words instead. */}
+                  <span className="ml-auto shrink-0 text-xs text-ink-faint">
+                    <span
+                      className={
+                        s.status === "pending" || s.status === "claimed"
+                          ? "text-warning"
+                          : !s.instructor_feedback
+                            ? "text-ink-soft"
+                            : s.ok
+                              ? "text-success"
+                              : "text-warning"
+                      }
+                    >
+                      {s.status === "pending" || s.status === "claimed"
+                        ? "Checking"
+                        : s.status === "failed"
+                          ? "Could not be read"
+                          : !s.instructor_feedback
+                            ? "Submitted"
+                            : s.ok
+                              ? "Passed"
+                              : "Needs fixes"}
+                    </span>{" "}
+                    · {new Date(s.submitted_at * 1000).toLocaleDateString()}
+                  </span>
+                </div>
+
+                {/* Each note sits under the submission it was left on, so a
+                    student with several attempts can tell them apart. */}
+                {s.instructor_feedback && (
+                  <div className="ml-5 rounded-(--radius-control) border border-violet/30 bg-violet-tint px-3 py-2.5">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-violet">
+                      <MessageSquare className="size-3.5" /> Feedback from your instructor
+                    </div>
+                    <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-ink">
+                      {s.instructor_feedback}
+                    </p>
+                    {s.instructor_feedback_at && (
+                      <div className="mt-1 text-xs text-ink-faint">
+                        {new Date(s.instructor_feedback_at * 1000).toLocaleDateString()}
+                      </div>
+                    )}
+                  </div>
                 )}
-                <span className="truncate text-ink-soft">{s.filename}</span>
-                <span className="ml-auto font-mono text-xs text-ink-faint">
-                  {s.score}/{s.total} · {new Date(s.submitted_at * 1000).toLocaleDateString()}
-                </span>
               </li>
             ))}
           </ul>

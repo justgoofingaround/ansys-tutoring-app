@@ -51,18 +51,18 @@ export function LoginPage() {
             Sign in to the tutoring hub
           </h1>
           <p className="mt-2 text-[15px] text-ink-soft">
-            Step-by-step Ansys tutorials, quizzes, and help — for the FEA lab.
+            Step-by-step Ansys tutorials, quizzes, and help for the FEA lab.
           </p>
 
           {confirmed && (
             <p className="mt-4 rounded-(--radius-control) border border-success/30 bg-success-tint px-3 py-2 text-sm text-success">
-              Email confirmed — sign in to continue.
+              Email confirmed. Sign in to continue.
             </p>
           )}
 
           {expired && (
             <p className="mt-4 rounded-(--radius-control) border border-hairline bg-surface px-3 py-2 text-sm text-ink-soft">
-              Session expired — sign in again.
+              Session expired. Sign in again.
             </p>
           )}
 

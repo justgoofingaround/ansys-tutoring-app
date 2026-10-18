@@ -126,8 +126,8 @@ function ConsentGate() {
         <CardTitle>Before you use Compass</CardTitle>
       </div>
       <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
-        Compass answers Ansys questions from locally indexed documentation —
-        nothing leaves NYU's network. To help improve the course, your questions
+        Compass answers Ansys questions from locally indexed documentation.
+        Nothing leaves NYU's network. To help improve the course, your questions
         and Compass's answers are logged for your instructor,{" "}
         <strong className="text-ink">under an anonymous session token, never your name or NetID</strong>.
       </p>
@@ -135,7 +135,7 @@ function ConsentGate() {
         You can withdraw consent any time; Compass simply stops working.
       </p>
       <Button className="mt-4 w-full" loading={grant.isPending} onClick={() => grant.mutate()}>
-        I understand — enable Compass
+        I understand, enable Compass
       </Button>
     </Card>
   );
@@ -275,7 +275,7 @@ export function ChatPage() {
         {messages.length === 0 && (
           <div className="mx-auto mt-10 max-w-md text-center">
             <p className="text-[15px] text-ink-soft">
-              Ask anything about Ansys — answers come from locally indexed
+              Ask anything about Ansys. Answers come from locally indexed
               documentation.
             </p>
             <div className="mt-4 space-y-2">

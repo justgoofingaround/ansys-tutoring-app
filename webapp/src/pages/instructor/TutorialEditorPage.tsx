@@ -194,7 +194,7 @@ function StepForm({
       // The file is stored immediately; the reference is saved with the document.
       onChange({ ...step, source_image: body.source_image });
     } catch {
-      setUploadError("Upload failed — is the server running?");
+      setUploadError("Upload failed. Is the server running?");
     } finally {
       setUploading(false);
     }
@@ -238,7 +238,7 @@ function StepForm({
         </code>
       </div>
       <p className="mt-1 text-[13px] text-ink-faint">
-        The step id is fixed — student progress is recorded against it.
+        The step id is fixed. Student progress is recorded against it.
       </p>
 
       <div className="mt-4 space-y-4">
@@ -346,7 +346,7 @@ function StepForm({
             <div className="mt-2">
               <p className="mb-2 text-[13px] text-ink-faint">
                 These control what the desktop guide highlights and how it checks the step.
-                Changing them can stop the guide working — edit only if you know the
+                Changing them can stop the guide working. Edit only if you know the
                 selectors.
               </p>
               <textarea
@@ -551,7 +551,7 @@ export function TutorialEditorPage() {
           <CardTitle>Couldn't open this tutorial</CardTitle>
           <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
             {notFound
-              ? "That version does not exist, or the server is running an older build that predates the editor — restart it and try again."
+              ? "That version does not exist, or the server is running an older build that predates the editor. Restart it and try again."
               : "The tutorial could not be loaded. Try reloading the page; if it keeps failing, sign out and back in."}
           </p>
           <p className="mt-2 font-mono text-[12px] text-ink-faint">

@@ -37,6 +37,32 @@ class ResetPasswordRequest(BaseModel):
     password: str = Field(min_length=8, max_length=72)
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=72)
+    # Same floor as registration and reset; bcrypt caps at 72 bytes.
+    password: str = Field(min_length=8, max_length=72)
+
+
+class ReportCheckIn(BaseModel):
+    name: str
+    ok: bool
+    message: str = ""
+
+
+class ReportResultIn(BaseModel):
+    """What the instructor-desktop checker posts back for one submission."""
+
+    ok: bool = False
+    score: int = 0
+    total: int = 0
+    checks: list[ReportCheckIn] = Field(default_factory=list)
+    feedback: str = ""
+    llm_review: dict | None = None
+    # True when the checker could not run at all (unreadable file, crash);
+    # the submission is marked failed rather than quietly scored zero.
+    failed: bool = False
+
+
 class VerifiedResponse(BaseModel):
     """Confirming an address does not sign anyone in, so there is no session to
     describe — only the address that was confirmed, for the success page."""

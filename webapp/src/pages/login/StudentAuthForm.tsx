@@ -16,15 +16,15 @@ import { cn } from "@/components/cn";
 const ERROR_TEXT: Record<string, string> = {
   bad_credentials: "Wrong email or password.",
   not_on_roster:
-    "That address isn't on the class list — check you used your NYU email, or ask your instructor to add you.",
+    "That address isn't on the class list. Check you used your NYU email, or ask your instructor to add you.",
   already_claimed:
     "An account already exists for that address. Sign in instead, or use the confirmation link you were sent.",
-  email_not_verified: "Confirm your email first — open the link we sent you.",
+  email_not_verified: "Confirm your email first. Open the link we sent you.",
 };
 
 function errorText(e: unknown): string {
   if (e instanceof ApiError) return ERROR_TEXT[e.code] ?? `Something went wrong (${e.code}).`;
-  return "Can't reach the server — is it running?";
+  return "Can't reach the server. Is it running?";
 }
 
 /** Shared "we've emailed you" panel — same shape for confirmation and reset. */
@@ -132,7 +132,7 @@ export function StudentAuthForm() {
           <p className="text-[15px] leading-relaxed text-ink-soft">
             Your account for <strong className="text-ink">{sent.email}</strong> is set up, but we
             couldn't send the confirmation email just now. Ask your instructor to confirm your
-            account — they can do it from the class list — then sign in with the password you
+            account. They can do it from the class list, then sign in with the password you
             just chose.
           </p>
           <Button variant="secondary" className="w-full" onClick={() => setSent(null)}>
@@ -154,7 +154,7 @@ export function StudentAuthForm() {
             ) : (
               <>
                 We sent a confirmation link to <strong className="text-ink">{sent.email}</strong>.
-                Open it to finish setting up your account — it works once and expires in 48 hours.
+                Open it to finish setting up your account. It expires in 48 hours.
               </>
             )
           }
@@ -222,7 +222,7 @@ export function StudentAuthForm() {
           />
           {tab === "register" && !forgotMode && (
             <p className="mt-1.5 text-[13px] leading-snug text-ink-faint">
-              Use the address your instructor has for you — only students on the class list can
+              Use the address your instructor has for you. Only students on the class list can
               register. Your instructor sees your name; logs use an anonymous token.
             </p>
           )}

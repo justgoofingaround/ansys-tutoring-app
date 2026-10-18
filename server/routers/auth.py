@@ -17,6 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from ..config import SESSION_COOKIE, Settings
 from ..deps import csrf_check, current_user, get_db, get_settings
 from ..models import (
+    ChangePasswordRequest,
     ForgotPasswordRequest,
     LoginRequest,
     MeResponse,
@@ -352,6 +353,38 @@ def reset_password(
     )
     conn.commit()
     return {"status": "password_reset"}
+
+
+@router.post("/password", dependencies=[Depends(csrf_check)])
+def change_password(
+    body: ChangePasswordRequest,
+    request: Request,
+    conn: sqlite3.Connection = Depends(get_db),
+    user: sqlite3.Row = Depends(current_user),
+) -> dict:
+    """Change your own password, proving you know the current one.
+
+    Every other session for the account is revoked — if someone else was
+    signed in on a lab PC, changing the password is how you end that. The
+    session making the request survives, so the student is not logged out of
+    the page they are standing on.
+    """
+    if not verify_password(body.current_password, user["password_hash"]):
+        raise HTTPException(status_code=403, detail="wrong_password")
+    if body.password == body.current_password:
+        raise HTTPException(status_code=400, detail="password_unchanged")
+
+    conn.execute(
+        "UPDATE users SET password_hash = ? WHERE id = ?",
+        (hash_password(body.password), user["id"]),
+    )
+    keep = request.cookies.get(SESSION_COOKIE)
+    conn.execute(
+        "UPDATE sessions SET revoked = 1 WHERE user_id = ? AND token_hash != ?",
+        (user["id"], hash_session_token(keep) if keep else ""),
+    )
+    conn.commit()
+    return {"status": "password_changed"}
 
 
 @router.post("/logout", dependencies=[Depends(csrf_check)])

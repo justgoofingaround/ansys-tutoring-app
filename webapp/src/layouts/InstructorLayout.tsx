@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LogOut, Users, BookOpen, ListChecks, HelpCircle } from "lucide-react";
+import { LogOut, Users, BookOpen, ListChecks, FileCheck, HelpCircle } from "lucide-react";
 import { useMe, useLogout } from "@/auth/useMe";
 import { cn } from "@/components/cn";
 
@@ -7,6 +7,7 @@ const navItems = [
   { to: "/instructor/class", icon: Users, label: "Class" },
   { to: "/instructor/tutorials", icon: BookOpen, label: "Tutorials" },
   { to: "/instructor/quizzes", icon: ListChecks, label: "Quizzes" },
+  { to: "/instructor/reports", icon: FileCheck, label: "Reports" },
   { to: "/instructor/faqs", icon: HelpCircle, label: "FAQs" },
 ];
 
@@ -42,7 +43,18 @@ export function InstructorLayout() {
           ))}
         </nav>
         <div className="flex items-center justify-between border-t border-hairline px-5 py-3">
-          <span className="truncate text-sm text-ink-soft">{me?.username}</span>
+          <NavLink
+            to="/instructor/account"
+            className={({ isActive }) =>
+              cn(
+                "min-w-0 truncate rounded-(--radius-control) px-2 py-1 text-sm transition-colors",
+                isActive ? "bg-violet-tint text-violet" : "text-ink-soft hover:bg-paper hover:text-ink",
+              )
+            }
+            title="Your account"
+          >
+            {me?.username}
+          </NavLink>
           <button
             onClick={() => logout.mutate(undefined, { onSuccess: () => navigate("/login") })}
             className="inline-flex size-8 items-center justify-center rounded-(--radius-control) text-ink-faint transition-colors hover:bg-paper hover:text-ink"

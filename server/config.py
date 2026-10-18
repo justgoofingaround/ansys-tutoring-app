@@ -60,6 +60,15 @@ class Settings:
     faq_threshold: float = 0.30
     faq_min_cohort: int = 5
     max_report_bytes: int = 20 * 1024 * 1024
+    # Where the report rubric runs. "inline" keeps the hub doing it (the
+    # default, and what every test assumes). "agent" means the hub only
+    # stores the file: a checker on the instructor desktop claims it, runs
+    # the rubric there — with the GPU, so the AI review is available — and
+    # posts the result back. Set REPORT_CHECKER=agent on a host with no GPU.
+    report_checker: str = os.environ.get("REPORT_CHECKER", "inline")
+    # Shared secret the desktop checker authenticates with. Unset means the
+    # agent endpoints refuse everything, so "agent" mode needs this set.
+    agent_token: str | None = os.environ.get("AGENT_TOKEN") or None
     instructor_username: str | None = os.environ.get("INSTRUCTOR_USERNAME")
     instructor_password: str | None = os.environ.get("INSTRUCTOR_PASSWORD")
     # COOKIE_SECURE=1 for HTTPS deployments (nginx + TLS); off by default so

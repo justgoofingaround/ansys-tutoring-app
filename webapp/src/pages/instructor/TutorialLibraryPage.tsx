@@ -153,7 +153,7 @@ function UploadCard() {
           )}
         >
           <div className={cn("text-sm font-semibold", uploaded ? "text-warning" : "text-error")}>
-            {uploaded ? "Uploaded with warnings" : "Validation failed — nothing was stored"}
+            {uploaded ? "Uploaded with warnings" : "Validation failed, nothing was stored"}
           </div>
           <FindingsList findings={findings} />
         </div>
@@ -164,11 +164,11 @@ function UploadCard() {
           {uploaded.unchanged ? (
             <>
               Identical to the existing v{uploaded.version} of{" "}
-              <code className="font-mono">{uploaded.tutorial_id}</code> — no new version stored.
+              <code className="font-mono">{uploaded.tutorial_id}</code>, so no new version was stored.
             </>
           ) : (
             <>
-              Stored <code className="font-mono">{uploaded.tutorial_id}</code> as draft v{uploaded.version} — publish it below when ready.
+              Stored <code className="font-mono">{uploaded.tutorial_id}</code> as draft v{uploaded.version}. Publish it below when ready.
             </>
           )}
         </div>
@@ -213,7 +213,7 @@ function NewTutorialCard() {
       const code = e instanceof ApiError ? e.code : "";
       setError(
         {
-          tutorial_exists: `A tutorial with the id "${effectiveId}" already exists — change the id below.`,
+          tutorial_exists: `A tutorial with the id "${effectiveId}" already exists. Change the id below.`,
           title_required: "Give the tutorial a title.",
           tutorial_id_must_be_lowercase_words:
             "The id needs at least 3 characters: lowercase letters, numbers or underscores.",
@@ -242,7 +242,7 @@ function NewTutorialCard() {
             id="new-tut-title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Tutorial 9 — Heat transfer"
+            placeholder="Tutorial 9: Heat transfer"
             required
           />
         </div>
@@ -353,7 +353,7 @@ function ConvertPdfCard() {
         Upload a tutorial PDF and the AI model (local Ollama, or a cloud model
         as fallback) drafts a tutorial from it:
         title, problem statement, and step-by-step instructions. The draft uses
-        manual step confirmation (no live highlighting) — review it, refine the
+        manual step confirmation (no live highlighting). Review it, refine the
         JSON if needed, then publish.
       </p>
       <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-(--radius-control) border border-dashed border-ink-faint bg-paper px-4 py-6 text-sm text-ink-soft hover:border-violet hover:text-ink">
@@ -405,7 +405,7 @@ function ConvertPdfCard() {
       </div>
       {convert.isPending && (
         <p className="mt-2 text-[13px] text-ink-faint">
-          Converting with the local AI model — this can take a few minutes.
+          Converting with the local AI model. This can take a few minutes.
           Keep this tab open.
         </p>
       )}
@@ -428,14 +428,14 @@ function ConvertPdfCard() {
             <CheckCircle2 className="size-4 shrink-0 text-success" />
             <span>
               Draft <code className="font-mono">{done.tutorial_id}</code> v{done.version} created
-              from {done.generated.pages} page{done.generated.pages === 1 ? "" : "s"} — review the
+              from {done.generated.pages} page{done.generated.pages === 1 ? "" : "s"}. Review the
               steps and publish it in the list.
             </span>
           </div>
           {done.generated.skipped_chunks > 0 && (
             <p className="mt-1.5 text-[13px] text-warning">
               {done.generated.skipped_chunks} section{done.generated.skipped_chunks === 1 ? "" : "s"} of
-              the PDF could not be converted — check the draft for gaps.
+              the PDF could not be converted. Check the draft for gaps.
             </p>
           )}
         </div>
@@ -610,7 +610,7 @@ function TutorialRow({ t }: { t: LibraryTutorial }) {
         <div className="mt-1.5 text-[13px] text-warning">
           {t.published_version == null
             ? "Not visible to students until a version is published."
-            : `v${latestVersion} is uploaded but unpublished — students still see v${t.published_version}. Open Versions to publish it.`}
+            : `v${latestVersion} is uploaded but unpublished. Students still see v${t.published_version}. Open Versions to publish it.`}
         </div>
       )}
     </div>
@@ -672,7 +672,7 @@ export function TutorialLibraryPage() {
     <>
       <PageHeader
         title="Tutorial library"
-        subtitle="Versioned tutorial content — upload, validate, publish."
+        subtitle="Versioned tutorial content: upload, validate, publish."
         actions={<HideAllButton library={library} />}
       />
       <div className="grid items-start gap-4 xl:grid-cols-[1fr_420px]">

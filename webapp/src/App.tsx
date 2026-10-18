@@ -11,6 +11,8 @@ import { RequireRole } from "@/auth/RequireRole";
 import { RequireAi } from "@/auth/RequireAi";
 import { StudentLayout } from "@/layouts/StudentLayout";
 import { InstructorLayout } from "@/layouts/InstructorLayout";
+import { AccountPage } from "@/pages/AccountPage";
+import { ReportsPage } from "@/pages/instructor/ReportsPage";
 import { LoginPage } from "@/pages/login/LoginPage";
 import { VerifyPage } from "@/pages/login/VerifyPage";
 import { ResetPasswordPage } from "@/pages/login/ResetPasswordPage";
@@ -61,6 +63,7 @@ const router = createBrowserRouter([
         children: [
           { path: "/", element: <Navigate to="/dashboard" replace /> },
           { path: "/dashboard", element: <DashboardPage /> },
+          { path: "/account", element: <AccountPage /> },
           { path: "/tutorials/:tutorialId", element: <TutorialDetailPage /> },
           { path: "/tutorials/:tutorialId/run", element: <RunPage /> },
           { path: "/tutorials/:tutorialId/quiz", element: <QuizPage /> },
@@ -89,8 +92,10 @@ const router = createBrowserRouter([
             element: <TutorialEditorPage />,
           },
           { path: "/instructor/quizzes", element: <QuizzesPage /> },
+          { path: "/instructor/reports", element: <ReportsPage /> },
           { path: "/instructor/quizzes/:quizId/edit", element: <QuizEditorPage /> },
           { path: "/instructor/faqs", element: <FaqQueuePage /> },
+          { path: "/instructor/account", element: <AccountPage /> },
         ],
       },
       { path: "*", element: <Navigate to="/" replace /> },

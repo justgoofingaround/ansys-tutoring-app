@@ -173,7 +173,16 @@ CREATE TABLE IF NOT EXISTS report_submissions (
     checks           TEXT NOT NULL DEFAULT '[]',
     feedback         TEXT NOT NULL DEFAULT '',
     llm_review       TEXT,
-    submitted_at     REAL NOT NULL
+    submitted_at     REAL NOT NULL,
+    -- 'checked' when the rubric has run, 'pending' while it waits for the
+    -- instructor-desktop checker, 'failed' when that checker gave up.
+    status           TEXT NOT NULL DEFAULT 'checked',
+    claimed_at       REAL,
+    checked_at       REAL,
+    -- What the instructor wrote back about this submission. The rubric is
+    -- automatic and terse; this is the human half, and the student sees it.
+    instructor_feedback    TEXT,
+    instructor_feedback_at REAL
 );
 CREATE INDEX IF NOT EXISTS idx_report_submissions_token ON report_submissions (session_token, tutorial_id);
 

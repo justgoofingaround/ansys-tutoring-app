@@ -19,7 +19,7 @@ import csv
 import io
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import FileResponse, PlainTextResponse
 
 from ..deps import csrf_check, get_db, get_settings, require_instructor
 from ..models import SectionCreate, SectionResponse
@@ -945,6 +945,162 @@ def unpublish_faq(faq_id: int, conn: sqlite3.Connection = Depends(get_db)) -> di
     conn.execute("UPDATE faqs SET is_published = 0 WHERE id = ?", (faq_id,))
     conn.commit()
     return {"ok": True}
+
+
+# ── submitted reports ────────────────────────────────────────────────────
+
+
+@router.get("/reports")
+def list_reports(
+    status: str | None = None,
+    tutorial_id: str | None = None,
+    conn: sqlite3.Connection = Depends(get_db),
+) -> list[dict]:
+    """Every submission, newest first, with the student's name attached.
+
+    This is one of the two places the name/token join happens (the other is
+    the progress matrix): a gradebook is exactly where a name belongs. The
+    stored path is deliberately not returned — the download route below is
+    the only way to the file, so the UI cannot leak a filesystem path.
+    """
+    sql = """SELECT r.id, r.session_token, r.tutorial_id, r.tutorial_version,
+                    r.filename, r.ok, r.score, r.total, r.checks, r.feedback,
+                    r.llm_review, r.submitted_at, r.status, r.checked_at,
+                    r.instructor_feedback, r.instructor_feedback_at,
+                    u.username, s.name AS section, t.title AS tutorial_title
+             FROM report_submissions r
+             LEFT JOIN users u ON u.opaque_token = r.session_token
+             LEFT JOIN sections s ON s.id = u.section_id
+             LEFT JOIN tutorials t ON t.tutorial_id = r.tutorial_id"""
+    where, args = [], []
+    if status == "queued":
+        # Waiting plus in-flight: a report a checker is working on right now
+        # is still something the instructor is waiting for.
+        where.append("r.status IN ('pending', 'claimed')")
+    elif status:
+        where.append("r.status = ?")
+        args.append(status)
+    if tutorial_id:
+        where.append("r.tutorial_id = ?")
+        args.append(tutorial_id)
+    if where:
+        sql += " WHERE " + " AND ".join(where)
+    sql += " ORDER BY r.submitted_at DESC LIMIT 500"
+
+    return [
+        {
+            "submission_id": r["id"],
+            # The student may have been removed; the work stays, anonymous.
+            "student": r["username"] or "(removed account)",
+            "section": r["section"],
+            "tutorial_id": r["tutorial_id"],
+            "tutorial_title": r["tutorial_title"] or r["tutorial_id"],
+            "tutorial_version": r["tutorial_version"],
+            "filename": r["filename"],
+            "status": r["status"],
+            "ok": bool(r["ok"]),
+            "score": r["score"],
+            "total": r["total"],
+            "checks": json.loads(r["checks"]) if r["checks"] else [],
+            "feedback": r["feedback"],
+            "llm_review": json.loads(r["llm_review"]) if r["llm_review"] else None,
+            "submitted_at": r["submitted_at"],
+            "checked_at": r["checked_at"],
+            "instructor_feedback": r["instructor_feedback"],
+            "instructor_feedback_at": r["instructor_feedback_at"],
+        }
+        for r in conn.execute(sql, args).fetchall()
+    ]
+
+
+def _download_name(row: sqlite3.Row) -> str:
+    """Name a downloaded report after who wrote it.
+
+    Students submit files called report.pdf and blank.pdf; a folder of those
+    is unusable for grading. Prefix the student and the tutorial so the pile
+    sorts by student and nothing has to be opened to identify it.
+    """
+    original = Path(row["filename"] or "report")
+    student = row["username"] or "removed account"
+    stem = f"{student} {row['tutorial_id']} {original.stem}"
+    safe = re.sub(r"[^A-Za-z0-9._()\-]+", "_", stem).strip("_")
+    return f"{safe}{original.suffix}"
+
+
+@router.get("/reports/{submission_id}/file")
+def download_report(submission_id: int, conn: sqlite3.Connection = Depends(get_db)):
+    """The student's actual file. The rubric score answers "did it pass";
+    this answers "what did they write", which is the thing a rubric cannot."""
+    row = conn.execute(
+        """SELECT r.stored_path, r.filename, r.tutorial_id, u.username
+           FROM report_submissions r
+           LEFT JOIN users u ON u.opaque_token = r.session_token
+           WHERE r.id = ?""",
+        (submission_id,),
+    ).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="submission_not_found")
+    path = Path(row["stored_path"])
+    if not path.is_file():
+        raise HTTPException(status_code=410, detail="file_missing")
+    return FileResponse(path, filename=_download_name(row))
+
+
+@router.post("/reports/{submission_id}/feedback", dependencies=[Depends(csrf_check)])
+def leave_report_feedback(
+    submission_id: int,
+    body: dict,
+    conn: sqlite3.Connection = Depends(get_db),
+) -> dict:
+    """Write back to the student about one submission.
+
+    The rubric says whether the required pieces are present; it cannot say
+    "your mesh is too coarse near the fillet". This is where that goes, and
+    the student sees it on the tutorial page next to their submission.
+    Sending empty text clears the note.
+    """
+    text = (body.get("feedback") or "").strip()
+    if len(text) > 4000:
+        raise HTTPException(status_code=422, detail="feedback_too_long")
+    row = conn.execute(
+        "SELECT id FROM report_submissions WHERE id = ?", (submission_id,)
+    ).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="submission_not_found")
+    conn.execute(
+        """UPDATE report_submissions
+           SET instructor_feedback = ?, instructor_feedback_at = ?
+           WHERE id = ?""",
+        (text or None, time.time() if text else None, submission_id),
+    )
+    conn.commit()
+    return {"submission_id": submission_id, "instructor_feedback": text or None}
+
+
+@router.post("/reports/{submission_id}/recheck", dependencies=[Depends(csrf_check)])
+def recheck_report(
+    submission_id: int, conn: sqlite3.Connection = Depends(get_db)
+) -> dict:
+    """Put a submission back in the queue.
+
+    For the case where the checker was down, the rubric has since been fixed,
+    or a result looks wrong — rather than asking the student to upload again.
+    """
+    row = conn.execute(
+        "SELECT stored_path FROM report_submissions WHERE id = ?", (submission_id,)
+    ).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="submission_not_found")
+    if not Path(row["stored_path"]).is_file():
+        raise HTTPException(status_code=410, detail="file_missing")
+    conn.execute(
+        """UPDATE report_submissions
+           SET status = 'pending', claimed_at = NULL, checked_at = NULL
+           WHERE id = ?""",
+        (submission_id,),
+    )
+    conn.commit()
+    return {"submission_id": submission_id, "status": "pending"}
 
 
 # ── CSV exports (FERPA: token-only, verbatim from the event tables) ──────

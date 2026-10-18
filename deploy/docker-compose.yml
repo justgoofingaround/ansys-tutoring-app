@@ -44,6 +44,11 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-no-reply@meuy4214.poly.edu}
+      # Report checking. "inline" (default) grades on this VM; "agent" parks
+      # uploads in a queue for the checker on the instructor desktop, which is
+      # where the GPU is. AGENT_TOKEN is the shared secret both sides use.
+      REPORT_CHECKER: ${REPORT_CHECKER:-inline}
+      AGENT_TOKEN: ${AGENT_TOKEN:-}
     extra_hosts:
       # Lets SMTP_HOST=host.docker.internal find the host's own mail server.
       - "host.docker.internal:host-gateway"

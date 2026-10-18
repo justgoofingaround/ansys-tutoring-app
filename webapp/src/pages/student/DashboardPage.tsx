@@ -11,9 +11,17 @@ import { ProgressBar } from "@/components/ProgressBar";
 import { Spinner } from "@/components/Spinner";
 
 function statusLine(t: TutorialCardData): { text: string; tone: "success" | "warning" | "neutral" } {
-  if (t.needs_report) {
-    if (t.report?.ok) return { text: "Report: passed", tone: "success" };
-    if (t.report) return { text: `Report: needs fixes (${t.report.last_score}/${t.report.last_total})`, tone: "warning" };
+  if (t.report?.has_feedback) {
+    return { text: "Instructor left feedback", tone: "warning" };
+  }
+  if (t.needs_report && t.report) {
+    // Same rule as the tutorial page: no verdict before a human gave one.
+    if (!t.report.has_feedback) return { text: "Report submitted", tone: "neutral" };
+    if (t.report.ok) return { text: "Report: passed", tone: "success" };
+    return { text: "Report: needs fixes", tone: "warning" };
+  }
+  if (t.quiz && !t.quiz.attempts && t.steps_completed === t.steps_total && t.steps_total > 0) {
+    return { text: "Quiz not taken yet", tone: "warning" };
   }
   if (t.quiz?.attempts) {
     return { text: `Quiz: best ${Math.round((t.quiz.best_score ?? 0) * 100)}%`, tone: "neutral" };
@@ -22,8 +30,17 @@ function statusLine(t: TutorialCardData): { text: string; tone: "success" | "war
 }
 
 function TutorialCard({ t }: { t: TutorialCardData }) {
-  const action =
-    t.status === "completed" ? "Review" : t.status === "in_progress" ? "Continue" : "Start";
+  // Steps done but the quiz untouched: send them to the quiz, not back to a
+  // tutorial they have finished.
+  const quizPending =
+    !!t.quiz && !t.quiz.attempts && t.steps_total > 0 && t.steps_completed === t.steps_total;
+  const action = quizPending
+    ? "Take the quiz"
+    : t.status === "completed"
+      ? "Review"
+      : t.status === "in_progress"
+        ? "Continue"
+        : "Start";
   const line = statusLine(t);
   return (
     <Card className="flex flex-col gap-3">
@@ -51,9 +68,11 @@ function TutorialCard({ t }: { t: TutorialCardData }) {
         </span>
         <Link
           to={
-            t.status === "completed"
-              ? `/tutorials/${t.tutorial_id}`
-              : `/tutorials/${t.tutorial_id}/run`
+            quizPending
+              ? `/tutorials/${t.tutorial_id}/quiz`
+              : t.status === "completed"
+                ? `/tutorials/${t.tutorial_id}`
+                : `/tutorials/${t.tutorial_id}/run`
           }
           className="inline-flex items-center gap-1 text-[15px] font-medium text-violet hover:text-violet-hover"
         >
@@ -108,8 +127,8 @@ export function DashboardPage() {
               <div className="mt-0.5 text-lg font-semibold text-ink">{data.continue.title}</div>
               {data.continue.step_title && (
                 <div className="mt-0.5 text-[15px] text-ink-soft">
-                  Next: <span className="font-mono text-sm">{data.continue.step_id}</span>{" "}
-                  — {data.continue.step_title}
+                  Next: <span className="font-mono text-sm">{data.continue.step_id}</span>{" · "}
+                  {data.continue.step_title}
                 </div>
               )}
             </div>

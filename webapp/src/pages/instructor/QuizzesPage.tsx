@@ -49,7 +49,7 @@ function QuizAnalyticsCard({ quizId }: { quizId: string }) {
         <CardTitle>Question difficulty</CardTitle>
         <p className="mt-1 text-[13px] text-ink-faint">
           % correct on each student's first attempt ({a.first_attempt_students} student
-          {a.first_attempt_students === 1 ? "" : "s"}) — hardest first. Click a question to
+          {a.first_attempt_students === 1 ? "" : "s"}). Hardest first. Click a question to
           see its options.
         </p>
         {a.first_attempt_students === 0 ? (
@@ -174,7 +174,7 @@ function QuizUploadCard() {
         <CardTitle>Upload a quiz</CardTitle>
       </div>
       <p className="mt-2 text-sm text-ink-soft">
-        A quiz is one JSON file attached to an existing tutorial — start from{" "}
+        A quiz is one JSON file attached to an existing tutorial. Start from{" "}
         <code className="font-mono text-[13px]">content/data/quizzes/_template.json</code>{" "}
         (a full real example is <code className="font-mono text-[13px]">tut1_3d_bar.json</code>).
         Re-uploading the same <code className="font-mono text-[13px]">quiz_id</code> replaces its
@@ -208,7 +208,7 @@ function QuizUploadCard() {
           )}
         >
           <div className={cn("text-sm font-semibold", uploaded ? "text-warning" : "text-error")}>
-            {uploaded ? "Uploaded with warnings" : "Validation failed — nothing was stored"}
+            {uploaded ? "Uploaded with warnings" : "Validation failed, nothing was stored"}
           </div>
           <FindingsList findings={findings} />
         </div>
@@ -220,7 +220,7 @@ function QuizUploadCard() {
             {uploaded.replaced ? "Replaced" : "Published"}{" "}
             <code className="font-mono">{uploaded.quiz_id}</code> ({uploaded.questions} question
             {uploaded.questions === 1 ? "" : "s"}) on{" "}
-            <code className="font-mono">{uploaded.tutorial_id}</code> — live for students now.
+            <code className="font-mono">{uploaded.tutorial_id}</code>. Live for students now.
           </span>
         </div>
       )}

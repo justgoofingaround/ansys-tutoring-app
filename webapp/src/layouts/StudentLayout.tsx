@@ -40,7 +40,18 @@ export function StudentLayout() {
             )}
           </nav>
           <div className="ml-auto flex items-center gap-3">
-            <span className="text-sm text-ink-soft">{me?.username}</span>
+            <NavLink
+              to="/account"
+              className={({ isActive }) =>
+                cn(
+                  "rounded-(--radius-control) px-2.5 py-1.5 text-sm transition-colors",
+                  isActive ? "bg-violet-tint text-violet" : "text-ink-soft hover:bg-paper hover:text-ink",
+                )
+              }
+              title="Your account"
+            >
+              {me?.username}
+            </NavLink>
             <button
               onClick={() => logout.mutate(undefined, { onSuccess: () => navigate("/login") })}
               className="inline-flex size-9 items-center justify-center rounded-(--radius-control) text-ink-faint transition-colors hover:bg-paper hover:text-ink"

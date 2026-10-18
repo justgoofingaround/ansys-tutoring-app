@@ -55,7 +55,7 @@ function MatrixCard({ matrix }: { matrix: ProgressMatrix }) {
       <CardTitle>Completion matrix</CardTitle>
       {matrix.students.length === 0 ? (
         <p className="mt-2 py-4 text-[15px] text-ink-faint">
-          No students registered yet — share a class code.
+          No students registered yet. Share a class code.
         </p>
       ) : (
         <div className="mt-3 overflow-x-auto">
@@ -176,7 +176,7 @@ function activityText(e: ActivityItem): string {
     return `report ${e.detail} (${e.score}/${e.total})`;
   }
   if (e.kind === "quiz") {
-    return `quiz submitted — ${Math.round((e.score ?? 0) * 100)}%`;
+    return `quiz submitted, ${Math.round((e.score ?? 0) * 100)}%`;
   }
   const map: Record<string, string> = {
     step_completed: "completed",
@@ -354,7 +354,7 @@ function RosterPanel({ sectionId }: { sectionId: number }) {
                 )}
                 {e.status === "pending" && (
                   <button
-                    title="Confirm without email — only if you know this student registered"
+                    title="Confirm without email, only if you know this student registered"
                     onClick={() => {
                       // Confirming replaces proof that the registrant can read
                       // that mailbox. Done carelessly it lets one student take
@@ -365,7 +365,7 @@ function RosterPanel({ sectionId }: { sectionId: number }) {
                           "",
                           "Normally the student proves the address is theirs by opening the link we email them. Confirming here replaces that step.",
                           "",
-                          "Only do this if you know THIS student registered the account — otherwise someone else could take over their account.",
+                          "Only do this if you know THIS student registered the account. Otherwise someone else could take over their account.",
                         ].join("\n"),
                       );
                       if (ok) confirmEntry.mutate(e.id);
@@ -419,7 +419,7 @@ function SectionRow({ section }: { section: Section }) {
         headers: { "X-Requested-With": "fetch" },
       }),
     onSuccess: invalidate,
-    onError: () => setError("Sections with students can't be deleted — archive it instead."),
+    onError: () => setError("Sections with students can't be deleted. Archive it instead."),
   });
 
   return (
@@ -470,7 +470,7 @@ function SectionRow({ section }: { section: Section }) {
               </button>
               <button
                 onClick={() => update.mutate({ is_active: !section.is_active })}
-                title={section.is_active ? "Archive — stops new registrations" : "Reactivate"}
+                title={section.is_active ? "Archive: stops new registrations" : "Reactivate"}
                 className="inline-flex size-8 items-center justify-center rounded-(--radius-control) text-ink-faint hover:bg-paper hover:text-ink"
               >
                 {section.is_active ? <Archive className="size-4" /> : <ArchiveRestore className="size-4" />}
@@ -530,7 +530,7 @@ function SectionsCard() {
           sections.map((s) => <SectionRow key={s.id} section={s} />)
         ) : (
           <p className="py-4 text-[15px] text-ink-faint">
-            No sections yet — create the first one below.
+            No sections yet. Create the first one below.
           </p>
         )}
       </div>
@@ -547,7 +547,7 @@ function SectionsCard() {
             id="section-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Section A — Fall 2026"
+            placeholder="Section A, Fall 2026"
           />
         </div>
         <Button type="submit" loading={create.isPending}>

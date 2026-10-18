@@ -121,6 +121,39 @@ only the automatic email is missing.
 **Note for the professor:** the link points at `meuy4214.poly.edu`, which only
 resolves on the NYU network or VPN, so students should register from a lab machine.
 
+## 5c. Report checking on the instructor desktop
+
+The VM has no GPU, so the report rubric — and the AI review that goes with it —
+can run on the instructor's desktop instead. The hub then only takes custody of
+the uploaded file.
+
+On the hub, in `deploy/.env`:
+
+```
+REPORT_CHECKER=agent
+AGENT_TOKEN=<a long random string>
+```
+
+and pass both through in `docker-compose.yml`'s `hub.environment` block. With
+`REPORT_CHECKER` unset the hub grades uploads itself, exactly as before.
+
+On the instructor desktop (same repo checkout, Ollama installed):
+
+```
+set AGENT_TOKEN=<the same string>
+.venv\Scripts\pythonw tools\report_checker.py --hub https://meuy4214.poly.edu
+```
+
+It polls, claims one report at a time, runs the rubric locally and posts the
+result back; the student's page updates on its own. Only outbound HTTPS is
+used, so the desktop needs no inbound firewall rule and no certificate. Add it
+as a logon scheduled task to have it start with the machine.
+
+**If the desktop is off**, uploads queue instead of failing. `GET /api/agent/status`
+reports the queue depth and when a checker was last heard from. A claim that
+goes stale (the desktop was closed mid-check) returns to the queue after 15
+minutes, so nothing is stranded.
+
 ## 6. AI features (disabled — how to re-enable)
 
 Nothing to do for the pilot: the compose file ships with AI off. Verify after a

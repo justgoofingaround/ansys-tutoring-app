@@ -48,6 +48,8 @@ export interface ReportState {
   last_score: number;
   last_total: number;
   submitted_at: number;
+  /** True when the instructor has written back about the latest submission. */
+  has_feedback?: boolean;
 }
 
 export interface TutorialCardData {
@@ -104,6 +106,9 @@ export interface LlmReview {
 
 export interface ReportResult {
   submission_id: number;
+  /** "checked" when a rubric has run; "pending" while it waits for the
+   * instructor-desktop checker; "failed" when that checker could not read it. */
+  status?: "checked" | "pending" | "claimed" | "failed";
   ok: boolean;
   score: number;
   total: number;
@@ -132,11 +137,14 @@ export interface TutorialDetailData {
   report_guidelines: string | null;
   report_submissions: {
     submission_id: number;
+    status?: "checked" | "pending" | "claimed" | "failed";
     filename: string;
     ok: boolean;
     score: number;
     total: number;
     submitted_at: number;
+    instructor_feedback: string | null;
+    instructor_feedback_at: number | null;
   }[];
   quiz: QuizState | null;
 }

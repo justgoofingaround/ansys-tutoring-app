@@ -180,7 +180,7 @@ export function QuizEditorPage() {
           <CardTitle>Couldn't open this quiz</CardTitle>
           <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
             {notFound
-              ? "The server has no quiz with this id, or it is running an older build that predates the quiz editor — restart it and try again."
+              ? "The server has no quiz with this id, or it is running an older build that predates the quiz editor. Restart it and try again."
               : "The quiz could not be loaded. Try reloading the page; if it keeps failing, sign out and back in."}
           </p>
           {/* The exact failure, so a report says what went wrong rather than
@@ -225,7 +225,7 @@ export function QuizEditorPage() {
               </span>
             )}
             {savedAt && !dirty && (
-              <span className="text-[13px] text-success">Saved — students see it now</span>
+              <span className="text-[13px] text-success">Saved. Students see it now</span>
             )}
             <Button variant="ghost" onClick={() => navigate("/instructor/quizzes")}>
               <ArrowLeft className="size-4" /> Quizzes
@@ -239,7 +239,7 @@ export function QuizEditorPage() {
 
       <Card className="mb-4">
         <p className="text-[13px] text-ink-faint">
-          Saving replaces the quiz immediately — quizzes have no draft step. Past submissions
+          Saving replaces the quiz immediately. Quizzes have no draft step. Past submissions
           keep the score they were given.
         </p>
       </Card>
@@ -331,7 +331,7 @@ export function QuizEditorPage() {
               </div>
 
               <div>
-                <Label>Options — select the correct answer</Label>
+                <Label>Options: select the correct answer</Label>
                 <div className="space-y-2">
                   {q.options.map((opt, oi) => (
                     <div key={oi} className="flex items-center gap-2">

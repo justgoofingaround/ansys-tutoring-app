@@ -16,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import db as dbmod
 from .config import REPO_ROOT, Settings
+from .routers import agent as agent_router
 from .routers import auth as auth_router
 from .routers import chatbot as chatbot_router
 from .routers import events as events_router
@@ -89,6 +90,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.settings = settings
 
     application.include_router(auth_router.router)
+    application.include_router(agent_router.router)
     application.include_router(instructor_router.router)
     application.include_router(tutorials_router.router)
     application.include_router(tutorials_router.guide_router)

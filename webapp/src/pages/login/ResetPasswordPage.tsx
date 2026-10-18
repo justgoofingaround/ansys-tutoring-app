@@ -101,7 +101,7 @@ export function ResetPasswordPage() {
           {reset.error
             ? expired
               ? "That link has expired or was already used. Request a new one from the sign-in page."
-              : "Something went wrong — try again."
+              : "Something went wrong. Try again."
             : null}
         </FieldError>
         <Button type="submit" loading={reset.isPending} className="w-full">

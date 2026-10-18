@@ -19,7 +19,7 @@ export function InstructorAuthForm() {
   const errorMsg = login.error
     ? login.error instanceof ApiError && login.error.code === "bad_credentials"
       ? "Wrong username or password."
-      : "Can't reach the server — is it running?"
+      : "Can't reach the server. Is it running?"
     : null;
 
   return (

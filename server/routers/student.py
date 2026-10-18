@@ -100,10 +100,13 @@ def tutorial_detail(
         {
             "submission_id": r["id"],
             "filename": r["filename"],
+            "status": r["status"],
             "ok": bool(r["ok"]),
             "score": r["score"],
             "total": r["total"],
             "submitted_at": r["submitted_at"],
+            "instructor_feedback": r["instructor_feedback"],
+            "instructor_feedback_at": r["instructor_feedback_at"],
         }
         for r in conn.execute(
             """SELECT * FROM report_submissions

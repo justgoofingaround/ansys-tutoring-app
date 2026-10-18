@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, Check, Lightbulb, PartyPopper } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Lightbulb, ListChecks, PartyPopper } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import type { StepStatus, TutorialContent, TutorialDetailData } from "@/types/api";
 import { Card, CardTitle } from "@/components/Card";
@@ -161,6 +161,10 @@ export function RunPage() {
   const allDone = completedCount === steps.length;
   const step = steps[Math.min(index, steps.length - 1)];
   const stepDone = statuses[step.step_id] === "completed";
+  const onLastStep = index === steps.length - 1;
+  // A quiz the student has not attempted is the one thing still owed once the
+  // steps are ticked — worth a button rather than a sentence.
+  const quizPending = !!detail.data?.quiz && !detail.data.quiz.attempts;
 
   return (
     <>
@@ -208,40 +212,31 @@ export function RunPage() {
         {/* ── current step panel ── */}
         <div className="space-y-4">
           {allDone && (
-            <Card className="flex items-center gap-3 border-success/30 bg-success-tint">
-              <PartyPopper className="size-6 shrink-0 text-success" />
-              <div>
-                <div className="font-semibold text-success">All {steps.length} steps complete!</div>
-                <div className="text-sm text-ink-soft">
-                  {detail.data?.needs_report ? (
-                    <>
-                      Now generate the report in Mechanical and{" "}
-                      <Link to={`/tutorials/${tutorialId}`} className="font-medium text-violet">
-                        upload it for checking
-                      </Link>
-                      {detail.data?.quiz ? (
-                        <>
-                          , then{" "}
-                          <Link to={`/tutorials/${tutorialId}/quiz`} className="font-medium text-violet">
-                            take the quiz
-                          </Link>
-                        </>
-                      ) : null}
-                      .
-                    </>
-                  ) : detail.data?.quiz ? (
-                    <>
-                      Now{" "}
-                      <Link to={`/tutorials/${tutorialId}/quiz`} className="font-medium text-violet">
-                        take the quiz
-                      </Link>{" "}
-                      to finish the tutorial.
-                    </>
-                  ) : (
-                    "Nice work."
-                  )}
+            <Card className="border-success/30 bg-success-tint">
+              <div className="flex items-center gap-3">
+                <PartyPopper className="size-6 shrink-0 text-success" />
+                <div className="min-w-0">
+                  <div className="font-semibold text-success">
+                    All {steps.length} steps complete!
+                  </div>
+                  <div className="text-sm text-ink-soft">
+                    {quizPending
+                      ? "One short quiz left to finish this tutorial."
+                      : detail.data?.quiz
+                        ? "You have already taken the quiz. Retake it any time."
+                        : "Nice work."}
+                  </div>
                 </div>
               </div>
+              {detail.data?.quiz && (
+                <Link to={`/tutorials/${tutorialId}/quiz`} className="mt-4 block">
+                  <Button className="w-full">
+                    <ListChecks className="size-4" />
+                    {quizPending ? "Take the quiz" : "Retake the quiz"}
+                    <ArrowRight className="size-4" />
+                  </Button>
+                </Link>
+              )}
             </Card>
           )}
 
@@ -288,16 +283,24 @@ export function RunPage() {
                   <Check className="size-4" strokeWidth={3} /> Mark step complete
                 </Button>
               )}
-              <Button
-                variant="secondary"
-                onClick={() => setIndex((i) => Math.min(steps.length - 1, i + 1))}
-                disabled={index === steps.length - 1}
-              >
-                Next <ArrowRight className="size-4" />
-              </Button>
+              {onLastStep && quizPending ? (
+                <Link to={`/tutorials/${tutorialId}/quiz`}>
+                  <Button>
+                    <ListChecks className="size-4" /> Take the quiz
+                  </Button>
+                </Link>
+              ) : (
+                <Button
+                  variant="secondary"
+                  onClick={() => setIndex((i) => Math.min(steps.length - 1, i + 1))}
+                  disabled={index === steps.length - 1}
+                >
+                  Next <ArrowRight className="size-4" />
+                </Button>
+              )}
             </div>
             <p className="mt-3 text-[13px] text-ink-faint">
-              Do the action in Ansys on this PC, then mark it complete — your progress
+              Do the action in Ansys on this PC, then mark it complete. Your progress
               syncs to your dashboard instantly. The desktop guide overlay tracks these
               same steps.
             </p>

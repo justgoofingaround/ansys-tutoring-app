@@ -55,34 +55,45 @@ def upload_report(
                 raise HTTPException(status_code=413, detail="report_too_large")
             out.write(chunk)
 
-    try:
-        # guidelines live on the tutorials row (web-edited, unversioned); the
-        # desktop guide's local pre-check doesn't see them — this endpoint is
-        # the authoritative graded path.
-        result = report_verify.validate_report(
-            dest, content,
-            use_llm=settings.enable_llm,
-            guidelines=meta["report_guidelines"],
-        )
-    except (ValueError, RuntimeError) as exc:
-        dest.unlink(missing_ok=True)
-        raise HTTPException(status_code=422, detail=str(exc))
+    queued = settings.report_checker == "agent"
+    if queued:
+        # The hub only takes custody of the file; the checker on the
+        # instructor desktop claims it and posts the result back. Nothing is
+        # graded here, so the row starts empty and the student sees "queued".
+        result = {"ok": False, "score": 0, "total": 0, "checks": [],
+                  "feedback": "", "llm_review": None}
+    else:
+        try:
+            # guidelines live on the tutorials row (web-edited, unversioned); the
+            # desktop guide's local pre-check doesn't see them — this endpoint is
+            # the authoritative graded path.
+            result = report_verify.validate_report(
+                dest, content,
+                use_llm=settings.enable_llm,
+                guidelines=meta["report_guidelines"],
+            )
+        except (ValueError, RuntimeError) as exc:
+            dest.unlink(missing_ok=True)
+            raise HTTPException(status_code=422, detail=str(exc))
 
     cur = conn.execute(
         """INSERT INTO report_submissions
            (session_token, tutorial_id, tutorial_version, filename, stored_path,
-            ok, score, total, checks, feedback, llm_review, submitted_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+            ok, score, total, checks, feedback, llm_review, submitted_at,
+            status, checked_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         (
             token, tutorial_id, meta["latest_published_version"], filename, str(dest),
             int(result["ok"]), result["score"], result["total"],
             json.dumps(result["checks"]), result["feedback"],
             json.dumps(result.get("llm_review")), time.time(),
+            "pending" if queued else "checked", None if queued else time.time(),
         ),
     )
     conn.commit()
     return {
         "submission_id": cur.lastrowid,
+        "status": "pending" if queued else "checked",
         "ok": result["ok"],
         "score": result["score"],
         "total": result["total"],
@@ -108,6 +119,7 @@ def my_reports(
     return [
         {
             "submission_id": r["id"],
+            "status": r["status"],
             "filename": r["filename"],
             "ok": bool(r["ok"]),
             "score": r["score"],

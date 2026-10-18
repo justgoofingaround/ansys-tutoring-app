@@ -44,6 +44,21 @@ def init_db(db_path: Path) -> None:
             conn.execute(
                 "ALTER TABLE quizzes ADD COLUMN edited_in_app INTEGER NOT NULL DEFAULT 0"
             )
+        report_cols = {row[1] for row in conn.execute("PRAGMA table_info(report_submissions)")}
+        if "status" not in report_cols:
+            conn.execute(
+                "ALTER TABLE report_submissions ADD COLUMN status TEXT NOT NULL DEFAULT 'checked'"
+            )
+        if "claimed_at" not in report_cols:
+            conn.execute("ALTER TABLE report_submissions ADD COLUMN claimed_at REAL")
+        if "checked_at" not in report_cols:
+            conn.execute("ALTER TABLE report_submissions ADD COLUMN checked_at REAL")
+        if "instructor_feedback" not in report_cols:
+            conn.execute("ALTER TABLE report_submissions ADD COLUMN instructor_feedback TEXT")
+        if "instructor_feedback_at" not in report_cols:
+            conn.execute(
+                "ALTER TABLE report_submissions ADD COLUMN instructor_feedback_at REAL"
+            )
         conn.execute(
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email"
             " ON users (email COLLATE NOCASE) WHERE email IS NOT NULL"

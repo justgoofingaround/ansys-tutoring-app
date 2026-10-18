@@ -106,7 +106,7 @@ function CandidateCard({ cand }: { cand: FaqCandidate }) {
           </div>
           {cand.draft_model && (
             <p className="mt-1 text-[12px] text-ink-faint">
-              Draft by {cand.draft_model} — edit before approving.
+              Draft by {cand.draft_model}. Edit before approving.
             </p>
           )}
           <div className="mt-3 flex flex-wrap gap-2">
@@ -134,7 +134,7 @@ function CandidateCard({ cand }: { cand: FaqCandidate }) {
           </div>
           {draft.isError && (
             <p className="mt-2 text-[13px] text-error">
-              Drafting failed (is Ollama running?) — you can still write the FAQ by hand.
+              Drafting failed. Is Ollama running? You can still write the FAQ by hand.
             </p>
           )}
         </>
@@ -227,7 +227,7 @@ export function FaqQueuePage() {
             <Card>
               <p className="py-4 text-[15px] text-ink-faint">
                 No open candidates. Click "Mine new candidates" after students have been
-                working — steps where ≥30% of the class fails a check show up here.
+                working. Steps where ≥30% of the class fails a check show up here.
               </p>
             </Card>
           ) : (

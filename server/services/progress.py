@@ -62,7 +62,8 @@ def step_statuses(
 
 def _report_state(conn: sqlite3.Connection, token: str, tutorial_id: str) -> dict | None:
     row = conn.execute(
-        """SELECT ok, score, total, submitted_at FROM report_submissions
+        """SELECT ok, score, total, submitted_at, instructor_feedback
+           FROM report_submissions
            WHERE session_token = ? AND tutorial_id = ?
            ORDER BY submitted_at DESC LIMIT 1""",
         (token, tutorial_id),
@@ -79,6 +80,7 @@ def _report_state(conn: sqlite3.Connection, token: str, tutorial_id: str) -> dic
         "last_score": row["score"],
         "last_total": row["total"],
         "submitted_at": row["submitted_at"],
+        "has_feedback": bool(row["instructor_feedback"]),
     }
 
 
