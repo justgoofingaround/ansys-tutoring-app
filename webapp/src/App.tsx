@@ -13,6 +13,7 @@ import { StudentLayout } from "@/layouts/StudentLayout";
 import { InstructorLayout } from "@/layouts/InstructorLayout";
 import { AccountPage } from "@/pages/AccountPage";
 import { ReportsPage } from "@/pages/instructor/ReportsPage";
+import { EnrollmentPage } from "@/pages/instructor/EnrollmentPage";
 import { LoginPage } from "@/pages/login/LoginPage";
 import { VerifyPage } from "@/pages/login/VerifyPage";
 import { ResetPasswordPage } from "@/pages/login/ResetPasswordPage";
@@ -86,6 +87,7 @@ const router = createBrowserRouter([
         children: [
           { path: "/instructor", element: <Navigate to="/instructor/class" replace /> },
           { path: "/instructor/class", element: <ClassDashboardPage /> },
+          { path: "/instructor/enrollment", element: <EnrollmentPage /> },
           { path: "/instructor/tutorials", element: <TutorialLibraryPage /> },
           {
             path: "/instructor/tutorials/:tutorialId/edit",

@@ -1,10 +1,13 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LogOut, Users, BookOpen, ListChecks, FileCheck, HelpCircle } from "lucide-react";
+import {
+  LogOut, Users, UserPlus, BookOpen, ListChecks, FileCheck, HelpCircle,
+} from "lucide-react";
 import { useMe, useLogout } from "@/auth/useMe";
 import { cn } from "@/components/cn";
 
 const navItems = [
   { to: "/instructor/class", icon: Users, label: "Class" },
+  { to: "/instructor/enrollment", icon: UserPlus, label: "Enrolment" },
   { to: "/instructor/tutorials", icon: BookOpen, label: "Tutorials" },
   { to: "/instructor/quizzes", icon: ListChecks, label: "Quizzes" },
   { to: "/instructor/reports", icon: FileCheck, label: "Reports" },
