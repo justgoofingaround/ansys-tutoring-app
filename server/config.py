@@ -19,9 +19,9 @@ if CHATBOT_DIR.exists() and str(CHATBOT_DIR) not in sys.path:
 
 def _load_dotenv(path: Path) -> None:
     """Minimal .env loader (KEY=VALUE lines, # comments; real environment
-    variables always win). Secrets like CHATBOT_API_KEY live in the
-    gitignored repo-root .env so they never enter git; deployments set real
-    env vars instead. Must run before Settings is defined — its field
+    variables always win). Secrets like SMTP_PASSWORD and AGENT_TOKEN live in
+    the gitignored repo-root .env so they never enter git; deployments set
+    real env vars instead. Must run before Settings is defined — its field
     defaults read os.environ at class-creation time."""
     if not path.exists():
         return
@@ -49,8 +49,8 @@ class Settings:
     # Master AI switch. OFF unless ENABLE_AI=1 is set explicitly: a deployment
     # that forgets the variable runs with no AI at all, which is the safe
     # failure direction while the NYU security review is open. When off,
-    # __post_init__ forces every other AI seam off too (including a stray
-    # CHATBOT_API_KEY), so no single missed env var can switch generation back on.
+    # __post_init__ forces every other AI seam off too, so no single missed
+    # env var can switch generation back on.
     enable_ai: bool = os.environ.get("ENABLE_AI", "0") == "1"
     enable_llm: bool = os.environ.get("ENABLE_LLM", "1") == "1"
     # Cloud/demo deployments seed the whole content/data catalog on first
@@ -69,6 +69,12 @@ class Settings:
     # Shared secret the desktop checker authenticates with. Unset means the
     # agent endpoints refuse everything, so "agent" mode needs this set.
     agent_token: str | None = os.environ.get("AGENT_TOKEN") or None
+    # Whether the desktop checker may run its local model over a student's
+    # report. Deliberately separate from ENABLE_AI: that switch governs AI the
+    # HUB serves (Compass, PDF import, FAQ drafting), and the hub has no GPU
+    # and no retrieval index, so turning it on there would advertise features
+    # that fail on use. This one governs a machine that does have a GPU.
+    enable_report_ai: bool = os.environ.get("ENABLE_REPORT_AI", "0") == "1"
     instructor_username: str | None = os.environ.get("INSTRUCTOR_USERNAME")
     instructor_password: str | None = os.environ.get("INSTRUCTOR_PASSWORD")
     # COOKIE_SECURE=1 for HTTPS deployments (nginx + TLS); off by default so
@@ -92,14 +98,11 @@ class Settings:
     reset_ttl_hours: float = 2.0
     resend_cooldown_seconds: float = 60.0
     mailer: object | None = None  # test seam, mirrors chatbot_engine
-    # Cloud chatbot: when CHATBOT_API_KEY is set, Compass answers through an
-    # OpenAI-compatible chat-completions API (Groq, OpenRouter, ...) instead
-    # of local Ollama + the compass retrieval index. Team-testing/demo
-    # deployments only — the NYU pilot keeps the FERPA invariant (no cloud
-    # LLM touches student data) by leaving this unset.
-    chatbot_api_key: str | None = os.environ.get("CHATBOT_API_KEY") or None
-    chatbot_api_base: str = os.environ.get("CHATBOT_API_BASE", "https://api.groq.com/openai/v1")
-    chatbot_model: str = os.environ.get("CHATBOT_MODEL", "openai/gpt-oss-20b")
+    # There is deliberately no cloud-LLM setting here. Every generation path
+    # in this system runs on a local Ollama the deployment controls, so no
+    # prompt built from student work can leave NYU hardware by configuration
+    # alone. Adding an API-key escape hatch would make that a property of
+    # whoever set the env vars rather than of the code.
     # Derived paths
     db_path: Path = field(init=False)
 
@@ -107,13 +110,16 @@ class Settings:
         self.data_dir = Path(self.data_dir)
         self.db_path = self.data_dir / "app.db"
         if not self.enable_ai:
-            # Single authority: the existing per-feature gates (report review,
-            # FAQ drafting, PDF->tutorial) all read enable_llm, and both the
-            # Compass cloud engine and the PDF cloud fallback read
-            # chatbot_api_key. Clearing them here disables every generation
-            # path without scattering `enable_ai` checks through the services.
+            # Single authority: the per-feature gates (Compass, report review,
+            # FAQ drafting, PDF->tutorial) all read enable_llm, so clearing it
+            # here disables every generation path without scattering
+            # `enable_ai` checks through the services.
             self.enable_llm = False
-            self.chatbot_api_key = None
+
+    @property
+    def report_ai_allowed(self) -> bool:
+        """May the desktop checker use its model? Either switch is enough."""
+        return self.enable_ai or self.enable_report_ai
 
     @property
     def tutorials_dir(self) -> Path:

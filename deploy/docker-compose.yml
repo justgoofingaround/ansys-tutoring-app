@@ -28,8 +28,8 @@ services:
       COOKIE_SECURE: "1"           # nginx serves HTTPS
       DATA_DIR: /app/server_data
       # Master AI switch — off for the pilot. With this unset/0 the app forces
-      # ENABLE_LLM off and ignores CHATBOT_API_KEY, so no generation path can
-      # run even if another variable is set by mistake.
+      # ENABLE_LLM off, so no generation path can run even if another
+      # variable is set by mistake. There is no cloud-API path to switch on.
       ENABLE_AI: "0"
       ENABLE_LLM: "0"
       # Registration confirmation mail. Unset SMTP_HOST -> the app logs the link
@@ -49,6 +49,9 @@ services:
       # where the GPU is. AGENT_TOKEN is the shared secret both sides use.
       REPORT_CHECKER: ${REPORT_CHECKER:-inline}
       AGENT_TOKEN: ${AGENT_TOKEN:-}
+      # Lets the desktop checker run its local model over a report. Separate
+      # from ENABLE_AI, which governs AI this host would have to serve itself.
+      ENABLE_REPORT_AI: ${ENABLE_REPORT_AI:-0}
     extra_hosts:
       # Lets SMTP_HOST=host.docker.internal find the host's own mail server.
       - "host.docker.internal:host-gateway"

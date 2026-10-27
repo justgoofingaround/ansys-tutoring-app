@@ -186,9 +186,13 @@ function RubricFeedback({
             ? "Report verified"
             : "Report needs fixes"}
       </div>
-      <div className="text-xs font-semibold uppercase tracking-wide text-ink-faint">
-        {reviewed ? "Rubric checks" : "Automatic checks, to help you while you wait"}
-      </div>
+      {/* A tutorial with no rubric produces no checks: a heading over an
+          empty list just looks broken. */}
+      {errors.length + warnings.length > 0 && (
+        <div className="text-xs font-semibold uppercase tracking-wide text-ink-faint">
+          {reviewed ? "Rubric checks" : "Automatic checks, to help you while you wait"}
+        </div>
+      )}
       <ul className="space-y-1.5">
         {[...errors, ...warnings].map((c) => (
           <li key={c.name} className="flex items-start gap-2 text-sm">
@@ -305,15 +309,6 @@ function ReportUploadCard({ detail }: { detail: TutorialDetailData }) {
           ? "Upload the report you generated from Mechanical (.html, .docx, .pdf…). It is checked against the tutorial rubric, then your instructor reviews it."
           : "Upload the report you generated from Mechanical (.html, .docx, .pdf…). Your instructor reviews it and writes back."}
       </p>
-      {waiting && (
-        <div className="mt-3 flex items-center gap-2.5 rounded-(--radius-control) border border-warning/30 bg-warning-tint px-4 py-3">
-          <Spinner className="size-4 text-warning" />
-          <div className="text-sm text-ink">
-            <span className="font-medium">Sent for checking.</span> Your instructor's
-            machine runs the rubric. This page updates by itself when it's done.
-          </div>
-        </div>
-      )}
       {detail.report_guidelines && (
         <div className="mt-3 rounded-(--radius-control) border border-violet/30 bg-violet-tint px-4 py-3">
           <div className="text-xs font-semibold uppercase tracking-wide text-violet">
@@ -419,6 +414,26 @@ function ReportUploadCard({ detail }: { detail: TutorialDetailData }) {
                     · {new Date(s.submitted_at * 1000).toLocaleDateString()}
                   </span>
                 </div>
+
+                {/* The rubric's own words about this attempt. They arrive
+                    from the instructor's machine minutes after the upload,
+                    so they belong to the submission rather than to whatever
+                    the upload response happened to say at the time. */}
+                {s.llm_review?.available && (
+                  <div className="ml-5 border-l-2 border-hairline pl-3 text-sm text-ink-soft">
+                    <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-faint">
+                      Feedback on this report (AI-generated)
+                    </div>
+                    <p className="leading-relaxed">{s.llm_review.overall}</p>
+                    {s.llm_review.suggestions.length > 0 && (
+                      <ul className="mt-1 list-disc pl-4">
+                        {s.llm_review.suggestions.map((t, i) => (
+                          <li key={i}>{t}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
 
                 {/* Each note sits under the submission it was left on, so a
                     student with several attempts can tell them apart. */}

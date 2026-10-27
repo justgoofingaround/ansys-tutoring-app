@@ -1,5 +1,6 @@
 """Student-facing aggregate views: dashboard + per-tutorial detail."""
 
+import json
 import sqlite3
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -107,6 +108,11 @@ def tutorial_detail(
             "submitted_at": r["submitted_at"],
             "instructor_feedback": r["instructor_feedback"],
             "instructor_feedback_at": r["instructor_feedback_at"],
+            # A report checked on the instructor's desktop comes back long
+            # after the upload response, so the verdict has to travel with
+            # the submission list or the student never sees it at all.
+            "checks": json.loads(r["checks"]) if r["checks"] else [],
+            "llm_review": json.loads(r["llm_review"]) if r["llm_review"] else None,
         }
         for r in conn.execute(
             """SELECT * FROM report_submissions

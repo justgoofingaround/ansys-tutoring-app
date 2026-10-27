@@ -167,16 +167,123 @@ def test_a_hub_with_no_token_configured_refuses_every_agent_call(client, seeded)
 
 
 def test_status_reports_queue_depth(agent_client):
-    _seeded_section(agent_client)
+    seeded = _seeded_section(agent_client)
+    login(agent_client, "prof", "prof-pass-123")
     assert agent_client.get("/api/agent/status").json()["pending"] == 0
+    agent_client.post("/api/auth/logout", json={})
 
-    _submit(agent_client, {"section_id": 1, "class_code": None}, "stu_q")
+    _submit(agent_client, seeded, "stu_q")
+    agent_client.post("/api/auth/logout", json={})
+
+    login(agent_client, "prof", "prof-pass-123")
     body = agent_client.get("/api/agent/status").json()
     assert body["pending"] == 1 and body["checker_last_seen"] is None
 
     _agent(agent_client, "post", "/api/agent/reports/claim")
     body = agent_client.get("/api/agent/status").json()
     assert body["in_progress"] == 1 and body["checker_last_seen"] is not None
+
+
+# --- the grading app on the instructor's desktop ---------------------------
+
+
+def test_the_agent_can_list_reports_with_names(agent_client):
+    """The grading app is a gradebook, so it needs names. This is the one
+    place the agent token sees them, and it still sees nothing without it."""
+    seeded = _seeded_section(agent_client)
+    _submit(agent_client, seeded, "stu_named")
+    agent_client.post("/api/auth/logout", json={})
+
+    assert agent_client.get("/api/agent/reports").status_code == 401
+
+    rows = _agent(agent_client, "get", "/api/agent/reports").json()
+    assert rows[0]["student"] == "stu_named"
+    assert rows[0]["tutorial_id"] == TUT
+    assert "stored_path" not in rows[0]  # the file is reachable only by its route
+
+
+def test_the_agent_can_write_feedback_the_student_sees(agent_client):
+    seeded = _seeded_section(agent_client)
+    sub = _submit(agent_client, seeded, "stu_fb")
+    sid = sub["submission_id"]
+
+    r = _agent(agent_client, "post", f"/api/agent/reports/{sid}/feedback",
+               json={"feedback": "Mesh is too coarse near the fillet."})
+    assert r.status_code == 200, r.text
+
+    detail = agent_client.get(f"/api/student/tutorials/{TUT}").json()
+    seen = [s for s in detail["report_submissions"] if s["submission_id"] == sid][0]
+    assert seen["instructor_feedback"] == "Mesh is too coarse near the fillet."
+
+
+def test_claiming_one_report_by_id_works_on_a_checked_one(agent_client):
+    """"Run the AI review again" on a report the rubric already scored."""
+    seeded = _seeded_section(agent_client)
+    sid = _submit(agent_client, seeded, "stu_again")["submission_id"]
+    job = _agent(agent_client, "post", "/api/agent/reports/claim").json()
+    _agent(agent_client, "post", f"/api/agent/reports/{job['submission_id']}/result",
+           json={"ok": True, "score": 4, "total": 4, "checks": [], "feedback": "fine"})
+
+    again = _agent(agent_client, "post", f"/api/agent/reports/{sid}/claim")
+    assert again.status_code == 200, again.text
+    assert again.json()["submission_id"] == sid
+    assert again.json()["report_checks"]  # the rubric travels with the job
+
+    assert _agent(agent_client, "post", "/api/agent/reports/9999/claim").status_code == 404
+
+
+def test_config_tells_the_app_whether_ai_is_permitted(agent_client):
+    """The hub owns the switch, so the app greys the button out rather than
+    letting the instructor click and read a failure."""
+    assert agent_client.get("/api/agent/config").status_code == 401
+    assert _agent(agent_client, "get", "/api/agent/config").json()["ai_enabled"] is False
+
+
+def test_status_counts_what_needs_the_instructor(agent_client):
+    """The sidebar badge. A report that passed needs nobody, so counting it
+    would leave a number the instructor can never clear; one that failed the
+    rubric and has no feedback yet is exactly the work."""
+    seeded = _seeded_section(agent_client)
+    sub = _submit(agent_client, seeded, "stu_badge")
+    agent_client.post("/api/auth/logout", json={})
+
+    login(agent_client, "prof", "prof-pass-123")
+    assert agent_client.get("/api/agent/status").json()["needs_review"] == 0  # still queued
+
+    job = _agent(agent_client, "post", "/api/agent/reports/claim").json()
+    _agent(agent_client, "post", f"/api/agent/reports/{job['submission_id']}/result",
+           json={"ok": False, "score": 1, "total": 4, "checks": [], "feedback": "thin"})
+    body = agent_client.get("/api/agent/status").json()
+    assert body["needs_review"] == 1
+    assert body["now"] > 0  # the page dates last_seen against our clock, not the browser's
+
+    agent_client.post(
+        f"/api/instructor/reports/{sub['submission_id']}/feedback",
+        json={"feedback": "Add the mesh statistics table."},
+    )
+    assert agent_client.get("/api/agent/status").json()["needs_review"] == 0
+
+
+def test_a_passing_report_does_not_ask_for_attention(agent_client):
+    seeded = _seeded_section(agent_client)
+    _submit(agent_client, seeded, "stu_pass")
+    agent_client.post("/api/auth/logout", json={})
+
+    login(agent_client, "prof", "prof-pass-123")
+    job = _agent(agent_client, "post", "/api/agent/reports/claim").json()
+    _agent(agent_client, "post", f"/api/agent/reports/{job['submission_id']}/result",
+           json={"ok": True, "score": 4, "total": 4, "checks": [], "feedback": "good"})
+    assert agent_client.get("/api/agent/status").json()["needs_review"] == 0
+
+
+def test_status_is_for_the_instructor_only(agent_client):
+    """The queue depth drives the instructor's Reports page. A student can do
+    nothing with it, and left open it lets anyone probe the hub."""
+    seeded = _seeded_section(agent_client)
+    assert agent_client.get("/api/agent/status").status_code == 401
+
+    register_student(agent_client, seeded, "stu_nosy", "pw-eight-chars")
+    assert agent_client.get("/api/agent/status").status_code == 403
 
 
 # --- the AI switch has to cross the machine boundary ------------------------
@@ -201,3 +308,39 @@ def test_claim_says_ai_is_on_when_the_hub_has_it_on(tmp_path):
         _submit(c, _seeded_section(c))
         job = c.post("/api/agent/reports/claim", headers={"X-Agent-Token": TOKEN}).json()
         assert job["ai_enabled"] is True
+
+
+def test_report_ai_can_be_on_while_student_ai_stays_off(tmp_path):
+    """The professor's desktop has the GPU; the hub has neither GPU nor index.
+
+    ENABLE_REPORT_AI lets his checker run the model over a report without
+    advertising Compass to students or opening the hub's AI import paths,
+    which would fail on use.
+    """
+    s = Settings(
+        data_dir=tmp_path / "report_ai", smtp_host=None,
+        enable_ai=False, enable_report_ai=True,
+        report_checker="agent", agent_token=TOKEN,
+        instructor_username="prof", instructor_password="prof-pass-123",
+    )
+    with TestClient(create_app(s)) as c:
+        _submit(c, _seeded_section(c))
+        job = c.post("/api/agent/reports/claim", headers={"X-Agent-Token": TOKEN}).json()
+        assert job["ai_enabled"] is True, "the desktop may use its model"
+
+        # ...while nothing student-facing changed
+        assert c.get("/api/auth/me").json()["ai_enabled"] is False
+        # the chatbot router is not mounted at all, so its routes 404
+        assert c.get("/api/chatbot/consent").status_code == 404
+
+
+def test_neither_switch_means_no_model(tmp_path):
+    s = Settings(
+        data_dir=tmp_path / "no_ai", smtp_host=None,
+        report_checker="agent", agent_token=TOKEN,
+        instructor_username="prof", instructor_password="prof-pass-123",
+    )
+    with TestClient(create_app(s)) as c:
+        _submit(c, _seeded_section(c))
+        job = c.post("/api/agent/reports/claim", headers={"X-Agent-Token": TOKEN}).json()
+        assert job["ai_enabled"] is False

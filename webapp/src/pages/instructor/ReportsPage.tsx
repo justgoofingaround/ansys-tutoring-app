@@ -42,8 +42,14 @@ interface CheckerStatus {
   pending: number;
   in_progress: number;
   failed: number;
+  needs_review: number;
   checker_last_seen: number | null;
+  now: number;
 }
+
+// A running checker claims a waiting report within seconds, so a queue that
+// has not moved in this long means the desktop is off rather than busy.
+const CHECKER_STALE_S = 150;
 
 const FILTERS = [
   { key: "", label: "All" },
@@ -264,12 +270,37 @@ export function ReportsPage() {
     }.`;
   };
 
+  // The one failure that needs saying out loud: students have uploaded and
+  // the desktop that grades is not running, so nothing is happening and the
+  // queue line alone is too quiet to notice.
+  const s = status.data;
+  const stalled =
+    s !== undefined &&
+    s.pending + s.in_progress > 0 &&
+    (s.checker_last_seen === null || s.now - s.checker_last_seen > CHECKER_STALE_S);
+
   return (
     <>
       <PageHeader
         title="Reports"
         subtitle="What students submitted, and how it scored against the rubric."
       />
+
+      {stalled && (
+        <div className="mb-4 flex items-start gap-3 rounded-(--radius-control) border border-amber-300 bg-amber-50 px-4 py-3 dark:border-amber-900 dark:bg-amber-950/40">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-500" />
+          <div className="text-[13px] leading-relaxed text-ink-soft">
+            <span className="font-medium text-ink">
+              {s!.pending + s!.in_progress} report
+              {s!.pending + s!.in_progress === 1 ? " is" : "s are"} waiting, and the
+              checker on your desktop has not picked
+              {s!.pending + s!.in_progress === 1 ? " it" : " them"} up.
+            </span>{" "}
+            Start that machine, or run <code>tools\report_checker.py</code> on it, and
+            these will be checked within seconds. Nothing is lost while it waits.
+          </div>
+        </div>
+      )}
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {FILTERS.map((f) => (

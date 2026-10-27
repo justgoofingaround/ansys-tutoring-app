@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import html
 import json
+import os
 import re
 import zipfile
 from html.parser import HTMLParser
@@ -152,6 +153,20 @@ def _report_excerpt(text, rubric, limit_lines=70):
     return "\n".join(excerpt)
 
 
+def default_model():
+    """The Ollama model the review runs on.
+
+    Callers outside this module need it too — the grading app says in its
+    status bar whether that model is installed, and the checker's preflight
+    prints the `ollama pull` line for it — so it is resolved in one place.
+    """
+    try:
+        from config import OLLAMA_MODEL  # compass is added to sys.path by the guide
+    except Exception:
+        OLLAMA_MODEL = "gemma3:4b"
+    return OLLAMA_MODEL
+
+
 def _review_report_with_llm(text, rubric, validation_summary, guidelines=None):
     """Run a local-only LLM review over the extracted report text.
 
@@ -173,10 +188,7 @@ def _review_report_with_llm(text, rubric, validation_summary, guidelines=None):
             "suggestions": [],
         }
 
-    try:
-        from config import OLLAMA_MODEL  # compass is added to sys.path by the guide
-    except Exception:
-        OLLAMA_MODEL = "gemma3:4b"
+    OLLAMA_MODEL = default_model()
 
     excerpt = _report_excerpt(text, rubric)
     guidelines_block = ""
@@ -221,7 +233,16 @@ Focus on whether the student documented the model setup, result pages, and inter
                 {"role": "system", "content": "You are a strict but helpful lab-report reviewer."},
                 {"role": "user", "content": prompt},
             ],
-            options={"temperature": 0, "num_predict": 260},
+            # num_gpu=0 forces CPU. Needed on a machine whose CUDA install is
+            # broken (a driver update is enough to do it), where the GPU path
+            # crashes the model server outright. Slower, but a background
+            # review nobody is waiting on is the right place to trade speed
+            # for working at all. Set REPORT_AI_CPU_ONLY=1.
+            options={
+                "temperature": 0,
+                "num_predict": 260,
+                **({"num_gpu": 0} if os.environ.get("REPORT_AI_CPU_ONLY") == "1" else {}),
+            },
             format="json",
         )
         payload = response["message"]["content"]

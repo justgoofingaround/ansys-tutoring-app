@@ -1,8 +1,10 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   LogOut, Users, UserPlus, BookOpen, ListChecks, FileCheck, HelpCircle,
 } from "lucide-react";
 import { useMe, useLogout } from "@/auth/useMe";
+import { apiFetch } from "@/lib/api";
 import { cn } from "@/components/cn";
 
 const navItems = [
@@ -18,6 +20,14 @@ export function InstructorLayout() {
   const { data: me } = useMe();
   const logout = useLogout();
   const navigate = useNavigate();
+
+  // Reports arrive while the instructor is on some other page, and checking
+  // happens on another machine entirely, so the count has to come to them.
+  const { data: queue } = useQuery({
+    queryKey: ["instructor", "checker-status"],
+    queryFn: () => apiFetch<{ needs_review: number }>("/api/agent/status"),
+    refetchInterval: 30_000,
+  });
 
   return (
     <div className="flex min-h-screen">
@@ -42,6 +52,14 @@ export function InstructorLayout() {
             >
               <Icon className="size-4" />
               {label}
+              {to === "/instructor/reports" && (queue?.needs_review ?? 0) > 0 && (
+                <span
+                  className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-violet px-1.5 text-[11px] font-semibold text-white tabular-nums"
+                  title="Reports that did not pass and have no feedback yet"
+                >
+                  {queue!.needs_review}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>

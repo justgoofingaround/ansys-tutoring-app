@@ -173,7 +173,6 @@ def test_llm_disabled_503(tmp_path):
     off = Settings(
         data_dir=tmp_path / "off_data", enable_ai=True, enable_llm=False,
         instructor_username="prof2", instructor_password="prof2-pass-123",
-        chatbot_api_key=None,  # hermetic: ignore any CHATBOT_API_KEY in the env
     )
     with TestClient(create_app(off)) as c:
         login(c, "prof2", "prof2-pass-123")
@@ -181,45 +180,10 @@ def test_llm_disabled_503(tmp_path):
         assert r.status_code == 503
 
 
-def test_cloud_fallback_when_ollama_down(tmp_path, monkeypatch):
-    """Ollama unreachable + CHATBOT_API_KEY set -> conversion runs through the
-    OpenAI-compatible cloud API instead of failing with 503."""
-    import httpx
-
-    responses = [json.dumps(METADATA), json.dumps(CHUNK)]
-
-    def handler(request):
-        assert request.url.path.endswith("/chat/completions")
-        assert request.headers["Authorization"] == "Bearer test-key"
-        body = json.loads(request.content)
-        assert body["response_format"] == {"type": "json_object"}
-        content = responses.pop(0) if responses else "{}"
-        return httpx.Response(
-            200, json={"choices": [{"message": {"content": content}}]}
-        )
-
-    monkeypatch.setattr(pdf_tutorial, "_cloud_transport", httpx.MockTransport(handler))
-
-    def _down():
-        raise ConnectionError("ollama down")
-
-    monkeypatch.setitem(sys.modules, "ollama", types.SimpleNamespace(list=_down))
-
-    s = Settings(
-        data_dir=tmp_path / "cf_data", enable_ai=True, enable_llm=True,
-        instructor_username="prof3", instructor_password="prof3-pass-123",
-        chatbot_api_key="test-key",
-    )
-    with TestClient(create_app(s)) as c:
-        login(c, "prof3", "prof3-pass-123")
-        r = _convert(c, _tiny_pdf(["Step 1: open workbench. Step 2: mesh."]))
-        assert r.status_code == 201, r.text
-        body = r.json()
-        assert body["generated"]["backend"] == "cloud"
-        assert body["tutorial_id"] == "thermal_analysis_of_a_bracket"
-
-
 def test_not_a_pdf_422(llm_client, seeded):
+    """422, and not 503, even with no model anywhere: the upload is the
+    problem. This test must not depend on whether Ollama happens to be
+    running on the machine, which is why nothing is injected here."""
     login(llm_client, "prof", "prof-pass-123")
     r = _convert(llm_client, b"this is not a pdf")
     assert r.status_code == 422
@@ -247,35 +211,6 @@ def test_all_garbage_502(llm_client, seeded, monkeypatch):
     login(llm_client, "prof", "prof-pass-123")
     r = _convert(llm_client, _tiny_pdf(["some text"]))
     assert r.status_code == 502
-
-
-def test_cloud_429_waited_out_and_retried(monkeypatch):
-    """Free-tier rate limits: a 429 with a cooldown hint is slept through and
-    the call retried, instead of surfacing as 'no AI model available'."""
-    import httpx
-
-    from server.config import Settings
-
-    calls = []
-
-    def handler(request):
-        calls.append(1)
-        if len(calls) == 1:
-            return httpx.Response(
-                429, json={"error": {"message": "Rate limit reached. Please try again in 0.01s."}}
-            )
-        return httpx.Response(
-            200, json={"choices": [{"message": {"content": json.dumps({"ok": True})}}]}
-        )
-
-    monkeypatch.setattr(pdf_tutorial, "_cloud_transport", httpx.MockTransport(handler))
-    naps = []
-    monkeypatch.setattr(pdf_tutorial.time, "sleep", naps.append)
-
-    s = Settings(chatbot_api_key="k")
-    assert pdf_tutorial._cloud_chat_json(s, "prompt") == {"ok": True}
-    assert len(calls) == 2          # 429 then success
-    assert naps and naps[0] < 31    # slept the hinted cooldown, capped
 
 
 def test_student_cannot_convert(llm_client, seeded):

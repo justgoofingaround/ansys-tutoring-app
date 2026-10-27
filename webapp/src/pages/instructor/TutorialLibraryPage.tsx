@@ -319,7 +319,7 @@ function ConvertPdfCard() {
           setError(null);
         } else if (res.status === 503) {
           setError(
-            "No AI model is available. Start Ollama on this machine, or set CHATBOT_API_KEY on the server to use a cloud model as fallback, then try again.",
+            "No AI model is available. Start Ollama on the machine running the hub, then try again.",
           );
         } else if (res.status === 502) {
           setError("The model could not produce a usable tutorial from this PDF. Try a text-based (not scanned) PDF with clear numbered steps.");
@@ -350,8 +350,7 @@ function ConvertPdfCard() {
         <CardTitle>Convert a PDF with AI</CardTitle>
       </div>
       <p className="mt-2 text-sm text-ink-soft">
-        Upload a tutorial PDF and the AI model (local Ollama, or a cloud model
-        as fallback) drafts a tutorial from it:
+        Upload a tutorial PDF and the local AI model drafts a tutorial from it:
         title, problem statement, and step-by-step instructions. The draft uses
         manual step confirmation (no live highlighting). Review it, refine the
         JSON if needed, then publish.

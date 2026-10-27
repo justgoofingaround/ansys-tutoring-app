@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Report grading</title>
+<style>
+  :root {
+    --paper: #faf9f7; --surface: #fff; --ink: #1a1917; --ink-soft: #55504a;
+    --ink-faint: #8a837b; --hairline: #e6e2dc; --violet: #5b4ac4;
+    --violet-tint: #efecfb; --ok: #1f7a4d; --warn: #9a6400; --err: #a32d26;
+    --radius: 7px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #16150f; --surface: #1f1e18; --ink: #f2efe8; --ink-soft: #b5aea4;
+      --ink-faint: #8a837b; --hairline: #343128; --violet: #a394f0;
+      --violet-tint: #2a2548; --ok: #5fcf96; --warn: #e0a830; --err: #ef8279;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font: 15px/1.5 ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  }
+  header {
+    padding: 18px 24px; border-bottom: 1px solid var(--hairline);
+    background: var(--surface); position: sticky; top: 0; z-index: 2;
+  }
+  h1 { margin: 0; font-size: 19px; letter-spacing: -0.01em; }
+  .sub { color: var(--ink-soft); font-size: 13px; margin-top: 2px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .pill {
+    display: inline-flex; align-items: center; font-size: 12.5px;
+    border: 1px solid var(--hairline); border-radius: 99px; padding: 4px 10px;
+    color: var(--ink-soft); background: var(--paper);
+  }
+  main { padding: 20px 24px 60px; max-width: 1000px; }
+  button {
+    font: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+    border-radius: var(--radius); border: 1px solid var(--hairline);
+    background: var(--surface); color: var(--ink); padding: 7px 12px;
+  }
+  button:hover:not(:disabled) { border-color: var(--violet); color: var(--violet); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primary { background: var(--violet); border-color: var(--violet); color: #fff; }
+  button.primary:hover:not(:disabled) { opacity: .9; color: #fff; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+  .tabs button.on { background: var(--violet-tint); color: var(--violet); border-color: transparent; }
+  .row {
+    border: 1px solid var(--hairline); border-radius: var(--radius);
+    background: var(--surface); margin-bottom: 8px; overflow: hidden;
+  }
+  .head {
+    display: flex; align-items: center; gap: 12px; padding: 11px 14px; cursor: pointer;
+  }
+  .who { flex: 1; min-width: 0; }
+  .who b { font-weight: 600; }
+  .who div { color: var(--ink-soft); font-size: 13px; }
+  .tag { font-size: 12px; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+  .tag.ok { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); }
+  .tag.warn { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+  .tag.err { background: color-mix(in srgb, var(--err) 15%, transparent); color: var(--err); }
+  .tag.ai { background: var(--violet-tint); color: var(--violet); }
+  .score { font-variant-numeric: tabular-nums; color: var(--ink-soft); width: 46px; text-align: right; }
+  .body { padding: 0 14px 14px; border-top: 1px solid var(--hairline); }
+  .checks { list-style: none; padding: 0; margin: 12px 0; }
+  .checks li { display: flex; gap: 8px; padding: 2px 0; font-size: 14px; }
+  .box {
+    border: 1px solid var(--hairline); border-radius: var(--radius);
+    padding: 10px 12px; margin: 12px 0; background: var(--paper);
+  }
+  .box h3 {
+    margin: 0 0 6px; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight: 600;
+  }
+  textarea {
+    width: 100%; min-height: 76px; resize: vertical; font: inherit; font-size: 14px;
+    border: 1px solid var(--hairline); border-radius: var(--radius);
+    background: var(--surface); color: var(--ink); padding: 8px 10px;
+  }
+  textarea:focus { outline: none; border-color: var(--violet); }
+  .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+  .note { font-size: 13px; color: var(--ink-faint); }
+  .note.good { color: var(--ok); }
+  .note.bad { color: var(--err); }
+  a { color: var(--violet); }
+  .empty { padding: 40px; text-align: center; color: var(--ink-faint); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Report grading</h1>
+  <div class="sub">Runs on this machine only. The AI review happens here, not on the server.</div>
+  <div class="bar">
+    <span class="pill" id="hubPill"><span class="dot"></span><span>checking…</span></span>
+    <span class="pill" id="aiPill"><span class="dot"></span><span>model…</span></span>
+    <button id="refresh">Refresh</button>
+    <span class="note" id="queueNote"></span>
+  </div>
+  <div class="note bad" id="trouble" style="margin-top:8px" hidden></div>
+</header>
+
+<main>
+  <div class="tabs" id="tabs"></div>
+  <div id="list"></div>
+</main>
+
+<script>
+const TABS = [
+  ["no_ai", "No AI review"],
+  ["", "All"],
+  ["checked", "Checked"],
+  ["queued", "Waiting"],
+  ["failed", "Could not read"],
+];
+let tab = "no_ai";
+let rows = [];
+let open = new Set();
+let health = {};
+
+const el = (h) => { const d = document.createElement("div"); d.innerHTML = h.trim(); return d.firstChild; };
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const when = (t) => t ? new Date(t * 1000).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+const hasAi = (r) => !!(r.llm_review && r.llm_review.available);
+
+async function api(path, opts) {
+  const res = await fetch(path, { headers: { "content-type": "application/json" }, ...opts });
+  if (!res.ok) {
+    let d = `HTTP ${res.status}`;
+    try { d = (await res.json()).detail || d; } catch {}
+    throw new Error(d);
+  }
+  return res.json();
+}
+
+async function loadHealth() {
+  try { health = await api("/api/health"); } catch (e) { health = { detail: e.message }; }
+  const hub = document.getElementById("hubPill");
+  hub.querySelector(".dot").style.background = health.hub_ok ? "var(--ok)" : "var(--err)";
+  hub.querySelector("span:last-child").textContent = health.hub_ok ? "Hub connected" : "Hub unreachable";
+  const ai = document.getElementById("aiPill");
+  ai.querySelector(".dot").style.background = health.ollama ? "var(--ok)" : "var(--warn)";
+  ai.querySelector("span:last-child").textContent = health.ollama ? `${health.model} ready` : "No model";
+  const t = document.getElementById("trouble");
+  t.hidden = !health.detail;
+  t.textContent = health.detail || "";
+  if (rows.length) render();   // the buttons depend on what we just learned
+}
+
+async function load() {
+  document.getElementById("list").innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    rows = await api("/api/reports" + (tab ? `?status=${tab}` : ""));
+    // Refreshing or switching tabs mid-queue must not strand the queued
+    // reports on objects that are no longer on screen.
+    for (let i = 0; i < queue.length; i++) {
+      const fresh = rows.find((x) => x.submission_id === queue[i].submission_id);
+      if (fresh) queue[i] = fresh;
+    }
+  } catch (e) {
+    document.getElementById("list").innerHTML = `<div class="empty">${esc(e.message)}</div>`;
+    return;
+  }
+  render();
+}
+
+/* Each report has its own button. Clicking several in a row is the normal
+   way to work, so a click only ever joins a queue: the reviews then run one
+   at a time, because the machine has one GPU and two models at once is how
+   a grading session dies halfway through. Every row says where it is. */
+const jobs = new Map();   // submission_id -> {status, msg}
+const queue = [];
+let running = null;
+
+const jobOf = (id) => jobs.get(id) || { status: "idle", msg: "" };
+const isBusy = (id) => ["queued", "running"].includes(jobOf(id).status);
+
+/* The model has already written the useful sentences. Retyping them by hand
+   for thirty students is the kind of work nobody does twice, so a finished
+   review drops straight into the feedback box — as a draft. It is still the
+   instructor who edits it and presses Send, which is what keeps a person
+   between the model and the student's grade. */
+function aiText(r) {
+  const rev = r.llm_review || {};
+  if (!rev.available) return "";
+  const lines = [];
+  if (rev.overall) lines.push(rev.overall.trim());
+  for (const s of rev.suggestions || []) lines.push("- " + String(s).trim());
+  return lines.join("\n");
+}
+
+function enqueue(r) {
+  if (isBusy(r.submission_id)) return;
+  jobs.set(r.submission_id, { status: "queued", msg: "" });
+  queue.push(r);
+  render();
+  pump();
+}
+
+async function pump() {
+  if (running) return;
+  const r = queue.shift();
+  if (!r) { render(); return; }
+  running = r.submission_id;
+  jobs.set(running, { status: "running", msg: "" });
+  render();
+  try {
+    const out = await api(`/api/reports/${r.submission_id}/review`, { method: "POST" });
+    Object.assign(r, {
+      ok: out.ok, score: out.score, total: out.total, checks: out.checks,
+      llm_review: out.llm_review, status: "checked", checked_at: Date.now() / 1000,
+    });
+    const rev = out.llm_review || {};
+    // Only into an empty box: never overwrite what he has already written,
+    // or sent before.
+    if (!r.instructor_feedback && !r._draft) r._draft = aiText(r);
+    jobs.set(r.submission_id, rev.available
+      ? { status: "done", msg: "Reviewed" }
+      : { status: "error", msg: (rev.caveats || ["The model did not run."])[0] });
+  } catch (e) {
+    jobs.set(r.submission_id, { status: "error", msg: e.message });
+  }
+  running = null;
+  render();
+  pump();
+}
+
+function render() {
+  const list = document.getElementById("list");
+
+  // Keep anything half-typed. A review finishing elsewhere redraws the list,
+  // and losing a sentence of feedback to that would be unforgivable.
+  for (const ta of list.querySelectorAll("textarea[data-id]")) {
+    const r = rows.find((x) => String(x.submission_id) === ta.dataset.id);
+    if (r) r._draft = ta.value;
+  }
+
+  list.innerHTML = "";
+  if (!rows.length) {
+    list.appendChild(el(`<div class="empty">${tab === "no_ai"
+      ? "Every checked report already has an AI review."
+      : "Nothing here."}</div>`));
+  }
+  for (const r of rows) list.appendChild(row(r));
+
+  const waiting = queue.length + (running ? 1 : 0);
+  const note = document.getElementById("queueNote");
+  note.textContent = waiting
+    ? `Reviewing ${waiting} report${waiting === 1 ? "" : "s"}…`
+    : "";
+}
+
+function statusTag(r) {
+  if (r.status === "pending" || r.status === "claimed")
+    return '<span class="tag warn">Waiting</span>';
+  if (r.status === "failed") return '<span class="tag err">Could not read</span>';
+  return r.ok ? '<span class="tag ok">Passed</span>' : '<span class="tag warn">Needs fixes</span>';
+}
+
+function reviewButtonLabel(r) {
+  const j = jobOf(r.submission_id);
+  if (j.status === "running") return "Reviewing…";
+  if (j.status === "queued") return "Queued";
+  return hasAi(r) ? "Run again" : "Run AI review";
+}
+
+function reviewButton(r) {
+  const id = r.submission_id;
+  const j = jobOf(id);
+  // Only a definite "no" disables the button. A health check that is slow,
+  // or that failed once, must not quietly take the app away from him — let
+  // him click and read a real error instead of a dead button.
+  const blocked = health.ai_allowed === false || health.hub_ok === false;
+  const b = el(`<button class="${j.status === "done" ? "" : "primary"}">${reviewButtonLabel(r)}</button>`);
+  b.disabled = isBusy(id) || blocked;
+  if (blocked) b.title = health.detail || "The hub does not permit AI review.";
+  b.onclick = (ev) => { ev.stopPropagation(); enqueue(r); };
+  return b;
+}
+
+function row(r) {
+  const id = r.submission_id;
+  const j = jobOf(id);
+  const node = el(`<div class="row" data-id="${id}">
+    <div class="head">
+      <div class="who"><b>${esc(r.student)}</b>
+        <div>${esc(r.tutorial_title)}${r.section ? " · " + esc(r.section) : ""} · ${esc(r.filename)}</div>
+      </div>
+      ${j.status === "error" ? `<span class="note bad" title="${esc(j.msg)}">${esc(j.msg.slice(0, 40))}</span>` : ""}
+      ${hasAi(r) ? '<span class="tag ai">AI reviewed</span>' : ""}
+      ${r.instructor_feedback ? '<span class="tag ai">Feedback sent</span>' : ""}
+      ${statusTag(r)}
+      <span class="score">${r.status === "checked" ? r.score + "/" + r.total : ""}</span>
+    </div>
+  </div>`);
+
+  const head = node.querySelector(".head");
+  head.appendChild(reviewButton(r));
+  head.onclick = () => {
+    open.has(id) ? open.delete(id) : open.add(id);
+    render();
+  };
+  if (open.has(id)) node.appendChild(details(r));
+  return node;
+}
+
+function details(r) {
+  const id = r.submission_id;
+  const rev = r.llm_review || {};
+  const job = jobOf(id);
+  const body = el(`<div class="body">
+    <div class="note" style="margin-top:10px">Submitted ${when(r.submitted_at)}${
+      r.checked_at ? " · checked " + when(r.checked_at) : ""}</div>
+
+    ${r.checks.length ? `<ul class="checks">${r.checks.map((c) => `<li>
+        <span style="color:${c.ok ? "var(--ok)" : "var(--warn)"}">${c.ok ? "✓" : "✗"}</span>
+        <span><b>${esc(c.name)}</b>${c.message ? " — " + esc(c.message) : ""}</span></li>`).join("")}</ul>` : ""}
+
+    <div class="box">
+      <h3>AI review ${hasAi(r) ? "· the rubric above decides the score" : ""}</h3>
+      <div>${hasAi(r)
+        ? `<div>${esc(rev.overall || "")}</div>${
+            (rev.suggestions || []).length
+              ? "<ul>" + rev.suggestions.map((s) => `<li>${esc(s)}</li>`).join("") + "</ul>"
+              : ""}`
+        : '<span class="note">No AI review yet. Use the button on the right of this row.</span>'}</div>
+      ${job.status === "error" ? `<div class="note bad" style="margin-top:6px">${esc(job.msg)}</div>` : ""}
+      ${job.status === "running" ? '<div class="note" style="margin-top:6px">Reading the report and running the model…</div>' : ""}
+      ${job.status === "queued" ? '<div class="note" style="margin-top:6px">Waiting for the report before it to finish.</div>' : ""}
+    </div>
+
+    <div class="box">
+      <h3>Your feedback to ${esc(r.student)}</h3>
+      <textarea id="fb-${id}" data-id="${id}" placeholder="What the rubric can't say: judgement about the mesh, the boundary conditions, the write-up.">${esc(r._draft ?? r.instructor_feedback ?? "")}</textarea>
+      <div class="actions">
+        <button class="primary" id="save-${id}">${r.instructor_feedback ? "Update feedback" : "Send feedback"}</button>
+        ${hasAi(r) ? `<button id="useai-${id}">Use the AI review</button>` : ""}
+        <span class="note ${r._justSent ? "good" : ""}" id="fbnote-${id}">${
+          r._justSent ? "Sent. The student sees it now."
+          : r.instructor_feedback_at ? "Last sent " + when(r.instructor_feedback_at)
+          : r._draft ? "Draft from the AI review — edit it, then send."
+          : ""}</span>
+      </div>
+    </div>
+  </div>`);
+
+  body.onclick = (ev) => ev.stopPropagation();   // typing must not collapse the row
+
+  const useAi = body.querySelector(`#useai-${id}`);
+  if (useAi) useAi.onclick = () => {
+    const ta = body.querySelector(`#fb-${id}`);
+    ta.value = aiText(r);
+    r._draft = ta.value;
+    ta.focus();
+    const note = body.querySelector(`#fbnote-${id}`);
+    note.textContent = "Draft from the AI review — edit it, then send.";
+    note.className = "note";
+  };
+
+  body.querySelector(`#save-${id}`).onclick = async () => {
+    const note = body.querySelector(`#fbnote-${id}`);
+    const text = body.querySelector(`#fb-${id}`).value;
+    note.textContent = "Sending…";
+    note.className = "note";
+    try {
+      await api(`/api/reports/${id}/feedback`, { method: "POST", body: JSON.stringify({ feedback: text }) });
+      r.instructor_feedback = text.trim() || null;
+      r.instructor_feedback_at = Date.now() / 1000;
+      delete r._draft;            // it is sent; it is no longer a draft
+      r._justSent = true;         // survives the redraw below
+      render();
+    } catch (e) {
+      note.textContent = e.message;
+      note.className = "note bad";
+    }
+  };
+  return body;
+}
+
+document.getElementById("tabs").append(...TABS.map(([key, label]) => {
+  const b = el(`<button class="${key === tab ? "on" : ""}">${label}</button>`);
+  b.onclick = () => {
+    tab = key;
+    [...document.getElementById("tabs").children].forEach((c) => c.classList.remove("on"));
+    b.classList.add("on");
+    load();
+  };
+  return b;
+}));
+document.getElementById("refresh").onclick = () => { loadHealth(); load(); };
+loadHealth();
+load();
+setInterval(loadHealth, 30000);
+</script>
+</body>
+</html>

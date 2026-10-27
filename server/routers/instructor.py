@@ -24,7 +24,10 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from ..deps import csrf_check, get_db, get_settings, require_instructor
 from ..models import SectionCreate, SectionResponse
 from ..security import new_class_code
-from ..services import faq_service, pdf_tutorial, progress, quiz_store, roster, tutorial_store
+from ..services import (
+    faq_service, pdf_tutorial, progress, quiz_store, report_listing, roster,
+    tutorial_store,
+)
 from ..services.tutorial_store import TutorialValidationError
 
 router = APIRouter(
@@ -963,54 +966,7 @@ def list_reports(
     stored path is deliberately not returned — the download route below is
     the only way to the file, so the UI cannot leak a filesystem path.
     """
-    sql = """SELECT r.id, r.session_token, r.tutorial_id, r.tutorial_version,
-                    r.filename, r.ok, r.score, r.total, r.checks, r.feedback,
-                    r.llm_review, r.submitted_at, r.status, r.checked_at,
-                    r.instructor_feedback, r.instructor_feedback_at,
-                    u.username, s.name AS section, t.title AS tutorial_title
-             FROM report_submissions r
-             LEFT JOIN users u ON u.opaque_token = r.session_token
-             LEFT JOIN sections s ON s.id = u.section_id
-             LEFT JOIN tutorials t ON t.tutorial_id = r.tutorial_id"""
-    where, args = [], []
-    if status == "queued":
-        # Waiting plus in-flight: a report a checker is working on right now
-        # is still something the instructor is waiting for.
-        where.append("r.status IN ('pending', 'claimed')")
-    elif status:
-        where.append("r.status = ?")
-        args.append(status)
-    if tutorial_id:
-        where.append("r.tutorial_id = ?")
-        args.append(tutorial_id)
-    if where:
-        sql += " WHERE " + " AND ".join(where)
-    sql += " ORDER BY r.submitted_at DESC LIMIT 500"
-
-    return [
-        {
-            "submission_id": r["id"],
-            # The student may have been removed; the work stays, anonymous.
-            "student": r["username"] or "(removed account)",
-            "section": r["section"],
-            "tutorial_id": r["tutorial_id"],
-            "tutorial_title": r["tutorial_title"] or r["tutorial_id"],
-            "tutorial_version": r["tutorial_version"],
-            "filename": r["filename"],
-            "status": r["status"],
-            "ok": bool(r["ok"]),
-            "score": r["score"],
-            "total": r["total"],
-            "checks": json.loads(r["checks"]) if r["checks"] else [],
-            "feedback": r["feedback"],
-            "llm_review": json.loads(r["llm_review"]) if r["llm_review"] else None,
-            "submitted_at": r["submitted_at"],
-            "checked_at": r["checked_at"],
-            "instructor_feedback": r["instructor_feedback"],
-            "instructor_feedback_at": r["instructor_feedback_at"],
-        }
-        for r in conn.execute(sql, args).fetchall()
-    ]
+    return report_listing.list_submissions(conn, status=status, tutorial_id=tutorial_id)
 
 
 def _download_name(row: sqlite3.Row) -> str:
@@ -1060,21 +1016,12 @@ def leave_report_feedback(
     Sending empty text clears the note.
     """
     text = (body.get("feedback") or "").strip()
-    if len(text) > 4000:
+    if len(text) > report_listing.MAX_FEEDBACK_CHARS:
         raise HTTPException(status_code=422, detail="feedback_too_long")
-    row = conn.execute(
-        "SELECT id FROM report_submissions WHERE id = ?", (submission_id,)
-    ).fetchone()
-    if row is None:
+    result = report_listing.set_feedback(conn, submission_id, text)
+    if result is None:
         raise HTTPException(status_code=404, detail="submission_not_found")
-    conn.execute(
-        """UPDATE report_submissions
-           SET instructor_feedback = ?, instructor_feedback_at = ?
-           WHERE id = ?""",
-        (text or None, time.time() if text else None, submission_id),
-    )
-    conn.commit()
-    return {"submission_id": submission_id, "instructor_feedback": text or None}
+    return result
 
 
 @router.post("/reports/{submission_id}/recheck", dependencies=[Depends(csrf_check)])

@@ -1,10 +1,9 @@
 """PDF -> tutorial JSON conversion (instructor upload).
 
-Backend: local Ollama when enabled and reachable, else the OpenAI-compatible
-cloud API (CHATBOT_API_KEY, same Groq-by-default config the cloud chatbot
-uses). The PDF is instructor-authored course material — never student data —
-so the cloud fallback does not touch the FERPA invariant (which is about
-student data specifically).
+Backend: local Ollama, when enabled and reachable, and nothing else. There is
+no cloud fallback — the upload is instructor-authored course material rather
+than student data, so one would not have broken the FERPA invariant, but a
+single local-only rule is easier to hold to than a per-endpoint judgement.
 
 The LLM's job is deliberately small: it extracts prose (title, problem,
 per-chunk step titles/descriptions/hints). Everything the tutorial
@@ -43,7 +42,7 @@ class PdfExtractionError(PdfConversionError):
 
 
 class LlmUnavailableError(PdfConversionError):
-    """No usable backend: Ollama off/unreachable and no cloud key (-> 503)."""
+    """No usable backend: Ollama off or unreachable (-> 503)."""
 
 
 class GenerationFailedError(PdfConversionError):
@@ -129,93 +128,25 @@ def _ollama_chat_json(model: str, prompt: str) -> dict:
     return data
 
 
-_cloud_transport = None  # test seam: httpx.MockTransport, mirrors CloudApiEngine
-
-
-_RETRY_AFTER_RE = re.compile(r"try again in ([0-9.]+)s", re.IGNORECASE)
-_MAX_429_RETRIES = 6
-
-
-def _retry_delay_s(resp) -> float:
-    """Cooldown from a 429: Retry-After header, or Groq's 'try again in Xs'
-    message text; conservative default otherwise."""
-    header = resp.headers.get("retry-after", "")
-    if header.replace(".", "", 1).isdigit():
-        return float(header)
-    m = _RETRY_AFTER_RE.search(resp.text)
-    return float(m.group(1)) if m else 10.0
-
-
-def _cloud_chat_json(settings, prompt: str) -> dict:
-    """One JSON-mode call against the OpenAI-compatible chat-completions API
-    (Groq by default — same CHATBOT_* config the cloud chatbot uses).
-    Free-tier rate limits (429) are waited out and retried, so a chunked
-    conversion completes slowly instead of failing. Connection/API failures
-    raise LlmUnavailableError; a bad payload raises ValueError (caller
-    retries)."""
-    import httpx  # lazy, mirrors chatbot_service
-
-    try:
-        with httpx.Client(
-            transport=_cloud_transport, timeout=httpx.Timeout(120.0, connect=10.0)
-        ) as client:
-            for _ in range(_MAX_429_RETRIES):
-                resp = client.post(
-                    f"{settings.chatbot_api_base.rstrip('/')}/chat/completions",
-                    headers={"Authorization": f"Bearer {settings.chatbot_api_key}"},
-                    json={
-                        "model": settings.chatbot_model,
-                        "messages": [{"role": "user", "content": prompt}],
-                        "response_format": {"type": "json_object"},
-                        "temperature": 0,
-                        # generous: reasoning models (gpt-oss-*) spend
-                        # completion tokens on reasoning before the JSON
-                        "max_tokens": 4096,
-                    },
-                )
-                if resp.status_code != 429:
-                    break
-                time.sleep(min(_retry_delay_s(resp) + 0.5, 30.0))
-    except httpx.HTTPError as exc:
-        raise LlmUnavailableError(f"cloud LLM API not reachable: {exc}")
-    if resp.status_code != 200:
-        raise LlmUnavailableError(
-            f"cloud LLM API returned {resp.status_code}: {resp.text[:300]}"
-        )
-    choices = resp.json().get("choices") or [{}]
-    content = (choices[0].get("message") or {}).get("content") or ""
-    data = json.loads(content)  # ValueError on garbage/empty
-    if not isinstance(data, dict):
-        raise ValueError("LLM did not return a JSON object")
-    return data
-
-
 def _pick_backend(settings):
-    """Choose the JSON-chat backend: (chat callable, model name, backend tag).
+    """The JSON-chat backend: (chat callable, model name, backend tag).
 
-    Local Ollama wins when enabled and reachable (the pilot path). Otherwise
-    fall back to the cloud API when CHATBOT_API_KEY is set — this also makes
-    PDF conversion work on cloud/demo deployments where ENABLE_LLM=0."""
+    Local Ollama or nothing. A conversion that cannot run says so and the
+    instructor authors the tutorial by hand, which is a worse afternoon than
+    a cloud fallback would be and a better guarantee about where the work went."""
     if settings.enable_llm:
         try:
             import ollama
 
             ollama.list()  # cheap reachability probe
         except Exception:
-            pass  # fall through to the cloud backend (or the error below)
+            pass  # fall through to the error below
         else:
             model = _resolve_model()
             return (lambda p: _ollama_chat_json(model, p)), model, "ollama"
-    if settings.chatbot_api_key:
-        return (
-            (lambda p: _cloud_chat_json(settings, p)),
-            settings.chatbot_model,
-            "cloud",
-        )
     raise LlmUnavailableError(
         "no LLM backend: Ollama is "
         + ("not reachable" if settings.enable_llm else "disabled (ENABLE_LLM=0)")
-        + " and CHATBOT_API_KEY is not set for the cloud fallback"
     )
 
 
@@ -314,8 +245,11 @@ def assemble_tutorial(metadata: dict, chunks: list[dict], existing_ids: set,
 
 def convert_pdf(raw: bytes, filename: str, settings, existing_ids: set) -> tuple[dict, dict]:
     """PDF bytes -> (tutorial dict, generation info)."""
-    chat, model, backend = _pick_backend(settings)
+    # Read the file before asking for a model. A .docx uploaded by mistake is
+    # not a PDF whether or not Ollama happens to be up, and telling the
+    # instructor "no AI model is available" sends them to fix the wrong thing.
     pages = _extract_pages(raw)
+    chat, model, backend = _pick_backend(settings)
 
     metadata = _call_with_retry(
         chat, METADATA_PROMPT.format(text="\n".join(pages[:PAGES_PER_CHUNK])[:CHUNK_CHAR_CAP])

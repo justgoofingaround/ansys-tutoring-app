@@ -148,6 +148,10 @@ export interface TutorialDetailData {
     submitted_at: number;
     instructor_feedback: string | null;
     instructor_feedback_at: number | null;
+    /** Checked on the instructor's desktop, so the verdict arrives here
+     * rather than in the upload response. */
+    checks?: ReportCheck[];
+    llm_review?: LlmReview | null;
   }[];
   quiz: QuizState | null;
 }

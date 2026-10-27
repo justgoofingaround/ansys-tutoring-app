@@ -14,7 +14,12 @@ uploads/
 
 # Internal correspondence, not code
 SECURITY-REVIEW-RESPONSE.md
+# Deployment runbook: hostnames, paths and operational detail for the NYU box.
+deploy/DEPLOY-NYU.md
 new tutorial
 
 *.png
 *.pptx
+
+# the instructor desktop checker keeps its hub address and token here
+tools/checker.env

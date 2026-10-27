@@ -23,13 +23,6 @@ def test_disabled_by_default():
     assert s.enable_llm is False
 
 
-def test_stray_api_key_cannot_re_enable_generation(tmp_path):
-    """Misconfiguration case: CHATBOT_API_KEY present but AI off. The key is
-    dropped, so neither CloudApiEngine nor the PDF cloud fallback can run."""
-    s = Settings(data_dir=tmp_path / "d", chatbot_api_key="sk-should-be-ignored")
-    assert s.chatbot_api_key is None
-
-
 def test_enable_ai_restores_the_llm_gate(tmp_path):
     """Reversibility: the flag is the only thing standing between the pilot
     build and a working AI build."""

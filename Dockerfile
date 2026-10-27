@@ -32,12 +32,9 @@ RUN if [ "$WITH_COMPASS" != "1" ]; then rm -rf compass; fi
 COPY tools/validate_tutorial.py tools/validate_tutorial.py
 COPY content/data/ content/data/
 COPY --from=webapp /build/dist webapp/dist
-# Ollama-backed LLM features off in the cloud (no Ollama); every LLM path
-# degrades gracefully. The Compass chatbot AND PDF->tutorial conversion CAN
-# run in the cloud: set CHATBOT_API_KEY (+ optional CHATBOT_API_BASE /
-# CHATBOT_MODEL, defaulting to Groq's free tier) to route them through an
-# OpenAI-compatible API — no retrieval index for chat, general-knowledge
-# answers, demo-grade only.
+# LLM features off by default: Ollama is the only generation backend and an
+# image has none, so every LLM path degrades gracefully to "unavailable".
+# There is no cloud-API alternative to configure — see server/config.py.
 # Instructor account comes from INSTRUCTOR_USERNAME / INSTRUCTOR_PASSWORD
 # env vars at deploy time.
 ENV ENABLE_LLM=0 \
